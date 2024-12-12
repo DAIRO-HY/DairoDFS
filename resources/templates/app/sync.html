@@ -1,0 +1,147 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <th:block th:include="app/icd/css :: header('同步状态')"/>
+    <style>
+        /* 定义旋转动画 */
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* 应用动画到图标 */
+        .rotate-icon {
+            animation: spin 2s linear infinite;
+        }
+    </style>
+</head>
+<body>
+<th:block th:include="app/icd/top-bar :: top-bar"/>
+<div class="mx-3 mt-3 px-3 row g-0 rounded shadow bg-content-bar" style="line-height: 44px;">
+    <div class="col-6 fs-5">同步状态</div>
+    <div class="col-6 text-end" style="font-size: 0;">
+    </div>
+</div>
+<div class="m-3 p-2 rounded shadow bg-content">
+    <div class="text-start">
+        <div id="table"></div>
+    </div>
+    <button class="btn btn-primary" type="button" onclick="onSyncClick()">日志同步</button>
+    <button class="btn btn-primary" type="button" onclick="onSyncAllClick()">全量同步</button>
+</div>
+<th:block th:include="app/icd/js :: js"/>
+<script>
+    $(function () {
+        getInfoList()
+        initSocket()
+    })
+
+    function getInfoList() {
+        $.ajaxByData("./sync/info_list").success(data => {
+            fillDataTable(data)
+        }).post()
+    }
+
+    /**
+     * 填充表格数据
+     * @param data 要填充的数据
+     */
+    function fillDataTable(data) {
+        $("#table").createTable({
+            data: data,
+            columns: [
+                {
+                    data: "no",
+                    title: "NO"
+                },
+                {
+                    data: "url",
+                    title: "URL"
+                },
+                {
+                    data: "state",
+                    title: "状态",
+                    render: function (value) {
+                        if (value === 0) {
+                            return `<i class="bi bi-clock-fill text-secondary"></i> 空闲`
+                        } else if (value === 1) {
+                            return `<div class="d-inline-block rotate-icon"><i class="bi bi-fan text-success"></i></div>`
+                        } else if (value === 2) {
+                            return `<i class="bi bi-emoji-angry-fill text-danger"></i>`
+                        } else {
+                            return value
+                        }
+                    }
+                },
+                {
+                    data: "lastTime",
+                    title: "最后同步时间",
+                    render: function (value) {
+                        if (value === 0) {
+                            return "未同步"
+                        }
+                        const date = dateFormat(new Date(value))
+                        return "<div>" + date + "</div>"
+                    }
+                },
+                {
+                    data: "lastHeartTime",
+                    title: "最后心跳时间",
+                    render: function (value) {
+                        if (value === 0) {
+                            return ""
+                        }
+                        const date = dateFormat(new Date(value))
+                        return "<div>" + date + "</div>"
+                    }
+                },
+                {
+                    data: "syncCount",
+                    title: "日志数"
+                },
+                {
+                    data: "msg",
+                    title: "消息"
+                }
+            ]
+        })
+    }
+
+    /**
+     * 日志同步按钮点击事件
+     */
+    function onSyncClick() {
+        $.ajaxByData("./sync/by_log").success(() => {
+            getInfoList()
+        }).post()
+    }
+
+    /**
+     * 全量同步按钮点击事件
+     */
+    function onSyncAllClick() {
+        $.ajaxByData("./sync/by_table").success(() => {
+            getInfoList()
+        }).post()
+    }
+
+    function initSocket() {
+        let socket = new WebSocket(`ws://${location.host}/ws/app/sync`);
+
+        socket.onopen = function (e) {
+            console.log("Connection established");
+            socket.send("Hello Server");
+        };
+
+        socket.onmessage = function (event) {
+            const data = JSON.parse(event.data)
+            $("#table").setRow(data.no - 1, data)
+        };
+    }
+</script>
+</body>
+</html>

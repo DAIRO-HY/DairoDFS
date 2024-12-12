@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.dairo.dfs.dao.UserDao">
+
+    <!--添加一条数据-->
+    <insert id="add">
+        insert into user(id, name, pwd, email, encryptionKey, state, date)
+        values (#{id}, #{name}, #{pwd}, #{email}, #{encryptionKey}, #{state}, #{date})
+    </insert>
+
+    <!--通过id获取一条数据-->
+    <select id="selectOne" resultType="UserDto">
+        select *
+        from user
+        where id = #{0}
+    </select>
+
+    <!-- 获取管理员ID -->
+    <select id="selectAdminId" resultType="Long">
+        select id
+        from user
+        order by id asc
+        limit 1
+    </select>
+
+    <!--通过邮箱获取用户信息-->
+    <select id="selectByEmail" resultType="UserDto">
+        select *
+        from user
+        where email = #{0}
+    </select>
+
+    <!--通过用户名获取用户信息-->
+    <select id="selectByName" resultType="UserDto">
+        select *
+        from user
+        where name = #{0}
+    </select>
+
+    <!--通过ApiToken获取用户ID-->
+    <select id="selectIdByApiToken" resultType="Long">
+        select id
+        from user
+        where apiToken = #{0}
+          and state = 1
+    </select>
+
+    <!--通过urlPath获取用户ID-->
+    <select id="selectIdByUrlPath" resultType="Long">
+        select id
+        from user
+        where urlPath = #{0}
+          and state = 1
+    </select>
+
+    <!--获取所有用户-->
+    <select id="selectAll" resultType="UserDto">
+        select *
+        from user
+    </select>
+
+    <!--判断是否已经初始化-->
+    <select id="isInit" resultType="Boolean">
+        select count(*) > 0
+        from user
+    </select>
+
+    <!--更新用户信息-->
+    <update id="update">
+        update user
+        set name  = #{name},
+            email = #{email},
+            state = #{state}
+        where id = #{id}
+    </update>
+
+    <!--设置URL路径前缀-->
+    <update id="setUrlPath">
+        update user
+        set urlPath = #{param2}
+        where id = #{param1}
+    </update>
+
+    <!--设置API票据-->
+    <update id="setApiToken">
+        update user
+        set apiToken = #{param2}
+        where id = #{param1}
+    </update>
+
+    <!--设置端对端加密-->
+    <update id="setEncryptionKey">
+        update user
+        set encryptionKey = #{param2}
+        where id = #{param1}
+    </update>
+
+    <!--设置密码-->
+    <update id="setPwd">
+        update user
+        set pwd = #{pwd}
+        where id = #{id}
+    </update>
+</mapper>

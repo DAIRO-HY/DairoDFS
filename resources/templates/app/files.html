@@ -1,0 +1,35 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <th:block th:include="app/icd/css :: header('文件管理')"/>
+</head>
+<body>
+<th:block th:include="app/icd/top-bar :: top-bar"/>
+
+<!--文件操作导航视图-->
+<th:block th:include="app/icd/files/files_toolbar :: files_toolbar"/>
+
+<!--文件上传进度试图-->
+<th:block th:include="app/icd/files/files_upload :: files_upload"/>
+
+<!--文件列表视图-->
+<th:block th:include="app/icd/files_list :: files_list"/>
+
+<!--右键菜单视图-->
+<th:block th:include="app/icd/files/files_right_option :: files_right_option"/>
+
+<!--分享画面-->
+<th:block th:include="app/icd/files/files_share :: files_share"/>
+
+<!--分享明细dialog-->
+<th:block th:include="app/icd/share_detail_dialog :: share_detail_dialog"/>
+
+<!--文件属性dialog-->
+<th:block th:include="app/icd/file_property_dialog :: file_property_dialog"/>
+
+<th:block th:include="app/icd/js :: js"/>
+
+<script>
+</script>
+</body>
+</html>

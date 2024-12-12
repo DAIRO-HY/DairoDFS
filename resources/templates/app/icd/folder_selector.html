@@ -1,0 +1,120 @@
+﻿<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
+<th:block th:fragment="folder_selector">
+    <div class="modal fade" id="modalFolderSelector" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
+         aria-labelledby="staticBackdropLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="staticBackdropLabel">选择文件夹</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="folderListDiv" data-folder="" style="height: 200px;overflow-y: auto;">
+
+                    </div>
+                    <div class="alert alert-primary d-flex text-nowrap mb-0 py-2">当前选择:
+                        <span id="selectedPath" data-path=""
+                              class="d-flex justify-content-end overflow-x-auto no-scrollbar text-nowrap ps-2">
+                        根目录
+                    </span>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button id="folderSelectorOkBtn" type="button" class="btn btn-primary">
+                        确认
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+
+        /**
+         * 文件夹显示HTML
+         */
+        const folderItemHtml = `<div class="ms-3" data-folder="{folder}">
+                                <i class="bi bi-plus" onclick="onFolderClick(this)" role="button" style="width:20px;display: inline-block;text-align: center;"></i>
+                                <span onclick="onSelectFolderClick(this)" role="button">{name}</span>
+                                <div></div>
+                            </div>`
+
+        /**
+         * 显示文件夹选择器
+         */
+        function showFolderSelector(onFunc) {
+            const modalShare = new bootstrap.Modal('#modalFolderSelector')
+            modalShare.show()
+            addRootFolderHtml()
+            $("#folderSelectorOkBtn").off("click").on("click", () => {
+                modalShare.hide()
+                const path = $("#selectedPath").data("path")
+                onFunc(path)
+            })
+        }
+
+        /**
+         * 添加根目录文件夹
+         */
+        function addRootFolderHtml() {
+            $("#folderListDiv").empty()
+            const html = folderItemHtml.replace("{folder}", "")
+                .replace("{name}", "根目录")
+            $("#folderListDiv").append(html)
+        }
+
+        /**
+         * 文件夹名点击事件
+         */
+        function onFolderClick(obj) {
+            const $parentDiv = $(obj).parent()
+            getSelectorFolderList($parentDiv)
+        }
+
+        /**
+         * 文件点击事件
+         */
+        function onSelectFolderClick(obj) {
+            const $parentDiv = $(obj).parent()
+            let currentFolder = $parentDiv.data("folder")
+            $("#selectedPath").data("path", currentFolder)
+            if (currentFolder === "") {
+                currentFolder = "根目录"
+            }
+            $("#selectedPath").text(currentFolder)
+        }
+
+        /**
+         * 获取子文件夹列表并填充
+         * @param $parentDiv 父级目录
+         */
+        function getSelectorFolderList($parentDiv) {
+            const $childDiv = $parentDiv.find(">div")
+            const $childIcon = $parentDiv.find(">.bi")
+            if ($childIcon.hasClass("bi-dash")) {//收起模式时
+                $childDiv.empty()
+                $childIcon.removeClass("bi-dash").addClass("bi-plus")
+                return
+            }
+
+            const currentFolder = $parentDiv.data("folder")
+            $.ajaxByData("/app/folder_selector/get_list?folder=" + currentFolder).success(data => {
+                $childDiv.empty()
+                if (data.length === 0) {//这是一个空文件夹
+                    $childIcon.removeClass("bi-plus")
+                    return
+                }
+
+                //将加号换成减号
+                $childIcon.removeClass("bi-plus").addClass("bi-dash")
+                data.forEach(item => {
+                    const folder = currentFolder + "/" + item.name
+                    const html = folderItemHtml.replace("{folder}", folder)
+                        .replace("{name}", item.name)
+                    $childDiv.append(html)
+                })
+            }).post()
+        }
+    </script>
+</th:block>
+</html>

@@ -1,0 +1,58 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <th:block th:include="app/icd/css :: header('用户登录')"/>
+    <script src="../../static/plugins/md5.js"></script>
+</head>
+<body class="bg-login">
+<div class="text-center d-table" style="width: 100vw;height: 100vh;">
+    <div class="d-table-cell align-middle">
+        <div class="d-inline-block border rounded bg-white p-3 text-start" style="width: 300px;">
+            <span class="fs-4">用户登录</span>
+            <form action="/app/login/do-login">
+                <input name="deviceId" type="hidden">
+                <div>
+                    <input name="name" class="form-control mt-3" type="text" placeholder="用户名" autocomplete="off">
+                </div>
+                <div>
+                    <input name="pwd" class="form-control mt-3" type="password" placeholder="密码" autocomplete="off">
+                </div>
+                <button type="button" class="btn btn-primary w-100 mt-4" onclick="onLoginClick()">登录</button>
+            </form>
+            <div class="text-end mt-2">
+                <a class="text-muted small" href="javascript:void(0);" onclick="onForgetClick();">忘记密码</a>
+            </div>
+        </div>
+    </div>
+</div>
+<th:block th:include="app/icd/js :: js"/>
+<script>
+
+    /**
+     * 登录按钮点击事件
+     */
+    function onLoginClick() {
+        let deviceId = localStorage.getItem("deviceId")
+        if (deviceId === null) {
+            deviceId = new Date().getTime().toString()
+            localStorage.setItem("deviceId", hexMD5(deviceId))
+        }
+        $("input[name='deviceId']").val(deviceId)
+        $("form").ajaxByForm().add("pwd", hexMD5($("input[name='pwd']").val())).success(token => {
+            localStorage.setItem("name", $("input[name='name']").val())
+            document.cookie = "token=" + token + "; max-age=3153600000; path=/";
+            window.location.href = "/app/files"
+        }).post()
+    }
+
+    /**
+     * 忘记密码点击事件
+     */
+    function onForgetClick() {
+        $.ajaxByData("/app/login/forget").success(data => {
+            alert("管理员账户名及密码保存在以下文件中,请直接修改文件里的账户名密码,然后重启服务.\n" + data)
+        }).post()
+    }
+</script>
+</body>
+</html>

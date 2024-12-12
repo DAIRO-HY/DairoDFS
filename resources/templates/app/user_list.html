@@ -1,0 +1,68 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org" xmlns="">
+<head>
+    <th:block th:include="app/icd/css :: header('用户')"/>
+</head>
+<body>
+<th:block th:include="app/icd/top-bar :: top-bar"/>
+<th:block th:insert="app/icd/uc::content">
+    <common-content>
+        <div id="table"></div>
+    </common-content>
+</th:block>
+<th:block th:include="app/icd/js :: js"/>
+<script th:inline="javascript">
+    addContentBarBtn("添加", () => {
+        location.href = "user_edit"
+    })
+    $(function () {
+        init()
+    })
+
+    function init() {
+        $("#table").initData(data => fillDataTable(data))
+    }
+
+    /**
+     * 填充表格数据
+     * @param data 要填充的数据
+     */
+    function fillDataTable(data) {
+        $("#table").createTable({
+            data: data,
+            csv: true,
+            searching: true,
+            paging: true,
+            checkbox: true,
+            iconBtns: {
+                "bi-pencil-square": function (item) {
+                    location.href = "/app/user_edit?id=" + item.id
+                }
+            },
+            columns: [
+                {
+                    data: "id",
+                    title: "ID"
+                },
+                {
+                    data: "name",
+                    title: "用户名"
+                },
+                {
+                    data: "email",
+                    title: "邮箱"
+                },
+                {
+                    data: "state",
+                    title: "状态"
+                },
+                {
+                    data: "date",
+                    title: "注册时间"
+                }
+            ]
+        })
+    }
+</script>
+</body>
+</html>

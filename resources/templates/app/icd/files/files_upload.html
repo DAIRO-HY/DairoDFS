@@ -1,0 +1,42 @@
+﻿<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
+<th:block th:fragment="files_upload">
+    <section id="uploadInfoDiv" style="display: none;">
+        <input id="uploadFile" type="file" onchange="onFileChange()" multiple hidden>
+        <div class="mx-3 mt-3 rounded shadow bg-content">
+            <div onclick="onShowUploadFileListClick()" role="button">
+                <div class="progress bg-secondary position-relative"
+                     role="progressbar"
+                     aria-label="Animated striped example"
+                     aria-valuenow="0"
+                     aria-valuemin="0"
+                     aria-valuemax="100"
+                     style="height: 20px;">
+                    <div id="uploadProgressBar" class="progress-bar progress-bar-striped progress-bar-animated"
+                         style="width: 0">
+                    </div>
+                    <div id="uploadProgressText"
+                         style="position: absolute;color: white;top: 0;left: 0;width: 100%;line-height: 20px;text-align: center;">
+                        0KB/S
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="openListIcon" role="button" onclick="onShowUploadFileListClick()"
+             style="line-height: 20px;text-align: center;">
+            <i class="bi bi-chevron-compact-down"></i>
+        </div>
+        <section id="uploadListDiv" style="display: none;">
+            <div class="mx-3 mt-1 p-2 rounded shadow bg-content">
+                <div id="uploadingTable"></div>
+                <div id="retryDiv" class="mt-2 text-end" style="display: none;">
+                    <button class="btn btn-primary" onclick="onRetryClick()">失败全部重试</button>
+                </div>
+                <div role="button" class="text-center" onclick="onShowUploadFileListClick()">
+                    <i class="bi bi-chevron-compact-up"></i>
+                </div>
+            </div>
+        </section>
+        <script src="/app/res/files/files_upload.js"></script>
+    </section>
+</th:block>
+</html>

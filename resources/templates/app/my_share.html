@@ -1,0 +1,178 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <th:block th:include="app/icd/css :: header('我的分享')"/>
+</head>
+<body>
+<th:block th:include="app/icd/top-bar :: top-bar"/>
+<th:block th:insert="app/icd/uc::content">
+    <common-content>
+        <div id="listDiv">
+        </div>
+    </common-content>
+</th:block>
+
+<!--分享明细dialog-->
+<th:block th:include="app/icd/share_detail_dialog :: share_detail_dialog"/>
+<th:block th:include="app/icd/js :: js"/>
+<script>
+
+    /**
+     * 当前数据列表
+     */
+    let dataList
+
+    /**
+     * 空文件夹时提示HTML
+     */
+    const NO_FILE_HTML = `<div class="text-center fs-4" style="line-height: 150px;opacity: .2;">分享列表空空的</div>`
+
+    /**
+     * 获取文件列表部分的HTML
+     */
+    const itemHtml =
+           `<div class="d-flex align-items-center justify-content-between" data-index="{index}" file-item>
+                <div class="text-white" role="button">
+                    <div style="width: 50px;height: 50px;">
+                    {thumb}
+                    </div>
+                </div>
+                <div class="ms-2 {border} d-flex align-items-center" style="width:99999px;height: 60px;overflow: hidden" role="button">
+                    <div>
+                    <div class="text-nowrap">{title}</div>
+                    <div class="small"><span>{date}</span><i class="bi bi-dot"></i><span>{size}</span></div>
+                    </div>
+                </div>
+                <div class="{border} px-2" style="height: 60px;line-height: 60px;" check-icon>
+                </div>
+            </div>`
+    $(function () {
+        $.ajaxByData("my_share/get_list").success(data => fillData(data)).post()
+    })
+
+
+    /**
+     * 填充数据
+     * @param data 分享数据列表
+     */
+    function fillData(data) {
+        if (data.length === 0) {
+            $("#listDiv").append(NO_FILE_HTML)
+            return
+        }
+        data.forEach(item => item.checked = false)
+        dataList = data
+        const $listDiv = $("#listDiv")
+        const lastIndex = data.length - 1
+        data.forEach((item, index) => {
+            const border = index < lastIndex ? "border-bottom" : ""
+            let thumb
+            if (item.thumb) {
+                thumb = `<img src="${item.thumb}" class="rounded" style="width: 50px;height: 50px;">`
+            } else if (item.folderFlag) {
+                thumb = `<div class="d-flex align-items-center" style="width: 50px;height: 50px;"><i class="bi bi-folder-fill" style="font-size: 50px;color:#6FBEEA;"></i></div>`
+            } else if (item.fileCount > 1) {
+                thumb = `<div class="d-flex align-items-center" style="width: 50px;height: 50px;"><i class="bi bi-file-earmark-fill" style="font-size: 50px; "></i></div>`
+            } else {
+                thumb = `<div class="d-flex align-items-center" style="width: 50px;height: 50px;"><i class="bi bi-file-earmark-fill" style="font-size: 50px;"></i></div>`
+            }
+
+            $listDiv.append(
+                itemHtml
+                    .replace("{thumb}", thumb)
+                    .replace("{title}", item.title)
+                    .replace("{size}", item.endDate)
+                    .replace("{date}", item.date)
+                    .replace(/{border}/g, border)
+                    .replace(/{index}/g, index)
+            )
+        })
+        initEvent()
+    }
+
+    /**
+     * 初始化事件
+     */
+    function initEvent() {
+        addContentBarBtn("取消分享", () => {
+            deleteChecked()
+        })
+        addContentBarBtn("全选", () => {
+            checkAll()
+        })
+        $("div[file-item]").on("click", function () {
+            const index = parseInt($(this).data("index"))
+            const item = dataList[index]
+            showShareDetailDialog(item.id)
+            updateCheckedState()
+        })
+        bindCheckIconClick()
+        updateCheckedState()
+    }
+
+    /**
+     * 选中所有
+     */
+    function checkAll() {
+        dataList.forEach(item => item.checked = true)
+        updateCheckedState()
+    }
+
+    /**
+     * 更新选中状态
+     */
+    function updateCheckedState() {
+        const $fileItems = $("#listDiv>div")
+        let hasChecked = false
+        dataList.forEach((item, index) => {
+            const checkIcon = $($fileItems[index]).find("div[check-icon]")
+            if (item.checked) {
+                hasChecked = true
+                checkIcon.html(`<i class="bi bi-check-circle text-primary fs-5"></i>`)
+            } else {
+                checkIcon.html(`<i class="bi bi-circle text-secondary"></i>`)
+            }
+        })
+        updateOptionBtn(hasChecked)
+    }
+
+    /**
+     * 绑定选中事件
+     */
+    function bindCheckIconClick() {
+        $("div[check-icon]").on("click", function (e) {
+            e.stopPropagation()
+            const index = parseInt($(this).parent().data("index"))
+            const file = dataList[index]
+            file.checked = !file.checked
+            updateCheckedState()
+        })
+    }
+
+    /**
+     * 更新功能按钮的显示状态
+     */
+    function updateOptionBtn(hasChecked) {
+        if (hasChecked) {
+            $("#contentBarBtnDiv").find(">button:nth-child(1)").show()
+        } else {
+            $("#contentBarBtnDiv").find(">button:nth-child(1)").hide()
+        }
+    }
+
+    /**
+     * 取消分享已经选择
+     */
+    function deleteChecked() {
+        const ids = dataList.filter(item => item.checked).map(item => item.id)
+        const isOk = confirm("确定取消分享所选的" + ids.length + "个项目")
+        if (!isOk) {
+            return
+        }
+        $.ajaxByData("my_share/delete").add("ids", ids).success(() => {
+            history.go(0)
+        }).post()
+    }
+</script>
+</body>
+</html>

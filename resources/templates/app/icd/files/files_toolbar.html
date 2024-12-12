@@ -1,0 +1,84 @@
+﻿<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
+<!--文件列表页面上面的工具栏-->
+<th:block th:fragment="files_toolbar">
+    <div class="mx-3 mt-3 px-2 row g-0 rounded shadow bg-content-bar" style="line-height: 44px;">
+        <div class="col-10 col-sm-11 d-flex">
+            <div class="position-relative">
+                <div style="width: 62px">
+                    <button class="btn btn-outline-primary rounded-circle p-0" onclick="loadFileData('')"
+                            role="button"
+                            style="width: 26px;height: 26px;margin-top: -3px;">
+                        <i class="bi bi-house"></i>
+                    </button>
+                    <button class="btn btn-outline-primary rounded-circle p-0 ms-1" onclick="onBackClick()"
+                            role="button"
+                            style="width: 26px;height: 26px;margin-top: -3px;">
+                        <i class="bi bi-arrow-left-short"></i>
+                    </button>
+                </div>
+                <div style="right: -17px; top: 4px;position: absolute; width: 17px;height: 36px;background: linear-gradient(to right,rgba(203,213,225,255),rgba(203,213,225,0))"></div>
+            </div>
+            <div id="pathNavbar" class="d-flex justify-content-end overflow-x-auto no-scrollbar text-nowrap ps-2">
+            </div>
+        </div>
+        <div class="col-2 col-sm-1 d-flex justify-content-end">
+            <button id="optionBtn" type="button"
+                    class="btn btn-outline-primary rounded-circle p-0"
+                    style="width: 32px;height: 32px;margin-top: 6px;">
+                <i class="bi bi-plus"></i>
+            </button>
+        </div>
+    </div>
+    <script>
+        $(function () {
+            updatePathNavbar()
+            $("#optionBtn").on("click", e => {
+                showFileOption(e)
+            })
+        })
+
+        /**
+         * 更新功能按钮的显示状态
+         */
+        function updateOptionBtn(hasChecked) {
+            if (hasChecked) {
+                $("#optionBtn").html(`<i class="bi bi-three-dots-vertical"></i>`)
+            } else {
+                $("#optionBtn").html(`<i class="bi bi-plus"></i>`)
+            }
+        }
+
+        /**
+         * 更新路径导航条
+         */
+        function updatePathNavbar() {
+            const folder = getCurrentFolderByUrl()
+            const $pathNavbar = $("#pathNavbar")
+            $pathNavbar.empty()
+            if (folder === "") {
+                $pathNavbar.append(`<span class="ps-2">根目录</span>`)
+                return
+            }
+
+            let tempPath = ""
+            folder.split("/").forEach(item => {
+                if (item === "") {
+                    return true
+                }
+                tempPath += "/" + item
+                $pathNavbar.append(`<i class="bi bi-chevron-right"></i><span role="button" onclick="loadFileData('${tempPath}')">${item}</span>`)
+            })
+        }
+
+        /**
+         * 后退点击事件
+         */
+        function onBackClick() {
+            const folder = getCurrentFolderByUrl()
+            const lastSplitIndex = folder.lastIndexOf("/")
+            const preFolder = folder.substring(0, lastSplitIndex)
+            loadFileData(preFolder)
+        }
+    </script>
+</th:block>
+</html>

@@ -1,0 +1,108 @@
+﻿<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
+<th:block th:fragment="share_detail_dialog">
+    <div class="modal fade" id="modalFolderSelector" data-bs-keyboard="false" tabindex="-1"
+         aria-labelledby="staticBackdropLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="staticBackdropLabel">分享明细</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="text-center" style="font-size: 50px;">
+                        <i class="bi bi-file-earmark"></i>
+                    </div>
+                    <div class="text-center" field="names"></div>
+                    <div class="row mt-4">
+                        <div class="col-4">创建时间</div>
+                        <div class="col-8 text-end" field="date">
+                        </div>
+                    </div>
+                    <div class="row mt-2">
+                        <div class="col-4">有效期</div>
+                        <div class="col-8 text-end" field="endDate">
+                        </div>
+                    </div>
+                    <div class="row mt-2">
+                        <div class="col-4">所属文件夹</div>
+                        <div class="col-7 text-end overflow-x-hidden">
+                            <div class="d-flex justify-content-end text-nowrap" field="folder">
+                            </div>
+                        </div>
+                        <div class="col-1 px-0"><a id="openFolderLink" href="">打开</a></div>
+                    </div>
+                    <div class="row mt-2">
+                        <div class="col-4">提取码</div>
+                        <div class="col-8 text-end" field="pwd">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button id="cancelBtn" type="button" class="btn btn-danger" onclick="onDeleteShareClick()">
+                        取消分享
+                    </button>
+                    <button id="copyBtn" type="button" class="btn btn-primary ms-auto" onclick="onCopyShareLinkClick()">
+                        复制链接
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+
+        /**
+         * 分享明细数据
+         */
+        let shareDetailData
+
+        /**
+         * 显示分享详细信息
+         */
+        function showShareDetailDialog(id) {
+            if (location.pathname !== "/app/my_share") {
+                $("#cancelBtn").hide()
+            }
+            $.ajaxByData("my_share/get_detail?id=" + id).success(data => {
+                shareDetailData = data
+                $("#copyBtn>i").remove()
+                for (let key in data) {
+                    $(`[field=${key}]`).text(data[key])
+                }
+                $("#openFolderLink").attr("href", "/app/files#" + $("[field='folder']").text().substring(1))
+                const modalShare = new bootstrap.Modal('#modalFolderSelector')
+                modalShare.show()
+            }).post()
+        }
+
+        /**
+         * 取消分享已经选择
+         */
+        function onDeleteShareClick() {
+            const isOk = confirm("确定取消分享")
+            if (!isOk) {
+                return
+            }
+            $.ajaxByData("my_share/delete").add("ids", shareDetailData.id).success(() => {
+                history.go(0)
+            }).post()
+        }
+
+        /**
+         * 复制链接按钮
+         */
+        function onCopyShareLinkClick() {
+            let shareCopyText = `分享的文件:${shareDetailData.names}\n链接: ${location.origin}${shareDetailData.url}`
+            if (shareDetailData.pwd !== "无") {
+                shareCopyText += `\n提取码: ${shareDetailData.pwd}`
+            }
+            shareCopyText += "\n点击上面的链接提取文件"
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(shareCopyText)
+                $("#copyBtn").prepend("<i class='bi bi-check-circle'></i>")
+            } else {
+                alert("http环境不支持自动复制,请手动复制以下分享信息:\n\n" + shareCopyText)
+            }
+        }
+    </script>
+</th:block>
+</html>

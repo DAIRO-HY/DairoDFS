@@ -1,0 +1,69 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <th:block th:include="app/icd/css :: header('高级功能')"/>
+</head>
+<body>
+<th:block th:include="app/icd/top-bar :: top-bar"/>
+
+<div class="mx-3 mt-3 px-3 row g-0 rounded shadow bg-content-bar" style="line-height: 44px;">
+    <div class="col-6 fs-5">执行SQL</div>
+    <div class="col-6 text-end" style="font-size: 0;">
+    </div>
+</div>
+<div class="mx-3 mt-2 p-2 rounded shadow bg-content">
+    <textarea class="form-control" id="sql"></textarea>
+    <div class="text-end">
+        <button type="button" class="btn btn-primary mt-2" onclick="onExecClick()">执行</button>
+    </div>
+    <div class="text-start">
+        <div id="result"></div>
+        <div id="table"></div>
+    </div>
+</div>
+<th:block th:include="app/icd/js :: js"/>
+<script>
+
+    function onExecClick() {
+        const sql = $("#sql").val()
+        if (sql === "") {
+            $("#table").empty()
+            $("#result").empty()
+            return
+        }
+        $.ajaxByData("advanced/exec_sql").add("sql", $("#sql").val()).fail().success(data => {
+            fillDataTable(data)
+        }).post()
+    }
+
+    /**
+     * 填充表格数据
+     * @param data 要填充的数据
+     */
+    function fillDataTable(data) {
+        if (!Array.isArray(data)) {
+            $("#table").empty()
+            $("#result").text("执行结果:" + data)
+            return
+        }
+        $("#result").empty()
+
+        const columns = []
+        if (data.length > 0) {
+            const first = data[0]
+            for (let key in first) {
+                columns.push({
+                    data: key,
+                    title: key
+                })
+            }
+        }
+        $("#table").createTable({
+            data: data,
+            columns: columns
+        })
+    }
+
+</script>
+</body>
+</html>

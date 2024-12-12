@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE configuration
+        PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-config.dtd">
+<!-- MyBatis配置文件（和Hibernate的有点类似，当然这步可以注解方式实现，不过我觉得xml还是比较直观和简洁一些）Mybatis_Configuration.xml -->
+<configuration>
+    <settings>
+        <!-- 打印sql语句 -->
+        <setting name="logImpl" value="STDOUT_LOGGING"/>
+        <setting name="cacheEnabled" value="true"/>
+    </settings>
+</configuration> 

@@ -1,0 +1,73 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org" xmlns="">
+<head>
+    <th:block th:include="app/icd/css :: header('用户编辑')"/>
+</head>
+<body>
+<th:block th:include="app/icd/top-bar :: top-bar"/>
+
+<div class="mx-3 mt-3 px-3 row g-0 rounded shadow bg-content-bar" style="line-height: 44px;">
+    <div class="col-6 fs-5">用户编辑</div>
+    <div class="col-6 text-end" style="font-size: 0;">
+    </div>
+</div>
+
+<div class="m-3 p-2 rounded shadow bg-content">
+    <form id="form" action="user_edit/edit">
+        <input type="hidden" name="id">
+        <div class="row">
+            <label class="col-2 col-form-label text-end">用户名</label>
+            <div class="col-10">
+                <input class="form-control" name="name" style="max-width: 160px" autocomplete="off">
+            </div>
+        </div>
+        <div class="row mt-2">
+            <label class="col-2 col-form-label text-end">密码</label>
+            <div class="col-10">
+                <input class="form-control" name="pwd" type="password" style="max-width: 240px" autocomplete="off">
+            </div>
+        </div>
+        <div class="row mt-2">
+            <label class="col-2 col-form-label text-end">邮箱</label>
+            <div class="col-10">
+                <input class="form-control" name="email" style="max-width: 240px" autocomplete="off">
+            </div>
+        </div>
+        <div class="row mt-2">
+            <label class="col-2 col-form-label text-end">状态</label>
+            <div class="col-10">
+                <select class="form-select w-auto" name="state">
+                    <option value="0">禁用</option>
+                    <option value="1">启用</option>
+                </select>
+            </div>
+        </div>
+        <div class="row mt-2">
+            <label class="col-2 col-form-label text-end">创建日期</label>
+            <div class="col-10">
+                <input class="form-control" name="date" style="max-width: 170px" autocomplete="off" disabled>
+            </div>
+        </div>
+        <div class="mt-3 text-end">
+            <button type="button" class="btn btn-primary" onclick="onSubmitClick()">提交</button>
+        </div>
+    </form>
+</div>
+<th:block th:include="app/icd/js :: js"/>
+<script>
+    $(function () {
+        $("form").initData()
+    })
+
+    function onSubmitClick() {
+        let pwd = $("input[name='pwd']").val()
+        if (pwd.length > 0) {
+            pwd = hexMD5(pwd)
+        }
+        $("form").ajaxByForm().add("pwd", pwd).success(() => {
+            location.href = "/app/user_list"
+        }).post()
+    }
+</script>
+</body>
+</html>

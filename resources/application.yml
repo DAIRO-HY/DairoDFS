@@ -1,0 +1,61 @@
+#运行时执行数据保存目录
+data.path: ./data
+
+#sqlite文件存放位置
+sqlite.path: ${data.path}/dairo-dfs.sqlite
+
+#用一个用户允许登录的客户端数量限制
+user.token.limit: 10
+
+#回收站保存天数
+config.trash-timeout: 30
+
+#彻底删除文件间隔天数
+config.delete-file-timeout: 10
+
+#ffmpeg安装目录
+config.ffmpeg.path: ${data.path}/lib/ffmpeg
+
+#ffprobe安装目录
+config.ffprobe.path: ${data.path}/lib/ffprobe
+
+#libraw安装目录
+config.libraw.path: ${data.path}/lib/libraw
+
+#启动模式,dev:开发模式,prod:生产模式
+active: prod
+server:
+  port: 8030
+  tomcat:
+    #request的inputstream读取数据超时设置，客户端突然掉线，服务器端没有感知到客户端掉线，连接就会一直存在
+    connection-timeout: 15000
+
+spring:
+  application:
+    name: dairo-dfs-service
+  mvc:
+    dispatch-options-request: true
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 10240MB
+      max-request-size: 10240MB
+      #location: C:\tmp
+
+
+  datasource:
+    driver-class-name: org.sqlite.JDBC
+    url: jdbc:sqlite:${sqlite.path}
+
+mybatis:
+  #搜索指定包的别名
+  type-aliases-package: cn.dairo.dfs.dao.dto
+  #xml映射路径
+  mapper-locations: classpath*:com/gl/dfs/dao/*.xml
+  #全局配置文件,是否控制台打印日志
+  config-location: classpath:my-batis.xml
+
+  #访问api文档路径
+springdoc:
+  api-docs:
+    path: /api-docs

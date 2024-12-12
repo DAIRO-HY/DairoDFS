@@ -1,0 +1,21 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <th:block th:include="app/icd/css :: header('垃圾箱')"/>
+</head>
+<body>
+<th:block th:include="app/icd/top-bar :: top-bar"/>
+
+<!--文件操作导航视图-->
+<th:block th:include="app/icd/trash/trash_toolbar :: trash_toolbar"/>
+
+<!--文件列表视图-->
+<th:block th:include="app/icd/trash/trash_list :: trash_list"/>
+
+<!--右键菜单视图-->
+<th:block th:include="app/icd/trash/trash_right_option :: trash_right_option"/>
+<th:block th:include="app/icd/js :: js"/>
+<script>
+</script>
+</body>
+</html>

@@ -1,0 +1,22 @@
+﻿<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
+<body>
+<head th:fragment="header(title)">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <link href="/plugins/bootstrap-5.3.2/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/plugins/bootstrap-icons-1.11.1/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="/plugins/datatable/datatables.min.css" rel="stylesheet">
+    <link rel="stylesheet" type="text/css" href="/app/res/common/css/common.css">
+
+    <script src="/plugins/jquery-3.6.3.min.js"></script>
+    <script src="/plugins/bootstrap-5.3.2/js/bootstrap.bundle.min.js"></script>
+    <script src="/plugins/datatable/datatables.min.js"></script>
+    <script src="/plugins/datatable/dataTables.bootstrap5.min.js"></script>
+    <script src="/plugins/md5.js"></script>
+    <script src="/app/res/common/js/common.js"></script>
+    <script src="/app/res/common/js/jquery.datatable++.js"></script>
+    <script src="/app/res/common/js/jquery++.js"></script>
+    <script src="/app/res/common/js/ApiHttp.js"></script>
+    <title th:text="${title}"></title>
+</head>
+</body>
+</html>

@@ -1,0 +1,36 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <th:block th:include="app/icd/css :: header('提取文件')"/>
+</head>
+<body class="bg-login">
+<div class="text-center d-table" style="width: 100vw;height: 100vh;">
+    <div class="d-table-cell align-middle">
+        <div class="d-inline-block border rounded bg-white p-3" style="width: 300px;">
+            <div>
+                <input id="pwd" class="form-control mt-3" type="text" placeholder="请输入提取码"
+                       autocomplete="off">
+            </div>
+            <button type="button" class="btn btn-primary w-100 mt-4" onclick="onValidClick()">提取文件</button>
+        </div>
+    </div>
+</div>
+<th:block th:include="app/icd/js :: js"/>
+<script>
+
+    /**
+     * 验证密码点击事件
+     */
+    function onValidClick() {
+        const pwd = $("#pwd").val()
+        if (pwd === "") {
+            alert("请输入提取密码")
+            return
+        }
+        $.ajaxByData(location.pathname + "/valid_pwd").add("pwd", pwd).success(() => {
+            history.go(0)
+        }).post()
+    }
+</script>
+</body>
+</html>

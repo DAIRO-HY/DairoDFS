@@ -1,0 +1,22 @@
+#启动模式,dev:开发模式,prod:生产模式
+active: dev
+
+
+#回收站保存天数
+config.trash-timeout: 0
+
+#彻底删除文件间隔天数
+config.delete-file-timeout: 0
+
+#thymeleaf缓存,开发阶段建议为false,否则可能导致热更新html失效,发布之后设置为true
+spring:
+  thymeleaf:
+    cache: false
+  devtools:
+    restart:
+      enabled: true
+    livereload:
+      enabled: true
+
+#仅在开发模式时打印sql日志
+mybatis.config-location: classpath:my-batis-dev.xml

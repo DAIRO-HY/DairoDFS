@@ -1,0 +1,71 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <th:block th:include="app/icd/css :: header('设置')"/>
+</head>
+<body>
+<th:block th:include="app/icd/top-bar :: top-bar"/>
+<th:block th:insert="app/icd/uc::content">
+    <common-content>
+        <th:block th:insert="app/icd/uc :: c-form('')">
+            <common-form>
+                <th:block
+                        th:insert="app/icd/uc::form-input(label='用户ID', name='id', disabled=true)"/>
+                <th:block
+                        th:insert="app/icd/uc::form-input(label='用户名', name='name', disabled=true)"/>
+                <th:block
+                        th:insert="app/icd/uc::form-input(label='邮箱', name='email', disabled=true)"/>
+                <th:block
+                        th:insert="app/icd/uc::form-input(label='创建日期', name='date', disabled=true)"/>
+                <th:block
+                        th:insert="app/icd/uc::form-input(label='WEB路径', name='urlPath', disabled=true, btn='生成|关闭', btnClick='onMakeUrlPathClick(1)|onMakeUrlPathClick(0)')"/>
+                <th:block
+                        th:insert="app/icd/uc::form-input(label='API票据', name='apiToken', disabled=true, btn='生成|关闭', btnClick='onMakeApiTokenClick(1)|onMakeApiTokenClick(0)')"/>
+                <th:block
+                        th:insert="app/icd/uc::form-input(label='端对端加密', name='encryptionKey', disabled=true, btn='生成|关闭', btnClick='onMakeEncryptionClick(1)|onMakeEncryptionClick(0)')"/>
+            </common-form>
+            <common-form-btn></common-form-btn>
+        </th:block>
+    </common-content>
+</th:block>
+<th:block th:include="app/icd/js :: js"/>
+<script>
+    $(function () {
+        $("form").initData()
+    })
+
+    /**
+     * 生成API票据点击事件
+     */
+    function onMakeApiTokenClick(flag) {
+        const btnOk = confirm("生成新的票据之后,原来的票据将被废弃,确定要生成新的票据吗?")
+        if (!btnOk) {
+            return
+        }
+        $.ajaxByData("/app/self_set/make_api_token?flag=" + flag).success(() => history.go(0)).post()
+    }
+
+    /**
+     * 生成web访问路径前缀
+     */
+    function onMakeUrlPathClick(flag) {
+        const btnOk = confirm("生成新的路径之后,原来的路径将被无法访问,确定要生成新的路径吗?")
+        if (!btnOk) {
+            return
+        }
+        $.ajaxByData("/app/self_set/make_url_path?flag=" + flag).success(() => history.go(0)).post()
+    }
+
+    /**
+     * 生成端对端加密
+     */
+    function onMakeEncryptionClick(flag) {
+        const btnOk = confirm("生成新的密钥之后,原来的密钥将被废弃,确定要生成新的密钥吗?")
+        if (!btnOk) {
+            return
+        }
+        $.ajaxByData("/app/self_set/make_encryption?flag=" + flag).success(() => history.go(0)).post()
+    }
+</script>
+</body>
+</html>

@@ -1,0 +1,15 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <th:block th:include="app/icd/css :: header('错误')"/>
+</head>
+<body class="bg-login">
+<div class="text-center d-table" style="width: 100vw;height: 100vh;">
+    <div class="d-table-cell align-middle">
+        <div class="d-inline-block border rounded bg-white p-3" style="width: 300px;">
+            [[${error}]]
+        </div>
+    </div>
+</div>
+</body>
+</html>

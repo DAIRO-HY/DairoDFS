@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.dairo.dfs.dao.UserTokenDao">
+
+    <!--添加-->
+    <insert id="add">
+        insert into user_token(id, token, userId, clientFlag, deviceId, ip, date, version)
+        values (#{id}, #{token}, #{userId}, #{clientFlag}, #{deviceId}, #{ip}, #{date}, #{version})
+    </insert>
+
+    <!--通过登录Token获取会员ID-->
+    <select id="getByUserIdByToken" resultType="Long">
+        select userId
+        from user_token
+        where token = #{0}
+    </select>
+
+    <!--获取某个用户的登录记录-->
+    <select id="listByUserId" resultType="UserTokenDto">
+        select *
+        from user_token
+        where userId = #{0}
+        order by date asc
+    </select>
+
+    <!--更新会员登录记录-->
+    <update id="update">
+        update user_token
+        set date    = #{date},
+            version = #{version},
+            ip      = #{ip}
+        where token = #{token}
+    </update>
+
+    <!--通过会员ID和客户端标识删除一条记录-->
+    <delete id="deleteByUserIdAndClientFlag">
+        delete
+        from user_token
+        where userId = #{param1}
+          and clientFlag = #{param2}
+    </delete>
+
+    <!--通过会员ID和设备标识删除一条记录-->
+    <delete id="deleteByUserIdAndDeviceId">
+        delete
+        from user_token
+        where userId = #{param1}
+          and deviceId = #{param2}
+    </delete>
+
+    <!--删除某个会员的所有登录token-->
+    <delete id="deleteByUserId">
+        delete
+        from user_token
+        where userId = #{0}
+    </delete>
+
+    <!--通过token删除-->
+    <delete id="deleteByToken">
+        delete
+        from user_token
+        where token = #{0}
+    </delete>
+</mapper>

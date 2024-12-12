@@ -1,0 +1,109 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <th:block th:include="app/icd/css :: header('配置')"/>
+</head>
+<body>
+<th:block th:include="app/icd/top-bar :: top-bar"/>
+
+<div class="mx-3 mt-3 px-3 row g-0 rounded shadow bg-content-bar" style="line-height: 44px;">
+    <div class="col-6 fs-5">配置</div>
+    <div class="col-6 text-end" style="font-size: 0;">
+    </div>
+</div>
+<div class="m-3 p-2 rounded shadow bg-content">
+    <form id="form" action="/app/profile/update">
+        <div class="row">
+            <label class="col-2 col-form-label text-end">文件大小限制</label>
+            <div class="col-10">
+                <div class="input-group" style="width: 160px;">
+                    <input class="form-control" name="uploadMaxSize" autocomplete="off">
+                    <span class="input-group-text">MB</span>
+                </div>
+            </div>
+        </div>
+        <div class="row mt-2">
+            <label class="col-2 col-form-label text-end">存储目录</label>
+            <div class="col-10">
+                <textarea class="form-control" name="folders" style="max-width: 550px"></textarea>
+            </div>
+        </div>
+        <div class="row mt-2">
+            <label class="col-2 col-form-label text-end">记录同步日志</label>
+            <div class="col-10">
+                <select class="form-select w-auto" name="openSqlLog">
+                    <option value="false">关闭</option>
+                    <option value="true">开启</option>
+                </select>
+            </div>
+        </div>
+        <div class="row mt-2">
+            <label class="col-2 col-form-label text-end">只读模式</label>
+            <div class="col-10">
+                <select class="form-select w-auto" name="hasReadOnly">
+                    <option value="false">关闭</option>
+                    <option value="true">开启</option>
+                </select>
+            </div>
+        </div>
+        <div class="row mt-2">
+            <label class="col-2 col-form-label text-end">同步服务器URL</label>
+            <div class="col-10">
+                <textarea class="form-control" name="syncDomains" style="max-width: 550px"></textarea>
+            </div>
+        </div>
+        <div class="row mt-2">
+            <label class="col-2 col-form-label text-end">同步票据</label>
+            <div class="col-10">
+                <div class="input-group">
+                    <input class="form-control" name="token" style="max-width: 280px" disabled>
+                    <button class="btn btn-primary" onclick="onMakeTokenClick()">生成</button>
+                </div>
+            </div>
+        </div>
+        <div class="row mt-2">
+            <label class="col-2 col-form-label text-end">本机同步URL</label>
+            <div class="col-10">
+                <input class="form-control" id="url" style="max-width: 550px" disabled>
+            </div>
+        </div>
+        <div class="mt-3 text-end">
+            <button type="button" class="btn btn-primary" onclick="onSubmitClick()">提交</button>
+        </div>
+    </form>
+</div>
+<th:block th:include="app/icd/js :: js"/>
+<script>
+    $(function () {
+        initData()
+    })
+
+    function initData() {
+        $.ajaxByData("/app/profile").success(data => {
+            $("form").bindValue(data)
+            const token = data.token
+            let syncUrl = location.origin + "/distributed/" + token
+            $("#url").val(syncUrl)
+        }).post()
+    }
+
+    function onSubmitClick() {
+        $("form").ajaxByForm().success(() => {
+            alert("修改成功")
+        }).post()
+    }
+
+    function onMakeTokenClick() {
+        const rs = confirm("重置票据之后旧票据将无法使用，确定要重置票据？")
+        if (!rs) {
+            return
+        }
+        $.ajaxByData("/app/profile/make_token").success(() => {
+
+            //页面刷新
+            history.go(0)
+        }).post()
+    }
+</script>
+</body>
+</html>
