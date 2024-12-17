@@ -5,15 +5,15 @@ type LocalFileDto struct {
 	/**
 	 *  id
 	 */
-	Id int64
+	Id *int64
 
 	/**
 	 * 本地存储目录
 	 */
-	Path string
+	Path *string
 
 	/**
 	 * 文件MD5
 	 */
-	Md5 string
+	Md5 *string
 }

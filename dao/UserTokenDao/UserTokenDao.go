@@ -11,7 +11,7 @@ import (
  */
 func Add(dto dto.UserTokenDto) {
 	DBUtil.InsertIgnoreError(`insert into user_token(id, token, userId, clientFlag, deviceId, ip, date, version)
-        values (#{id}, #{token}, #{userId}, #{clientFlag}, #{deviceId}, #{ip}, #{date}, #{version})`)
+        values (?,?,?,?,?,?,?,?)`, dto.Id, dto.Token, dto.UserId, dto.ClientFlag, dto.DeviceId, dto.Ip, dto.Date, dto.Version)
 }
 
 /**
@@ -19,9 +19,7 @@ func Add(dto dto.UserTokenDto) {
  * @param token 登录Token
  */
 func GetByUserIdByToken(token string) int64 {
-	return DBUtil.SelectSingleOneIgnoreError[int64](`select userId
-        from user_token
-        where token = #{0}`)
+	return DBUtil.SelectSingleOneIgnoreError[int64]("select userId from user_token where token = ?", token)
 }
 
 /**
@@ -29,10 +27,7 @@ func GetByUserIdByToken(token string) int64 {
  * @param userId 用户ID
  */
 func ListByUserId(userId int64) []*dto.UserTokenDto {
-	return DBUtil.SelectList[dto.UserTokenDto](`select *
-        from user_token
-        where userId = #{0}
-        order by date asc`)
+	return DBUtil.SelectList[dto.UserTokenDto]("select * from user_token where userId = ? order by date", userId)
 }
 
 /**
@@ -40,11 +35,8 @@ func ListByUserId(userId int64) []*dto.UserTokenDto {
  * @param dto 用户信息
  */
 func Update(dto dto.UserTokenDto) {
-	DBUtil.ExecIgnoreError(`update user_token
-        set date    = #{date},
-            version = #{version},
-            ip      = #{ip}
-        where token = #{token}`)
+	DBUtil.ExecIgnoreError(`update user_token set date = ?, version = ?, ip = ? where token = ?`,
+		dto.Date, dto.Version, dto.Ip, dto.Token)
 }
 
 /**
@@ -53,10 +45,7 @@ func Update(dto dto.UserTokenDto) {
  * @param clientFlag 客户端标志
  */
 func DeleteByUserIdAndClientFlag(userId int64, clientFlag int) {
-	DBUtil.ExecIgnoreError(`delete
-        from user_token
-        where userId = #{param1}
-          and clientFlag = #{param2}`)
+	DBUtil.ExecIgnoreError("delete from user_token where userId = ? and clientFlag = ?", userId, clientFlag)
 }
 
 /**
@@ -65,10 +54,7 @@ func DeleteByUserIdAndClientFlag(userId int64, clientFlag int) {
  * @param deviceId 设备唯一标识
  */
 func DeleteByUserIdAndDeviceId(userId int64, deviceId string) {
-	DBUtil.ExecIgnoreError(`delete
-        from user_token
-        where userId = #{param1}
-          and deviceId = #{param2}`)
+	DBUtil.ExecIgnoreError(`delete from user_token where userId = ? and deviceId = ?`, userId, deviceId)
 }
 
 /**
@@ -76,9 +62,7 @@ func DeleteByUserIdAndDeviceId(userId int64, deviceId string) {
  * @param userId 用户ID
  */
 func DeleteByUserId(userId int64) {
-	DBUtil.ExecIgnoreError(`delete
-        from user_token
-        where userId = #{0}`)
+	DBUtil.ExecIgnoreError("delete from user_token where userId = ?", userId)
 }
 
 /**
@@ -86,7 +70,5 @@ func DeleteByUserId(userId int64) {
  * @param token 用户登录票据
  */
 func DeleteByToken(token string) {
-	DBUtil.ExecIgnoreError(`delete
-        from user_token
-        where token = #{0}`)
+	DBUtil.ExecIgnoreError("delete from user_token where token = ?", token)
 }

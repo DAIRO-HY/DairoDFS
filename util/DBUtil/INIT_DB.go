@@ -37,11 +37,11 @@ func init() {
  */
 func upgrade() {
 	version := SelectSingleOneIgnoreError[int]("PRAGMA USER_VERSION")
-	if version == 0 {
+	if *version == 0 {
 		create()
 
 	}
-	if version > 0 {
+	if *version > 0 {
 	}
 
 	//设置数据库版本号

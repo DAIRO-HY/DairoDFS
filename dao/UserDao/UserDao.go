@@ -28,10 +28,7 @@ func SelectOne(id int64) *dto.UserDto {
  * @return 用户信息
  */
 func SelectAdminId() int64 {
-	return DBUtil.SelectSingleOneIgnoreError[int64](`select id
-        from user
-        order by id asc
-        limit 1`)
+	return DBUtil.SelectSingleOneIgnoreError[int64]("select id from user order by id limit 1")
 }
 
 /**
@@ -40,9 +37,7 @@ func SelectAdminId() int64 {
  * @return 用户信息
  */
 func SelectByEmail(email string) *dto.UserDto {
-	return DBUtil.SelectOne[dto.UserDto](`select *
-        from user
-        where email = #{0}`)
+	return DBUtil.SelectOne[dto.UserDto]("select * from user where email = ?", email)
 }
 
 /**
@@ -51,9 +46,7 @@ func SelectByEmail(email string) *dto.UserDto {
  * @return 用户信息
  */
 func SelectByName(name string) *dto.UserDto {
-	return DBUtil.SelectOne[dto.UserDto](`select *
-        from user
-        where name = #{0}`)
+	return DBUtil.SelectOne[dto.UserDto]("select * from user where name = ?", name)
 }
 
 /**
@@ -62,10 +55,7 @@ func SelectByName(name string) *dto.UserDto {
  * @return 用户ID
  */
 func SelectIdByApiToken(apiToken string) int64 {
-	return DBUtil.SelectSingleOneIgnoreError[int64](`select id
-        from user
-        where apiToken = #{0}
-          and state = 1`)
+	return DBUtil.SelectSingleOneIgnoreError[int64](`select id from user where apiToken = ? and state = 1`, apiToken)
 }
 
 /**
@@ -74,10 +64,7 @@ func SelectIdByApiToken(apiToken string) int64 {
  * @return 用户ID
  */
 func SelectIdByUrlPath(urlPath string) int64 {
-	return DBUtil.SelectSingleOneIgnoreError[int64](`select id
-        from user
-        where urlPath = #{0}
-          and state = 1`)
+	return DBUtil.SelectSingleOneIgnoreError[int64]("select id from user where urlPath = ? and state = 1", urlPath)
 }
 
 /**
@@ -92,8 +79,7 @@ func SelectAll() []*dto.UserDto {
  * 判断是否已经初始化
  */
 func IsInit() bool {
-	return DBUtil.SelectSingleOneIgnoreError[bool](`select count(*) > 0
-        from user`)
+	return DBUtil.SelectSingleOneIgnoreError[bool]("select count(*) > 0 from user")
 }
 
 /**
@@ -101,11 +87,8 @@ func IsInit() bool {
  * @param dto 用户信息
  */
 func Update(dto dto.UserDto) {
-	DBUtil.ExecIgnoreError(`update user
-        set name  = #{name},
-            email = #{email},
-            state = #{state}
-        where id = #{id}`)
+	DBUtil.ExecIgnoreError("update user set name  = ?, email = ?, state = ? where id = ?",
+		dto.Name, dto.Email, dto.State, dto.Id)
 }
 
 /**
@@ -114,9 +97,7 @@ func Update(dto dto.UserDto) {
  * @param urlPath URL路径前缀
  */
 func SetUrlPath(id int64, urlPath string) {
-	DBUtil.ExecIgnoreError(`update user
-        set urlPath = #{param2}
-        where id = #{param1}`)
+	DBUtil.ExecIgnoreError("update user set urlPath = ? where id = ?", urlPath, id)
 }
 
 /**
@@ -125,9 +106,7 @@ func SetUrlPath(id int64, urlPath string) {
  * @param apiToken URL路径前缀
  */
 func SetApiToken(id int64, apiToken string) {
-	DBUtil.ExecIgnoreError(`update user
-        set apiToken = #{param2}
-        where id = #{param1}`)
+	DBUtil.ExecIgnoreError("update user set apiToken = ? where id = ?", apiToken, id)
 }
 
 /**
@@ -136,9 +115,7 @@ func SetApiToken(id int64, apiToken string) {
  * @param encryptionKey URL路径前缀
  */
 func SetEncryptionKey(id int64, encryptionKey string) {
-	DBUtil.ExecIgnoreError(`update user
-        set encryptionKey = #{param2}
-        where id = #{param1}`)
+	DBUtil.ExecIgnoreError(`update user set encryptionKey = ? where id = ?`, encryptionKey, id)
 }
 
 /**
@@ -147,7 +124,5 @@ func SetEncryptionKey(id int64, encryptionKey string) {
  * @param pwd 密码
  */
 func SetPwd(id int64, pwd string) {
-	DBUtil.ExecIgnoreError(`update user
-        set pwd = #{pwd}
-        where id = #{id}`)
+	DBUtil.ExecIgnoreError(`update user set pwd = ? where id = ?`, pwd, id)
 }

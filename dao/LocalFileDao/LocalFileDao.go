@@ -9,10 +9,7 @@ import (
  * 添加一条数据
  */
 func Add(dto dto.LocalFileDto) {
-	DBUtil.InsertIgnoreError(`
-		insert into local_file(id, path, md5)
-        values (#{id}, #{path}, #{md5})
-	`)
+	DBUtil.InsertIgnoreError("insert into local_file(id, path, md5) values (?,?,?)", dto.Id, dto.Path, dto.Md5)
 }
 
 /**
@@ -20,9 +17,7 @@ func Add(dto dto.LocalFileDto) {
  * @param id 文件ID
  */
 func SelectOne(id int64) *dto.LocalFileDto {
-	return DBUtil.SelectOne[dto.LocalFileDto](`select *
-        from local_file
-        where id = #{0}`)
+	return DBUtil.SelectOne[dto.LocalFileDto](`select * from local_file where id = ?`, id)
 }
 
 /**
@@ -30,7 +25,5 @@ func SelectOne(id int64) *dto.LocalFileDto {
  * @param md5 文件MD5
  */
 func SelectByFileMd5(md5 string) *dto.LocalFileDto {
-	return DBUtil.SelectOne[dto.LocalFileDto](`select *
-        from local_file
-        where md5 = #{0}`)
+	return DBUtil.SelectOne[dto.LocalFileDto](`select * from local_file where md5 = ?`, md5)
 }
