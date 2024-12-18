@@ -1,10 +1,14 @@
 package DfsFileUtil
 
 import (
+	"DairoDFS/appication/SystemConfig"
+	controller "DairoDFS/exception"
 	"bufio"
 	"embed"
 	_ "embed"
+	"github.com/shirou/gopsutil/disk"
 	"log"
+	"os"
 	"strings"
 )
 
@@ -54,30 +58,28 @@ func dfsContentType(ext string) string {
 /**
  * 判断储存路径的磁盘剩余容量,选择合适的目录
  */
-//func selectDriverFolder() (string,error){
-//        maxSize := SystemConfig.Instance().UploadMaxSize
-//        saveFolderList := SystemConfig.Instance().SaveFolderList
-//        if len(saveFolderList) == 0 {
-//		   return "", &controller.BusinessException{
-//			   Message: "没有配置存储目录",
-//		   }
-//        }
-//	   for _,folder := range saveFolderList{
-//		   _,err := os.Stat(folder)
-//		   if os.IsNotExist(err){//如果文件夹不存在
-//			   continue
-//		   }
-//            //val localFolder = File(it)
-//            //if (!localFolder.exists()) {
-//            //    throw BusinessException("目录${localFolder.absolutePath}不存在")
-//            //}
-//            val freeSpace = localFolder.freeSpace
-//            if (freeSpace > maxSize) {
-//                return it
-//            }
-//        }
-//        throw BusinessException("储存目录剩余空间太小不足")
-//    }
+func selectDriverFolder() (string,error){
+       maxSize := SystemConfig.Instance().UploadMaxSize
+       saveFolderList := SystemConfig.Instance().SaveFolderList
+       if len(saveFolderList) == 0 {
+		   return "", &controller.BusinessException{
+			   Message: "没有配置存储目录",
+		   }
+       }
+	   for _,folder := range saveFolderList{
+		   _,err := os.Stat(folder)
+		   if os.IsNotExist(err){//如果文件夹不存在
+			   continue
+		   }
+		   usage, usageErr := disk.Usage(folder)
+		   if usage
+           val freeSpace = localFolder.freeSpace
+           if (freeSpace > maxSize) {
+               return it
+           }
+       }
+       throw BusinessException("储存目录剩余空间太小不足")
+   }
 
 //    /**
 //     * 获取本地文件存储路径
