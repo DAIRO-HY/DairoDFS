@@ -2,14 +2,29 @@ package DfsFileUtil
 
 import (
 	_ "embed"
+	"fmt"
+	"github.com/shirou/gopsutil/disk"
 	"log"
 	"testing"
 )
 
-func TestContentTypeTxt(t *testing.T) {
-	contentData, err := contentTypeTxt.ReadFile("content-type.txt")
+// 通过文件名获取文件的content-type
+func TestDfsContentType(t *testing.T) {
+	contentType := dfsContentType("MP4")
+	log.Println(contentType)
+}
+
+func getDiskFreeSpace(path string) (uint64, error) {
+	usage, err := disk.Usage(path)
 	if err != nil {
-		log.Fatal(err)
+		return 0, err
 	}
-	log.Println(contentData)
+	return usage.Free, nil
+}
+func TestSelectDriverFolder(t *testing.T) {
+	s, e := getDiskFreeSpace("C:\\develop\\project\\idea\\DairoDFS\\util")
+	if e != nil {
+		log.Fatal(e)
+	}
+	fmt.Println(s)
 }

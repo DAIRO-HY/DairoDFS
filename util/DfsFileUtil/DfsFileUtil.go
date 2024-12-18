@@ -1,13 +1,15 @@
 package DfsFileUtil
 
 import (
-    "embed"
-    _ "embed"
+	"bufio"
+	"embed"
+	_ "embed"
+	"log"
+	"strings"
 )
 
 //go:embed content-type.txt
 var contentTypeTxt embed.FS
-
 
 //    /**
 //     * 后缀对应ContentType
@@ -28,40 +30,55 @@ var contentTypeTxt embed.FS
 //        }
 //        iStream.close()
 //    }
-//
-//    /**
-//     * 获取路径的父级文件夹路径
-//     */
-//    val String.dfsContentType: String
-//        get() {
-//            val ext = this.lowercase()
-//            return this@DfsFileUtil.extToContentType[ext] ?: "application/octet-stream"//未知文件类型
+
+/**
+ * 通过文件名获取文件的content-type
+ */
+func dfsContentType(ext string) string {
+	file, err := contentTypeTxt.Open("content-type.txt")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
+	ext = strings.ToLower(ext)
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() { //读取
+		line := scanner.Text()
+		if strings.HasPrefix(line, ext+":") {
+			return line[len(ext)+1:]
+		}
+	}
+	return "application/octet-stream" //未知文件类型
+}
+
+/**
+ * 判断储存路径的磁盘剩余容量,选择合适的目录
+ */
+//func selectDriverFolder() (string,error){
+//        maxSize := SystemConfig.Instance().UploadMaxSize
+//        saveFolderList := SystemConfig.Instance().SaveFolderList
+//        if len(saveFolderList) == 0 {
+//		   return "", &controller.BusinessException{
+//			   Message: "没有配置存储目录",
+//		   }
 //        }
-//
-//    /**
-//     * 判断储存路径的磁盘剩余容量,选择合适的目录
-//     */
-//    private val selectDriverFolder: String
-//        get() {
-//            val maxSize = SystemConfig.instance.uploadMaxSize
-//            val saveFolderList = SystemConfig.instance.saveFolderList
-//            if (saveFolderList.isEmpty()) {
-//                throw BusinessException("没有配置存储目录")
+//	   for _,folder := range saveFolderList{
+//		   _,err := os.Stat(folder)
+//		   if os.IsNotExist(err){//如果文件夹不存在
+//			   continue
+//		   }
+//            //val localFolder = File(it)
+//            //if (!localFolder.exists()) {
+//            //    throw BusinessException("目录${localFolder.absolutePath}不存在")
+//            //}
+//            val freeSpace = localFolder.freeSpace
+//            if (freeSpace > maxSize) {
+//                return it
 //            }
-//            SystemConfig.instance.saveFolderList.forEach {
-//                val localFolder = File(it)
-//                if (!localFolder.exists()) {
-//                    throw BusinessException("目录${localFolder.absolutePath}不存在")
-//                }
-//                val freeSpace = localFolder.freeSpace
-//                if (freeSpace > maxSize) {
-//                    return it
-//                }
-//            }
-//            throw BusinessException("储存目录剩余空间太小不足")
 //        }
-//
-//
+//        throw BusinessException("储存目录剩余空间太小不足")
+//    }
+
 //    /**
 //     * 获取本地文件存储路径
 //     */

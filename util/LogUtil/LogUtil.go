@@ -59,6 +59,14 @@ func Error(content string) {
 }
 
 // 记录错误日志
+func Error1(msg string, err error) {
+	if !LogLevel["error"] {
+		return
+	}
+	write(fmt.Sprintf("error  %s%q", msg, err))
+}
+
+// 记录错误日志
 func Debug(content string) {
 	if !LogLevel["debug"] {
 		return
