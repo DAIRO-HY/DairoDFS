@@ -19,7 +19,7 @@ func init() {
 	if os.IsNotExist(err) { //文件不存在
 
 		// 创建多层目录
-		err := os.MkdirAll(filepath.Dir(DB_PATH), 0700)
+		err := os.MkdirAll(filepath.Dir(DB_PATH), os.ModePerm)
 		if err != nil {
 			LogUtil.Error(fmt.Sprintf("创建文件夹[%s]失败 err:%q", DB_PATH, err))
 			log.Fatal(err)

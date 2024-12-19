@@ -31,7 +31,7 @@ type SystemConfig struct {
 	/**
 	 * 文件上传限制(MB)
 	 */
-	UploadMaxSize int64
+	UploadMaxSize uint64
 
 	/**
 	 * 文件保存文件夹列表
@@ -56,7 +56,7 @@ var readLock sync.Mutex
 var instance *SystemConfig
 
 // 获取系统配置
-func Instance() SystemConfig {
+func Instance() *SystemConfig {
 	if instance == nil {
 		readLock.Lock()
 		_, err := os.Stat(appication.SYSTEM_JSON_PATH)
@@ -82,7 +82,7 @@ func Instance() SystemConfig {
 		}
 		readLock.Unlock()
 	}
-	return *instance
+	return instance
 }
 
 /**
