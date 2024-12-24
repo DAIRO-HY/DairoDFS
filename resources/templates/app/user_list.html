@@ -1,7 +1,7 @@
 ﻿<!DOCTYPE html>
 <html lang="zh-CN" xmlns:th="http://www.thymeleaf.org" xmlns="">
 <head>
-    <th:block th:include="app/icd/css :: header('用户')"/>
+    <title>用户</title>
 </head>
 <body>
 <th:block th:include="app/icd/top-bar :: top-bar"/>
@@ -10,7 +10,6 @@
         <div id="table"></div>
     </common-content>
 </th:block>
-<th:block th:include="app/icd/js :: js"/>
 <script th:inline="javascript">
     addContentBarBtn("添加", () => {
         location.href = "user_edit"

@@ -1,7 +1,6 @@
 package SystemConfig
 
 import (
-	"DairoDFS/appication"
 	"DairoDFS/extension/String"
 	"DairoDFS/util/LogUtil"
 	"encoding/json"
@@ -91,7 +90,7 @@ func Instance() *SystemConfig {
 func Save() {
 	_, err := os.Stat(appication.SYSTEM_JSON_PATH)
 	if os.IsNotExist(err) { //文件不存在时创建文件夹
-		mkdirErr := os.MkdirAll(String.GetParentPath(appication.SYSTEM_JSON_PATH), os.ModePerm)
+		mkdirErr := os.MkdirAll(String.FileParent(appication.SYSTEM_JSON_PATH), os.ModePerm)
 		if mkdirErr != nil {
 			LogUtil.Error1("文件夹创建失败：", mkdirErr)
 			return

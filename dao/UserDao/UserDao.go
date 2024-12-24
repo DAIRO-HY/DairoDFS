@@ -27,7 +27,7 @@ func SelectOne(id int64) *dto.UserDto {
  * 获取管理员账户
  * @return 用户信息
  */
-func SelectAdminId() int64 {
+func SelectAdminId() *int64 {
 	return DBUtil.SelectSingleOneIgnoreError[int64]("select id from user order by id limit 1")
 }
 
@@ -54,7 +54,7 @@ func SelectByName(name string) *dto.UserDto {
  * @param apiToken 用户ApiToken
  * @return 用户ID
  */
-func SelectIdByApiToken(apiToken string) int64 {
+func SelectIdByApiToken(apiToken string) *int64 {
 	return DBUtil.SelectSingleOneIgnoreError[int64](`select id from user where apiToken = ? and state = 1`, apiToken)
 }
 
@@ -63,7 +63,7 @@ func SelectIdByApiToken(apiToken string) int64 {
  * @param urlPath 文件访问前缀
  * @return 用户ID
  */
-func SelectIdByUrlPath(urlPath string) int64 {
+func SelectIdByUrlPath(urlPath string) *int64 {
 	return DBUtil.SelectSingleOneIgnoreError[int64]("select id from user where urlPath = ? and state = 1", urlPath)
 }
 
@@ -78,7 +78,7 @@ func SelectAll() []*dto.UserDto {
 /**
  * 判断是否已经初始化
  */
-func IsInit() bool {
+func IsInit() *bool {
 	return DBUtil.SelectSingleOneIgnoreError[bool]("select count(*) > 0 from user")
 }
 

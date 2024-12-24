@@ -5,7 +5,7 @@ import (
 	"DairoDFS/dao/DfsFileDao"
 	"DairoDFS/dao/LocalFileDao"
 	"DairoDFS/dao/dto"
-	controller "DairoDFS/exception"
+	"DairoDFS/exception"
 	"bufio"
 	"embed"
 	_ "embed"
@@ -75,9 +75,7 @@ func SelectDriverFolder() (string, error) {
 	maxSize := SystemConfig.Instance().UploadMaxSize
 	saveFolderList := SystemConfig.Instance().SaveFolderList
 	if len(saveFolderList) == 0 {
-		return "", &controller.BusinessException{
-			Message: "没有配置存储目录",
-		}
+		return "", exception.Biz("没有配置存储目录")
 	}
 	for _, folder := range saveFolderList {
 		_, err := os.Stat(folder)
@@ -92,9 +90,7 @@ func SelectDriverFolder() (string, error) {
 			return folder, nil
 		}
 	}
-	return "", &controller.BusinessException{
-		Message: "文件夹不存在或没有足够存储空间",
-	}
+	return "", exception.Biz("文件夹不存在或没有足够存储空间")
 }
 
 /**
@@ -131,9 +127,7 @@ func LocalPath() (string, error) {
 	makePathLock.Unlock()
 	_, pathErr := os.Stat(path)
 	if os.IsExist(pathErr) { //文件已经存在，则报错（小概率事件）
-		return "", &controller.BusinessException{
-			Message: "准备创建的文件已经存在",
-		}
+		return "", exception.Biz("准备创建的文件已经存在")
 	}
 	return path, nil
 }
@@ -146,14 +140,10 @@ func CheckPath(path string) error {
 	pattern := `[>,?,\\,:,|,<,*,"]`
 	matched, _ := regexp.MatchString(pattern, path)
 	if matched {
-		return &controller.BusinessException{
-			Message: "文件路径不能包含>,?,\\,:,|,<,*,\"字符",
-		}
+		return exception.Biz("文件路径不能包含>,?,\\,:,|,<,*,\"字符")
 	}
 	if strings.Contains(path, "//") {
-		return &controller.BusinessException{
-			Message: "文件路径不能包含两个连续的字符/",
-		}
+		return exception.Biz("文件路径不能包含两个连续的字符/")
 	}
 	return nil
 }

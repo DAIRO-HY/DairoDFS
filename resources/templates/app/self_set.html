@@ -1,7 +1,7 @@
 ﻿<!DOCTYPE html>
-<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<html lang="zh-CN">
 <head>
-    <th:block th:include="app/icd/css :: header('设置')"/>
+    <title>设置</title>
 </head>
 <body>
 <th:block th:include="app/icd/top-bar :: top-bar"/>
@@ -28,7 +28,6 @@
         </th:block>
     </common-content>
 </th:block>
-<th:block th:include="app/icd/js :: js"/>
 <script>
     $(function () {
         $("form").initData()

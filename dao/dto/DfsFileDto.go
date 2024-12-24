@@ -74,3 +74,17 @@ type DfsFileDto struct {
 	 */
 	StateMsg *string
 }
+
+/**
+ * 是否文件
+ */
+func (mine *DfsFileDto) IsFile() bool {
+	return *mine.LocalId > 0
+}
+
+/**
+ * 是否文件夹
+ */
+func (mine *DfsFileDto) IsFolder() bool {
+	return *mine.LocalId == 0
+}

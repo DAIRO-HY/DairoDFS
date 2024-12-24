@@ -1,7 +1,7 @@
 ﻿<!DOCTYPE html>
-<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<html lang="zh-CN">
 <head>
-    <th:block th:include="app/icd/css :: header('我的分享')"/>
+    <title>我的分享</title>
 </head>
 <body>
 <th:block th:include="app/icd/top-bar :: top-bar"/>
@@ -14,7 +14,6 @@
 
 <!--分享明细dialog-->
 <th:block th:include="app/icd/share_detail_dialog :: share_detail_dialog"/>
-<th:block th:include="app/icd/js :: js"/>
 <script>
 
     /**

@@ -7,8 +7,9 @@ import (
 	_ "golang.org/x/image/tiff"
 	_ "golang.org/x/image/webp"
 	"image"
+	"image/color"
+	"image/draw"
 	"image/jpeg"
-	_ "image/jpeg" // 必须导入具体的图片格式
 	_ "image/png"
 	"os"
 )
@@ -30,7 +31,7 @@ func ThumbByFile(path string, maxWidth int, maxHeight int) ([]byte, error) {
 func ThumbByData(data []byte, maxWidth int, maxHeight int) ([]byte, error) {
 
 	//加载
-	imageConfig, _, err := image.DecodeConfig(bytes.NewReader(data))
+	imageConfig, format, err := image.DecodeConfig(bytes.NewReader(data))
 	if err != nil {
 		return nil, err
 	}
@@ -75,6 +76,24 @@ func ThumbByData(data []byte, maxWidth int, maxHeight int) ([]byte, error) {
 
 	//data不再使用，让GC尽快回收
 	data = nil
+	if format == "png" { //如果图片是png格式，将背景填充白色
+
+		// 创建一个新的 RGBA 图像
+		bounds := img.Bounds()
+
+		//填充背景色后的图片
+		pngFill := image.NewRGBA(bounds)
+
+		// 指定填充颜色（如白色）
+		fillColor := color.RGBA{R: 255, G: 255, B: 255, A: 255}
+
+		// 填充背景颜色
+		draw.Draw(pngFill, bounds, &image.Uniform{fillColor}, image.Point{}, draw.Src)
+
+		// 将原始图片绘制到新图像上，保留非透明部分
+		draw.Draw(pngFill, bounds, img, bounds.Min, draw.Over)
+		img = pngFill
+	}
 
 	//按比例裁切
 	croppedImg := img.(interface {
@@ -111,11 +130,20 @@ func ThumbByData(data []byte, maxWidth int, maxHeight int) ([]byte, error) {
  * 获取图片信息
  */
 func GetInfo(path string) (*ImageInfo, error) {
-	file, _ := os.Open(path)
-	defer file.Close()
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	return GetInfoByData(data)
+}
 
-	//加载
-	imageConfig, _, err := image.DecodeConfig(file)
+/**
+ * 获取图片信息
+ */
+func GetInfoByData(data []byte) (*ImageInfo, error) {
+
+	//加载图片信息
+	imageConfig, _, err := image.DecodeConfig(bytes.NewReader(data))
 	if err != nil {
 		return nil, err
 	}

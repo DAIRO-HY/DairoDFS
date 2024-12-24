@@ -1,7 +1,7 @@
 ﻿<!DOCTYPE html>
-<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<html lang="zh-CN">
 <head>
-    <th:block th:include="app/icd/css :: header('安装LIBRAW')"/>
+    <title>安装LIBRAW</title>
     <style>
         iframe body {
             color: #0dcaf0;
@@ -39,7 +39,6 @@
         </div>
     </div>
 </div>
-<th:block th:include="app/icd/js :: js"/>
 <script>
     $(() => {
         getState()

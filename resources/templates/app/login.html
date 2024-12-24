@@ -1,8 +1,9 @@
 ﻿<!DOCTYPE html>
-<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<html lang="zh-CN">
 <head>
-    <th:block th:include="app/icd/css :: header('用户登录')"/>
-    <script src="../../static/plugins/md5.js"></script>
+    {{template "head" .}}
+    <script src="/static/plugins/md5.js"></script>
+    <title>用户登录</title>
 </head>
 <body class="bg-login">
 <div class="text-center d-table" style="width: 100vw;height: 100vh;">
@@ -25,7 +26,6 @@
         </div>
     </div>
 </div>
-<th:block th:include="app/icd/js :: js"/>
 <script>
 
     /**

@@ -1,0 +1,113 @@
+﻿<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
+<th:block th:fragment="trash_right_option">
+    <style>
+        .content-menu {
+            min-width: 160px;
+            position: fixed;
+            overflow: hidden;
+        }
+
+        .content-menu > .content-menu-item {
+            line-height: 34px;
+            cursor: pointer;
+        }
+
+        .content-menu > .content-menu-item:hover {
+            background: #b0b0b0;
+        }
+    </style>
+    <div id="fileOptionPopGroup"
+         style="position: fixed;top: 0;left: 0;width: 100vw;height: 100vh;z-index: 9;background: #00000055;display: none;"
+         onclick="onFileOptionPopGroupClick()" oncontextmenu="onFileOptionPopGroupClick();return false;">
+        <div id="fileOptionPop" class="rounded content-menu shadow bg-content">
+            <div class="content-menu-item px-2" onclick="checkAll()"><i class="bi bi-check-all"></i>&nbsp;&nbsp;全选
+            </div>
+            <div class="content-menu-item px-2" onclick="uncheckAll()"><i class="bi bi-x-square"></i>&nbsp;&nbsp;全取消
+            </div>
+            <hr class="m-0">
+            <div class="content-menu-item px-2" onclick="onRecoverClick()"><i class="bi bi-bootstrap-reboot"></i>&nbsp;&nbsp;还原
+            </div>
+            <div class="content-menu-item px-2" onclick="onLogicDeleteClick()"><i class="bi bi-trash"></i>&nbsp;&nbsp;彻底删除
+            </div>
+        </div>
+    </div>
+    <script>
+        $(function () {
+            $("#fileOptionPop").on("click", e => {
+                e.stopPropagation()
+                $('#fileOptionPopGroup').hide()
+            })
+        })
+
+        /**
+         * 弹出菜单其他区域点击事件
+         */
+        function onFileOptionPopGroupClick() {
+            uncheckAll()
+            $('#fileOptionPopGroup').hide()
+        }
+
+        /**
+         * 显示文件操作视图
+         */
+        function showFileOption(e) {
+
+            //计算功能菜单高度
+            const menuHeight = $("#fileOptionPop > .content-menu-item").length * 34 + 5
+
+            //当前窗口的宽
+            const windowWidth = window.innerWidth
+
+            //当前窗口的高
+            const windowHeight = window.innerHeight
+
+            const clientX = e.clientX
+            const clientY = e.clientY
+
+            const left = windowWidth - clientX > 160 ? clientX : clientX - 160
+            const top = windowHeight - clientY > menuHeight ? clientY : clientY - menuHeight
+
+            const $fileOptionPop = $("#fileOptionPop")
+            $fileOptionPop.css("left", left + "px")
+            $fileOptionPop.css("top", top + "px")
+            $("#fileOptionPopGroup").show()
+        }
+
+        /**
+         * 删除点击事件
+         */
+        function onLogicDeleteClick() {
+            const ids = fileList.filter(item => item.checked).map(item => {
+                return item.id
+            })
+            if (ids.length === 0) {
+                return
+            }
+            const ok = confirm(`确定要从垃圾桶删除选中的${ids.length}个项目(包括子文件)吗?`)
+            if (!ok) {
+                return
+            }
+
+            $.ajaxByData("trash/logic_delete").add("ids", ids).success(() => {
+                reload()
+            }).post()
+        }
+
+        /**
+         * 还原已经删除的文件
+         */
+        function onRecoverClick() {
+            const ids = fileList.filter(item => item.checked).map(item => {
+                return item.id
+            })
+            if (ids.length === 0) {
+                return
+            }
+            $.ajaxByData("trash/trash_recover").add("ids", ids).success(() => {
+                reload()
+            }).post()
+        }
+
+    </script>
+</th:block>
+</html>

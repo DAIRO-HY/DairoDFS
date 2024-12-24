@@ -53,7 +53,7 @@ func SelectByParentIdAndName(userId int64, parentId int64, name string) *dto.Dfs
  * @param name 文件名
  * @return 文件信息
  */
-func SelectIdByParentIdAndName(userId int64, parentId int64, name string) int64 {
+func SelectIdByParentIdAndName(userId int64, parentId int64, name string) *int64 {
 	return DBUtil.SelectSingleOneIgnoreError[int64](`select id from dfs_file where userId = ?
           and parentId = ?
           and name COLLATE NOCASE = ?
@@ -227,7 +227,7 @@ func SetState(id int64, state int8, stateMsg string) {
 /**
  * 验证文件存储ID权限
  */
-func ValidLocalId(userId int64, localId int64) bool {
+func ValidLocalId(userId int64, localId int64) *bool {
 	return DBUtil.SelectSingleOneIgnoreError[bool]("select count(*) > 0 from dfs_file where userId = ? and localId = ?", userId, localId)
 }
 
@@ -247,7 +247,7 @@ func SelectExtra(parentId int64, name string) *dto.DfsFileDto {
  * @param id dfs文件ID
  * @return 附属文件信息
  */
-func SelectExtraNames(id int64) []string {
+func SelectExtraNames(id int64) []*string {
 	sql := "select name from dfs_file where parentId = ? and isExtra = 1"
 	return DBUtil.SelectList[string](sql, id)
 }
@@ -257,7 +257,7 @@ func SelectExtraNames(id int64) []string {
  * @param localId 本地存储id
  * @return 属性
  */
-func SelectPropertyByLocalId(localId int64) string {
+func SelectPropertyByLocalId(localId int64) *string {
 	sql := "select property from dfs_file where localId = ? and state = 1 and property is not null limit 1"
 	return DBUtil.SelectSingleOneIgnoreError[string](sql, localId)
 }
@@ -296,7 +296,7 @@ func SelectAllChildList(id int64) []*dto.DfsFileDto {
  * 文件是否正在使用中
  * @param id 本地文件id
  */
-func IsFileUsing(id int64) bool {
+func IsFileUsing(id int64) *bool {
 	sql := `select count(*) > 0 from dfs_file where localId = ?`
 	return DBUtil.SelectSingleOneIgnoreError[bool](sql, id)
 }

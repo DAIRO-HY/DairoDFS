@@ -1,4 +1,4 @@
-package appication
+package application
 
 import (
 	"DairoDFS/util/LogUtil"
@@ -93,5 +93,34 @@ func Init() {
 		case "-is-dev":
 			IsDev = paramArr[1] == "true"
 		}
+	}
+	//for index, it := range os.Args {
+	//	switch it {
+	//	case "-web-port":
+	//		WebPort, _ = strconv.Atoi(paramArr[1])
+	//	case "-log-type": //日志输出方式
+	//		switch paramArr[1] {
+	//		case "0":
+	//			LogUtil.LogOutType = LogUtil.LOG_OUT_TYPE_NO
+	//		case "1":
+	//			LogUtil.LogOutType = LogUtil.LOG_OUT_TYPE_CONSOLE
+	//		case "2":
+	//			LogUtil.LogOutType = LogUtil.LOG_OUT_TYPE_FILE
+	//		}
+	//	case "-log-level": //日志输出级别
+	//		levels := strings.Split(paramArr[1], ",")
+	//		for _, level := range levels {
+	//			LogUtil.LogLevel[level] = true
+	//		}
+	//	case "-is-dev":
+	//		IsDev = paramArr[1] == "true"
+	//	}
+	//}
+}
+
+// 防止程序终止
+func StopRuntimeError() {
+	if r := recover(); r != nil {
+		//防止程序终止
 	}
 }

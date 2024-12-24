@@ -98,13 +98,16 @@ func SelectSingleOneIgnoreError[T any](query string, args ...any) *T {
 // SelectSingleOne 查询第一个数据
 func SelectSingleOne[T any](query string, args ...any) (*T, error) {
 	row := DBConn.QueryRow(query, args...)
-	var value T
-	err := row.Scan(&value) // 使用 Scan 将结果赋值给 value
+	var value *T
+
+	// 使用 Scan 将结果赋值给 value
+	// 这里最好使用指针的指针类型，否则可能导致string类型为nil时报错
+	err := row.Scan(&value)
 	if err != nil {
-		LogUtil.Error(fmt.Sprintf("error: %q, sql: %s", err, query))
+		LogUtil.Debug(fmt.Sprintf("error: %q, sql: %s", err, query))
 		return nil, err // 返回默认值和错误
 	}
-	return &value, nil
+	return value, nil
 }
 
 // SelectOne 查询第一个数据

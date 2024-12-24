@@ -153,6 +153,20 @@ func TestSelectSingleOneIgnoreError(t *testing.T) {
 	fmt.Println(count)
 }
 
+func TestSelectSingleOneIgnoreError2(t *testing.T) {
+	name1 := SelectSingleOneIgnoreError[string]("select name from user where id = 0")
+	fmt.Println(name1)
+
+	name := SelectSingleOneIgnoreError[string]("select name from user limit 1")
+	fmt.Println(name)
+
+	apiToken := SelectSingleOneIgnoreError[string]("select apiToken from user limit 1")
+	fmt.Println(apiToken)
+
+	id := SelectSingleOneIgnoreError[string]("select id from user limit 1")
+	fmt.Println(id)
+}
+
 func TestDB(t *testing.T) {
 	id := ID()
 	InsertIgnoreError("insert into user(id, name, pwd, encryptionKey, state, date) values (?, ?, ?, ?, ?, ?)",

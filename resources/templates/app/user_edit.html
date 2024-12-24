@@ -1,7 +1,7 @@
 ﻿<!DOCTYPE html>
 <html lang="zh-CN" xmlns:th="http://www.thymeleaf.org" xmlns="">
 <head>
-    <th:block th:include="app/icd/css :: header('用户编辑')"/>
+    <title>用户编辑</title>
 </head>
 <body>
 <th:block th:include="app/icd/top-bar :: top-bar"/>
@@ -53,7 +53,6 @@
         </div>
     </form>
 </div>
-<th:block th:include="app/icd/js :: js"/>
 <script>
     $(function () {
         $("form").initData()

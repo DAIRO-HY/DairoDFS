@@ -13,4 +13,7 @@ type ImageInfo struct {
 
 	//拍摄时间
 	Date int64
+
+	//相机名称
+	Camera string
 }

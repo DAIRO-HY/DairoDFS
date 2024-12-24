@@ -1,6 +1,7 @@
 package ShellUtil
 
 import (
+	"DairoDFS/exception"
 	"io"
 	"os/exec"
 	"strings"
@@ -50,39 +51,67 @@ func ExecToErrReader(command string, errReader func(io.ReadCloser)) (string, err
 	return okResult, err
 }
 
-// 将执行结果输出到字符串
+// 将执行成功的结果返回
 // - command 指令
 // return 正常结果，异常结果，error
-func ExecToResult(command string) (string, string, error) {
-	var okResult string
+func ExecToOkResult(command string) (string, error) {
+	okData, err := ExecToOkData(command)
+	return string(okData), err
+}
+
+// 将执行成功的结果输出到字节数组
+// - command 指令
+// return 正常数据，异常数据，error
+func ExecToOkData(command string) ([]byte, error) {
+	okData, errData, CmdErr := ExecToOkAndErrorData(command)
+	if CmdErr != nil { //如果执行出错
+		if len(errData) > 0 {
+			return nil, exception.Biz(string(errData))
+		} else {
+			return nil, CmdErr
+		}
+	}
+	return okData, nil
+}
+
+// 将执行成功的结果返回
+// - command 指令
+// return 正常结果，异常结果，error
+func ExecToOkAndErrorResult(command string) (string, string, error) {
+	okData, errData, err := ExecToOkAndErrorData(command)
+	return string(okData), string(errData), err
+}
+
+// 将执行结果输出字节数组中
+// 如果成功数据流没有数据，将会返回错误数据流中的数据
+// - command 指令
+// return 正常数据，异常数据，error
+func ExecToOkAndErrorData(command string) ([]byte, []byte, error) {
+	var okData []byte
 	reader := func(reader io.ReadCloser) {
-		var data []byte
 		buf := make([]byte, 8*1024)
 		for {
 			n, err := reader.Read(buf)
 			if err != nil && err == io.EOF {
 				break
 			}
-			data = append(data[:], buf[:n]...)
+			okData = append(okData[:], buf[:n]...)
 		}
-		okResult = string(data)
 	}
 
-	var errResult string
+	var errData []byte
 	errReader := func(reader io.ReadCloser) {
-		var data []byte
 		buf := make([]byte, 8*1024)
 		for {
 			n, err := reader.Read(buf)
 			if err != nil && err == io.EOF {
 				break
 			}
-			data = append(data[:], buf[:n]...)
+			errData = append(errData[:], buf[:n]...)
 		}
-		errResult = string(data)
 	}
 	err := ExecToReader(command, reader, errReader)
-	return okResult, errResult, err
+	return okData, errData, err
 }
 
 // 将执行结果输出到流

@@ -1,7 +1,7 @@
 ﻿<!DOCTYPE html>
-<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<html lang="zh-CN">
 <head>
-    <th:block th:include="app/icd/css :: header('同步状态')"/>
+    <title>同步状态</title>
     <style>
         /* 定义旋转动画 */
         @keyframes spin {
@@ -33,7 +33,6 @@
     <button class="btn btn-primary" type="button" onclick="onSyncClick()">日志同步</button>
     <button class="btn btn-primary" type="button" onclick="onSyncAllClick()">全量同步</button>
 </div>
-<th:block th:include="app/icd/js :: js"/>
 <script>
     $(function () {
         getInfoList()
