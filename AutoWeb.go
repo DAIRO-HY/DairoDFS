@@ -6,11 +6,16 @@ package main
 import (
 	controllerapp "DairoDFS/controller/app"
 	controllerappinstallcreateadmin "DairoDFS/controller/app/install/create_admin"
+	controllerappinstallcreateadminform "DairoDFS/controller/app/install/create_admin/form"
 	controllerapplogin "DairoDFS/controller/app/login"
 
 	"embed"
 	"encoding/json"
 	"fmt"
+	"github.com/go-playground/locales/zh"
+	ut "github.com/go-playground/universal-translator"
+	"github.com/go-playground/validator/v10"
+	zh_translations "github.com/go-playground/validator/v10/translations/zh"
 	"html/template"
 	"io/fs"
 	"log"
@@ -25,6 +30,18 @@ var staticFiles embed.FS
 
 //go:embed resources/templates/*
 var templatesFiles embed.FS
+
+// 定义一个表单验证全局实例
+var validate = validator.New()
+
+var trans ut.Translator
+
+func init() {
+	zhLocale := zh.New() // 中文翻译器
+	uni := ut.New(zhLocale, zhLocale)
+	trans, _ = uni.GetTranslator("zh") // 注册中文翻译
+	zh_translations.RegisterDefaultTranslations(validate, trans)
+}
 
 // 开启web服务
 func startWebServer(port int) {
@@ -55,6 +72,18 @@ func startWebServer(port int) {
 		controllerappinstallcreateadmin.Init(writer, request)
 		templates := append([]string{"resources/templates/app/install/create_admin.html"}, COMMON_TEMPLATES...)
 		writeToTemplate(writer, templates, body)
+	})
+	http.HandleFunc("/app/install/create_admin/add_admin", func(writer http.ResponseWriter, request *http.Request) {
+		paramMap := makeParamMap(request)
+		inForm := getForm[controllerappinstallcreateadminform.CreateAdminForm](paramMap)
+		validBody := validateForm(inForm)
+		if validBody != nil {
+			writeFieldError(writer, validBody)
+			return
+		}
+		var body any = nil
+		body = controllerappinstallcreateadmin.AddAdmin(inForm)
+		writeToResponse(writer, body)
 	})
 	http.HandleFunc("/app/login", func(writer http.ResponseWriter, request *http.Request) {
 		var body any = nil
@@ -178,6 +207,41 @@ func getFloat64(paramMap map[string][]string, key string) float64 {
 	}
 	rValue, _ := strconv.ParseFloat(value[0], 64)
 	return rValue
+}
+
+// 表单验证
+func validateForm(form any) any {
+	err := validate.Struct(form)
+	if err == nil {
+		return nil
+	}
+	fieldError := map[string]*[]string{}
+	for _, validErr := range err.(validator.ValidationErrors) {
+		key := validErr.Field()
+		key = strings.ToLower(key[:1]) + key[1:]
+		messages, isExists := fieldError[key]
+		if !isExists {
+			var temp []string
+			messages = &temp
+			fieldError[key] = messages
+		}
+		*messages = append(*messages, validErr.Translate(trans))
+	}
+	body := map[string]any{
+		"code": 2,
+		"msg":  "参数错误",
+		"data": fieldError,
+	}
+	return body
+}
+
+// 返回表单验证失败结果
+func writeFieldError(writer http.ResponseWriter, validBody any){
+
+	// 设置 Content-Type 头部信息
+	writer.Header().Set("Content-Type", "text/plain;charset=UTF-8")
+	writer.WriteHeader(http.StatusInternalServerError) // 设置状态码
+	writeToResponse(writer,validBody)
 }
 
 // 返回结果

@@ -2,7 +2,6 @@ package String
 
 import (
 	"DairoDFS/exception"
-	"DairoDFS/util/DfsFileUtil"
 	"crypto/md5"
 	"encoding/hex"
 	"strings"
@@ -52,7 +51,8 @@ func FileParent(path string) string {
  * 将路径分割成列表
  */
 func ToDfsFileNameList(name string) ([]string, error) {
-	DfsFileUtil.CheckPath(name)
+	//TODO:这里是否需要检查路径的正确行，待验证
+	//DfsFileUtil.CheckPath(name)
 	if len(name) == 0 {
 		return []string{}, nil
 	}
