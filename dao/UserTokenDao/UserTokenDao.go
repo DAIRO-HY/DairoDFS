@@ -18,7 +18,7 @@ func Add(dto dto.UserTokenDto) {
  * 通过登录Token获取会员ID
  * @param token 登录Token
  */
-func GetByUserIdByToken(token string) int64 {
+func GetByUserIdByToken(token string) *int64 {
 	return DBUtil.SelectSingleOneIgnoreError[int64]("select userId from user_token where token = ?", token)
 }
 

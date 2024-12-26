@@ -1,87 +1,76 @@
 package login
 
-/**
- * 管理员登录画面
- */
-//@Controller
-//@RequestMapping("/app/login")
-//class LoginAppController : AppBase() {
-//
-//    /**
-//     * 文件路径
-//     */
-//    @Value("\${sqlite.path}")
-//    private lateinit var dbPath: String
-//
-//    /**
-//     * 用一个用户允许登录的客户端数量限制
-//     */
-//    @Value("\${user.token.limit}")
-//    private var userTokenLimit = 0
-//
-//    /**
-//     * 用户操作Dao
-//     */
-//    @Autowired
-//    private lateinit var userDao: UserDao
-//
-//    /**
-//     * 用户登录票据
-//     */
-//    @Autowired
-//    private lateinit var userTokenDao: UserTokenDao
+import (
+	application "DairoDFS/appication"
+	"DairoDFS/controller/app/login/form"
+	"DairoDFS/dao/UserDao"
+	"DairoDFS/dao/UserTokenDao"
+	"DairoDFS/dao/dto"
+	"DairoDFS/exception"
+	"DairoDFS/extension/String"
+	"DairoDFS/util/DBUtil"
+	"net/http"
+	"strconv"
+	"time"
+)
 
-/**
- * 页面初始化
- */
-//get:/app/login
-//templates:app/login.html
-func Execute() {
-	//if !this.userDao.isInit() { //是否已经初始化
-	//	return "redirect:/app/install/ffmpeg"
-	//}
-	//return "app/login"
+/** 页面初始化 */
+//@get:/app/login
+//@templates:app/login.html
+func Execute(writer http.ResponseWriter, request *http.Request) {
+	if !*UserDao.IsInit() { //是否已经初始化
+		http.Redirect(writer, request, "/app/install/ffmpeg", http.StatusFound)
+	}
 }
 
-//    @Operation(summary = "用户登录")
-//    @PostMapping("/do-login")
-//    @ResponseBody
-//    fun doLogin(
-//        @Valid loginForm: LoginAppForm,
-//        @Parameter(name = "客户端标志") @RequestParam("_clientFlag") clientFlag: Int,
-//        @Parameter(name = "客户端版本") @RequestParam("_version") version: Int
-//    ): String {
-//        val userDto = this.userDao.selectByName(loginForm.name!!) ?: throw BusinessException("用户名或密码错误")
-//        if (loginForm.pwd != userDto.pwd) {
-//            throw BusinessException("用户名或密码错误")
-//        }
-//
-//        //删除已经存在登录记录
-//        this.userTokenDao.deleteByUserIdAndDeviceId(userDto.id!!, loginForm.deviceId!!)
-//
-//        val token = System.currentTimeMillis().toString().md5
-//        val userTokenDto = UserTokenDto()
-//        userTokenDto.id = DBID.id
-//        userTokenDto.userId = userDto.id
-//        userTokenDto.date = Date()
-//        userTokenDto.ip = ServletTool.getClientIp()
-//        userTokenDto.clientFlag = clientFlag
-//        userTokenDto.version = version
-//        userTokenDto.token = token
-//        userTokenDto.deviceId = loginForm.deviceId
-//
-//        //添加一条登录记录
-//        this.userTokenDao.add(userTokenDto)
-//
-//        val userTokenList = this.userTokenDao.listByUserId(userDto.id!!) as ArrayList
-//        while (userTokenList.size > userTokenLimit) {//挤掉以前的登录记录
-//
-//            //删除登录记录
-//            this.userTokenDao.deleteByToken(userTokenList[0].token!!)
-//            userTokenList.removeAt(0)
-//        }
-//        return token
-//    }
+/** 用户登录 */
+//@post:/app/login/do-login
+func DoLogin(loginForm form.LoginAppInForm, _clientFlag int, _version int) any {
+	userDto := UserDao.SelectByName(loginForm.Name)
+	if userDto == nil { //用户不存在
+		return exception.LOGIN_ERROR()
+	}
+	if loginForm.Pwd != *userDto.Pwd { //密码不正确
+		return exception.LOGIN_ERROR()
+	}
+
+	//删除已经存在登录记录
+	UserTokenDao.DeleteByUserIdAndDeviceId(*userDto.Id, loginForm.DeviceId)
+
+	//登录token
+	token := strconv.FormatInt(time.Now().UnixMicro(), 10)
+	token = String.ToMd5(token)
+
+	id := DBUtil.ID()
+	date := time.Now()
+
+	//TODO:
+	ip := "0.0.0.0"
+	userTokenDto := dto.UserTokenDto{
+		Id:         &id,
+		UserId:     userDto.Id,
+		Date:       &date,
+		Ip:         &ip,
+		ClientFlag: &_clientFlag,
+		Version:    &_version,
+		Token:      &token,
+		DeviceId:   &loginForm.DeviceId,
+	}
+
+	//添加一条登录记录
+	UserTokenDao.Add(userTokenDto)
+	userTokenList := UserTokenDao.ListByUserId(*userDto.Id)
+	for len(userTokenList) > application.UserTokenLimit { //挤掉以前的登录记录
+
+		//删除登录记录
+		UserTokenDao.DeleteByToken(*userTokenList[0].Token)
+
+		//移除第一个元素
+		userTokenList = userTokenList[1:]
+	}
+	return token
+}
+
 //
 //    /**
 //     * 退出登录

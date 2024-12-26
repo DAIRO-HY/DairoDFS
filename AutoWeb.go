@@ -5,9 +5,11 @@ package main
 
 import (
 	controllerapp "DairoDFS/controller/app"
+	controllerappfiles "DairoDFS/controller/app/files"
 	controllerappinstallcreateadmin "DairoDFS/controller/app/install/create_admin"
 	controllerappinstallcreateadminform "DairoDFS/controller/app/install/create_admin/form"
 	controllerapplogin "DairoDFS/controller/app/login"
+	controllerapploginform "DairoDFS/controller/app/login/form"
 
 	"embed"
 	"encoding/json"
@@ -67,6 +69,12 @@ func startWebServer(port int) {
 		templates := append([]string{"resources/templates/index.html"}, COMMON_TEMPLATES...)
 		writeToTemplate(writer, templates, body)
 	})
+	http.HandleFunc("/app/files", func(writer http.ResponseWriter, request *http.Request) {
+		var body any = nil
+		controllerappfiles.Init()
+		templates := append([]string{"resources/templates/app/files.html"}, COMMON_TEMPLATES...)
+		writeToTemplate(writer, templates, body)
+	})
 	http.HandleFunc("/app/install/create_admin", func(writer http.ResponseWriter, request *http.Request) {
 		var body any = nil
 		controllerappinstallcreateadmin.Init(writer, request)
@@ -87,9 +95,23 @@ func startWebServer(port int) {
 	})
 	http.HandleFunc("/app/login", func(writer http.ResponseWriter, request *http.Request) {
 		var body any = nil
-		controllerapplogin.Execute()
+		controllerapplogin.Execute(writer, request)
 		templates := append([]string{"resources/templates/app/login.html"}, COMMON_TEMPLATES...)
 		writeToTemplate(writer, templates, body)
+	})
+	http.HandleFunc("/app/login/do-login", func(writer http.ResponseWriter, request *http.Request) {
+		paramMap := makeParamMap(request)
+		loginForm := getForm[controllerapploginform.LoginAppInForm](paramMap)
+		validBody := validateForm(loginForm)
+		if validBody != nil {
+			writeFieldError(writer, validBody)
+			return
+		}
+		_clientFlag := getInt(paramMap, "_clientFlag")
+		_version := getInt(paramMap, "_version")
+		var body any = nil
+		body = controllerapplogin.DoLogin(loginForm, _clientFlag, _version)
+		writeToResponse(writer, body)
 	})
 
 	// 启动服务器

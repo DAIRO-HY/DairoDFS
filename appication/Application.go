@@ -63,7 +63,10 @@ var LibrawPath string
 var IsDev bool
 
 // WEB管理端口
-var WebPort = 9030
+var WebPort = 8031
+
+// 用一个用户允许登录的客户端数量限制
+var UserTokenLimit = 10
 
 func Init() {
 	fmt.Println("------------------------------------------------------------------------")

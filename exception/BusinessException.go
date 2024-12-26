@@ -77,6 +77,12 @@ func NO_LOGIN() *BusinessException {
 		Message: "没有登录",
 	}
 }
+func LOGIN_ERROR() *BusinessException {
+	return &BusinessException{
+		Code:    6,
+		Message: "用户名或密码错误",
+	}
+}
 func EXISTS_FILE(name string) *BusinessException {
 	return &BusinessException{
 		Code:    1001,
