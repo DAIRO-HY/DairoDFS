@@ -14,6 +14,12 @@ import (
  */
 const BASE_TIME = 1699177026571
 
+/** 用户登录token的cookie键 **/
+const COOKIE_TOKEN = "token"
+
+/** 用户ID键 **/
+const USER_ID = "USER_ID"
+
 /**
  * 数字转换成短文本支持的字符串
  */

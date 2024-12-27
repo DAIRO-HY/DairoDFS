@@ -4,7 +4,7 @@
     <title>垃圾箱</title>
 </head>
 <body>
-<th:block th:include="app/icd/top-bar :: top-bar"/>
+{{template "top-bar" .}}
 
 <!--文件操作导航视图-->
 <th:block th:include="app/icd/trash/trash_toolbar :: trash_toolbar"/>

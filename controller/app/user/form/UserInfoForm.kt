@@ -1,19 +1,13 @@
-package cn.dairo.dfs.controller.app.user.form
+package form
 
-class UserInfoForm {
+type UserInfoForm struct{
 
-    /**
-     * 主键
-     */
-    var id: Long? = null
+    /** 主键 **/
+    id int64
 
-    /**
-     * 用户名
-     */
-    var name: String? = null
+    /** 用户名 **/
+    name string
 
-    /**
-     * 管理员标识
-     */
-    var adminFlag: Boolean? = null
+    /** 管理员标识 **/
+    adminFlag bool
 }

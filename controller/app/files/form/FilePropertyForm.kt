@@ -1,49 +1,31 @@
-package cn.dairo.dfs.controller.app.files.form
+package form
 
-class FilePropertyForm {
+type FilePropertyForm struct{
 
-    /**
-     * 名称
-     */
-    var name: String? = null
+    /** 名称 **/
+    name string
 
-    /**
-     * 路径
-     */
-    var path: String? = null
+    /** 路径 **/
+    path string
 
-    /**
-     * 大小
-     */
-    var size: String? = null
+    /** 大小 **/
+    size string
 
-    /**
-     * 文件类型(文件专用)
-     */
-    var contentType: String? = null
+    /** 文件类型(文件专用) **/
+    contentType string
 
-    /**
-     * 创建日期
-     */
-    var date: String? = null
+    /** 创建日期 **/
+    date string
 
-    /**
-     * 是否文件
-     */
-    var isFile: Boolean? = null
+    /** 是否文件 **/
+    isFile bool
 
-    /**
-     * 文件数(文件夹属性专用)
-     */
-    var fileCount: Int? = null
+    /** 文件数(文件夹属性专用) **/
+    fileCount int
 
-    /**
-     * 文件夹数(文件夹属性专用)
-     */
-    var folderCount: Int? = null
+    /** 文件夹数(文件夹属性专用) **/
+    folderCount int
 
-    /**
-     * 历史记录(文件属性专用)
-     */
-    var historyList: List<FilePropertyHistoryForm>? = null
+    /** 历史记录(文件属性专用) **/
+    historyList: List<FilePropertyHistoryForm>? = null
 }

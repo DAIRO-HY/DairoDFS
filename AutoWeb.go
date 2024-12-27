@@ -5,11 +5,14 @@ package main
 
 import (
 	controllerapp "DairoDFS/controller/app"
+	controllerappabout "DairoDFS/controller/app/about"
 	controllerappfiles "DairoDFS/controller/app/files"
 	controllerappinstallcreateadmin "DairoDFS/controller/app/install/create_admin"
 	controllerappinstallcreateadminform "DairoDFS/controller/app/install/create_admin/form"
 	controllerapplogin "DairoDFS/controller/app/login"
 	controllerapploginform "DairoDFS/controller/app/login/form"
+	controllerappselfset "DairoDFS/controller/app/self_set"
+	inerceptor "DairoDFS/inerceptor"
 
 	"embed"
 	"encoding/json"
@@ -58,30 +61,59 @@ func startWebServer(port int) {
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.FS(staticFS))))
 
 	http.HandleFunc("/", func(writer http.ResponseWriter, request *http.Request) {
+		if !inerceptor.LoginValidate(writer, request) {
+			return
+		}
 		var body any = nil
 		controllerapp.Home()
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 		templates := append([]string{"resources/templates/index.html"}, COMMON_TEMPLATES...)
 		writeToTemplate(writer, templates, body)
 	})
 	http.HandleFunc("/app", func(writer http.ResponseWriter, request *http.Request) {
+		if !inerceptor.LoginValidate(writer, request) {
+			return
+		}
 		var body any = nil
 		controllerapp.Init()
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 		templates := append([]string{"resources/templates/index.html"}, COMMON_TEMPLATES...)
 		writeToTemplate(writer, templates, body)
 	})
+	http.HandleFunc("/app/about", func(writer http.ResponseWriter, request *http.Request) {
+		if !inerceptor.LoginValidate(writer, request) {
+			return
+		}
+		var body any = nil
+		controllerappabout.Init()
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+		templates := append([]string{"resources/templates/app/about.html"}, COMMON_TEMPLATES...)
+		writeToTemplate(writer, templates, body)
+	})
 	http.HandleFunc("/app/files", func(writer http.ResponseWriter, request *http.Request) {
+		if !inerceptor.LoginValidate(writer, request) {
+			return
+		}
 		var body any = nil
 		controllerappfiles.Init()
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 		templates := append([]string{"resources/templates/app/files.html"}, COMMON_TEMPLATES...)
 		writeToTemplate(writer, templates, body)
 	})
 	http.HandleFunc("/app/install/create_admin", func(writer http.ResponseWriter, request *http.Request) {
+		if !inerceptor.LoginValidate(writer, request) {
+			return
+		}
 		var body any = nil
 		controllerappinstallcreateadmin.Init(writer, request)
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 		templates := append([]string{"resources/templates/app/install/create_admin.html"}, COMMON_TEMPLATES...)
 		writeToTemplate(writer, templates, body)
 	})
 	http.HandleFunc("/app/install/create_admin/add_admin", func(writer http.ResponseWriter, request *http.Request) {
+		if !inerceptor.LoginValidate(writer, request) {
+			return
+		}
 		paramMap := makeParamMap(request)
 		inForm := getForm[controllerappinstallcreateadminform.CreateAdminForm](paramMap)
 		validBody := validateForm(inForm)
@@ -91,11 +123,13 @@ func startWebServer(port int) {
 		}
 		var body any = nil
 		body = controllerappinstallcreateadmin.AddAdmin(inForm)
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 		writeToResponse(writer, body)
 	})
 	http.HandleFunc("/app/login", func(writer http.ResponseWriter, request *http.Request) {
 		var body any = nil
-		controllerapplogin.Execute(writer, request)
+		controllerapplogin.Init(writer, request)
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 		templates := append([]string{"resources/templates/app/login.html"}, COMMON_TEMPLATES...)
 		writeToTemplate(writer, templates, body)
 	})
@@ -111,6 +145,26 @@ func startWebServer(port int) {
 		_version := getInt(paramMap, "_version")
 		var body any = nil
 		body = controllerapplogin.DoLogin(loginForm, _clientFlag, _version)
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+		writeToResponse(writer, body)
+	})
+	http.HandleFunc("/app/self_set", func(writer http.ResponseWriter, request *http.Request) {
+		if !inerceptor.LoginValidate(writer, request) {
+			return
+		}
+		var body any = nil
+		controllerappselfset.Init()
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+		templates := append([]string{"resources/templates/app/self_set.html"}, COMMON_TEMPLATES...)
+		writeToTemplate(writer, templates, body)
+	})
+	http.HandleFunc("/app/self_set123", func(writer http.ResponseWriter, request *http.Request) {
+		if !inerceptor.LoginValidate(writer, request) {
+			return
+		}
+		var body any = nil
+		body = controllerappselfset.InitData()
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 		writeToResponse(writer, body)
 	})
 

@@ -1,40 +1,26 @@
-package cn.dairo.dfs.controller.app.my_share.form
+package form
 
 
-class MyShareForm {
+type MyShareForm struct{
 
-    /**
-     * id
-     */
-    var id: Long? = null
+    /** id **/
+    id int64
 
-    /**
-     * 分享的标题（文件名）
-     */
-    var title: String? = null
+    /** 分享的标题（文件名） **/
+    title string
 
-    /**
-     * 文件数量
-     */
-    var fileCount: Int? = null
+    /** 文件数量 **/
+    fileCount int
 
-    /**
-     * 是否分享的仅仅是一个文件夹
-     */
-    var folderFlag: Boolean? = null
+    /** 是否分享的仅仅是一个文件夹 **/
+    folderFlag bool
 
-    /**
-     * 结束时间
-     */
-    var endDate: String? = null
+    /** 结束时间 **/
+    endDate string
 
-    /**
-     * 创建日期
-     */
-    var date: String? = null
+    /** 创建日期 **/
+    date string
 
-    /**
-     * 缩略图
-     */
-    var thumb: String? = null
+    /** 缩略图 **/
+    thumb string
 }

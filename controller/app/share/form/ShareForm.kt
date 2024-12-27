@@ -1,29 +1,19 @@
-package cn.dairo.dfs.controller.app.share.form
+package form
 
-class ShareForm {
+type ShareForm struct{
 
-    /**
-     * 名称
-     */
-    var name: String? = null
+    /** 名称 **/
+    name string
 
-    /**
-     * 大小
-     */
-    var size: Long? = null
+    /** 大小 **/
+    size int64
 
-    /**
-     * 是否文件
-     */
-    var fileFlag: Boolean? = null
+    /** 是否文件 **/
+    fileFlag bool
 
-    /**
-     * 创建日期
-     */
-    var date: String? = null
+    /** 创建日期 **/
+    date string
 
-    /**
-     * 缩率图
-     */
-    var thumb: String? = null
+    /** 缩率图 **/
+    thumb string
 }

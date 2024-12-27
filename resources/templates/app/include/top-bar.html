@@ -1,5 +1,4 @@
-﻿<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
-<body th:fragment="top-bar">
+﻿{{define "top-bar"}}
 <nav class="navbar navbar-expand-sm bg-primary" data-bs-theme="dark">
     <div class="container-fluid">
         <a class="navbar-brand" href="#">DairoDFS</a>
@@ -82,5 +81,4 @@
         }
     }
 </script>
-</body>
-</html>
+{{end}}

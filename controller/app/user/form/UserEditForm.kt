@@ -1,4 +1,4 @@
-package cn.dairo.dfs.controller.app.user.form
+package form
 
 import cn.dairo.dfs.dao.UserDao
 import cn.dairo.dfs.extension.bean
@@ -7,19 +7,15 @@ import jakarta.validation.constraints.Email
 import jakarta.validation.constraints.NotBlank
 import org.hibernate.validator.constraints.Length
 
-class UserEditForm {
+type UserEditForm struct{
 
-    /**
-     * 主键
-     */
-    var id: Long? = null
+    /** 主键 **/
+    id int64
 
-    /**
-     * 用户名
-     */
+    /** 用户名 **/
     @Length(min = 2, max = 32)
     @NotBlank
-    var name: String? = null
+    name string
 
     @AssertTrue(message = "用户名已经存在")
     fun isName(): Boolean {
@@ -37,26 +33,18 @@ class UserEditForm {
         return true
     }
 
-    /**
-     * 用户电子邮箱
-     */
+    /** 用户电子邮箱 **/
     @Email
-    var email: String? = null
+    email string
 
-    /**
-     * 用户状态
-     */
-    var state: Int = 1
+    /** 用户状态 **/
+    state int
 
-    /**
-     * 创建日期
-     */
-    var date: String? = null
+    /** 创建日期 **/
+    date string
 
-    /**
-     * 密码
-     */
-    var pwd: String? = null
+    /** 密码 **/
+    pwd string
 
     @AssertTrue(message = "密码必填")
     fun isPwd(): Boolean {

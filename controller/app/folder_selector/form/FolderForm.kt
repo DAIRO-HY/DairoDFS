@@ -1,24 +1,16 @@
-package cn.dairo.dfs.controller.app.folder_selector.form
+package form
 
-class FolderForm {
+type FolderForm struct{
 
-    /**
-     * 名称
-     */
-    var name: String? = null
+    /** 名称 **/
+    name string
 
-    /**
-     * 大小
-     */
-    var size: String? = null
+    /** 大小 **/
+    size string
 
-    /**
-     * 是否文件
-     */
-    var fileFlag: Boolean? = null
+    /** 是否文件 **/
+    fileFlag bool
 
-    /**
-     * 创建日期
-     */
-    var date: String? = null
+    /** 创建日期 **/
+    date string
 }

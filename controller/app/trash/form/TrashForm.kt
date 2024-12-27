@@ -1,34 +1,22 @@
-package cn.dairo.dfs.controller.app.trash.form
+package form
 
-class TrashForm {
+type TrashForm struct{
 
-    /**
-     * 文件id
-     */
-    var id: Long? = null
+    /** 文件id **/
+    id int64
 
-    /**
-     * 名称
-     */
-    var name: String? = null
+    /** 名称 **/
+    name string
 
-    /**
-     * 大小
-     */
-    var size: Long? = null
+    /** 大小 **/
+    size int64
 
-    /**
-     * 是否文件
-     */
-    var fileFlag: Boolean? = null
+    /** 是否文件 **/
+    fileFlag bool
 
-    /**
-     * 删除日期
-     */
-    var date: String? = null
+    /** 删除日期 **/
+    date string
 
-    /**
-     * 缩率图
-     */
-    var thumb: String? = null
+    /** 缩率图 **/
+    thumb string
 }

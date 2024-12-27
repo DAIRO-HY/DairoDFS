@@ -1,20 +1,14 @@
-package cn.dairo.dfs.controller.app.files.form
+package form
 
-class FilePropertyHistoryForm {
+type FilePropertyHistoryForm struct{
 
-    /**
-     * 文件ID
-     */
-    var id: Long? = null
+    /** 文件ID **/
+    id int64
 
-    /**
-     * 大小
-     */
-    var size: String? = null
+    /** 大小 **/
+    size string
 
-    /**
-     * 创建日期
-     */
-    var date: String? = null
+    /** 创建日期 **/
+    date string
 
 }

@@ -1,11 +1,11 @@
 ﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
+    {{template "head" .}}
     <title>关于</title>
 </head>
 <body>
-<th:block th:include="app/icd/top-bar :: top-bar"/>
-
+{{template "top-bar" .}}
 <div class="mx-3 mt-3 px-3 row g-0 rounded shadow bg-content-bar" style="line-height: 44px;">
     <div class="col-6 fs-5">关于</div>
     <div class="col-6 text-end" style="font-size: 0;">

@@ -4,7 +4,7 @@
     <title>用户</title>
 </head>
 <body>
-<th:block th:include="app/icd/top-bar :: top-bar"/>
+{{template "top-bar" .}}
 <th:block th:insert="app/icd/uc::content">
     <common-content>
         <div id="table"></div>

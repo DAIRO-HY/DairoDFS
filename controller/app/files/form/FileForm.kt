@@ -1,34 +1,22 @@
-package cn.dairo.dfs.controller.app.files.form
+package form
 
-class FileForm {
+type FileForm struct{
 
-    /**
-     * 文件id
-     */
-    var id: Long = 0
+    /** 文件id **/
+    id int64
 
-    /**
-     * 名称
-     */
-    var name: String = ""
+    /** 名称 **/
+    name string
 
-    /**
-     * 大小
-     */
-    var size: Long = 0
+    /** 大小 **/
+    size int64
 
-    /**
-     * 是否文件
-     */
-    var fileFlag: Boolean = false
+    /** 是否文件 **/
+    fileFlag bool
 
-    /**
-     * 创建日期
-     */
-    var date: String = ""
+    /** 创建日期 **/
+    date string
 
-    /**
-     * 缩率图
-     */
-    var thumb: String? = null
+    /** 缩率图 **/
+    thumb string
 }

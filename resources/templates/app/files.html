@@ -5,7 +5,7 @@
     <title>文件管理</title>
 </head>
 <body>
-<th:block th:include="app/icd/top-bar :: top-bar"/>
+{{template "top-bar" .}}
 
 <!--文件操作导航视图-->
 <th:block th:include="app/icd/files/files_toolbar :: files_toolbar"/>

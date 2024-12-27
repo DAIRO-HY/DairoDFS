@@ -9,6 +9,8 @@ import (
 	"DairoDFS/exception"
 	"DairoDFS/extension/String"
 	"DairoDFS/util/DBUtil"
+	"DairoDFS/util/GoroutineLocal"
+	"fmt"
 	"net/http"
 	"strconv"
 	"time"
@@ -17,7 +19,9 @@ import (
 /** 页面初始化 */
 //@get:/app/login
 //@templates:app/login.html
-func Execute(writer http.ResponseWriter, request *http.Request) {
+func Init(writer http.ResponseWriter, request *http.Request) {
+	id := GoroutineLocal.GetGoroutineID()
+	fmt.Println(id)
 	if !*UserDao.IsInit() { //是否已经初始化
 		http.Redirect(writer, request, "/app/install/ffmpeg", http.StatusFound)
 	}
