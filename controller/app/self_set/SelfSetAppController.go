@@ -4,6 +4,10 @@ import (
 	"DairoDFS/controller/app/self_set/form"
 	"DairoDFS/dao/UserDao"
 	"DairoDFS/extension/Date"
+	"DairoDFS/extension/String"
+	"DairoDFS/util/LoginState"
+	"strconv"
+	"time"
 )
 
 /**
@@ -15,41 +19,42 @@ import (
  */
 //@get:/app/self_set
 //@templates:app/self_set.html
-func Init() {}
+func Html() {}
 
 /**
  * 页面初始化
  */
-//@post:/app/self_set123
-func InitData() form.SelfSetForm {
-	//userDto := UserDao.SelectOne(super.loginId)
-	userDto := UserDao.SelectOne(0)
+//@post:/app/self_set/init
+func Init() form.SelfSetForm {
+	loginId := LoginState.LoginId()
+	userDto := UserDao.SelectOne(loginId)
+	date := Date.Format(*userDto.Date)
 	return form.SelfSetForm{
-		Id:            *userDto.Id,
-		Name:          *userDto.Name,
-		Email:         *userDto.Email,
-		Date:          Date.Format(*userDto.Date),
-		UrlPath:       *userDto.UrlPath,
-		ApiToken:      *userDto.ApiToken,
-		EncryptionKey: *userDto.EncryptionKey,
+		Id:            userDto.Id,
+		Name:          userDto.Name,
+		Email:         userDto.Email,
+		Date:          &date,
+		UrlPath:       userDto.UrlPath,
+		ApiToken:      userDto.ApiToken,
+		EncryptionKey: userDto.EncryptionKey,
 	}
 }
 
-//    /**
-//     * 生成API票据
-//     */
-//    @PostMapping("/make_api_token")
-//    @ResponseBody
-//    fun makeApiToken(flag: Int) {
-//        val id = super.loginId
-//        if (flag == 0) {
-//            this.userDao.setApiToken(id, null)
-//            return
-//        }
-//        val timespan = System.currentTimeMillis() - Constant.BASE_TIME
-//        val apiToken = StringUtil.getRandomChar(5) + timespan.toShortString
-//        this.userDao.setApiToken(id, apiToken)
-//    }
+/**
+ * 生成API票据
+ */
+//@post:/app/self_set/make_api_token
+func MakeApiToken(flag int) {
+	loginId := LoginState.LoginId()
+	if flag == 0 {
+		UserDao.SetApiToken(loginId, nil)
+		return
+	}
+	timespan := strconv.FormatInt(time.Now().UnixMicro(), 10)
+	apiToken := String.ToMd5(timespan)
+	UserDao.SetApiToken(loginId, &apiToken)
+}
+
 //
 //    /**
 //     * 生成web访问路径前缀

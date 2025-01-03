@@ -105,7 +105,7 @@ func SetUrlPath(id int64, urlPath string) {
  * @param id 用户ID
  * @param apiToken URL路径前缀
  */
-func SetApiToken(id int64, apiToken string) {
+func SetApiToken(id int64, apiToken *string) {
 	DBUtil.ExecIgnoreError("update user set apiToken = ? where id = ?", apiToken, id)
 }
 

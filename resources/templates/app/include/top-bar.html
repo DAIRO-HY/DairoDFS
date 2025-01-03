@@ -62,7 +62,15 @@
         </div>
     </div>
 </nav>
+<div class="mx-3 mt-3 px-3 row g-0 rounded shadow bg-content-bar" style="line-height: 44px;">
+    <div id="contentBarTitle" class="col-6 fs-5"></div>
+    <div id="contentBarBtnDiv" class="col-6 text-end" style="font-size: 0;">
+    </div>
+</div>
 <script>
+
+    //设置导航栏的标题
+    document.getElementById("contentBarTitle").innerText = document.title
 
     function initTopBar() {
 
@@ -79,6 +87,17 @@
                 break;
             }
         }
+    }
+
+    /**
+     * 在顶部导航栏添加按钮
+     * @param title
+     * @param event
+     */
+    function addContentBarBtn(title, event) {
+        const btn = $('<button class="btn btn-primary ms-2">' + title + '</button>')
+        btn.on("click", event);
+        $("#contentBarBtnDiv").append(btn)
     }
 </script>
 {{end}}

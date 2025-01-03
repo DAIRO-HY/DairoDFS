@@ -6,32 +6,98 @@
 </head>
 <body>
 {{template "top-bar" .}}
-<th:block th:insert="app/icd/uc::content">
-    <common-content>
-        <th:block th:insert="app/icd/uc :: c-form('')">
-            <common-form>
-                <th:block
-                        th:insert="app/icd/uc::form-input(label='用户ID', name='id', disabled=true)"/>
-                <th:block
-                        th:insert="app/icd/uc::form-input(label='用户名', name='name', disabled=true)"/>
-                <th:block
-                        th:insert="app/icd/uc::form-input(label='邮箱', name='email', disabled=true)"/>
-                <th:block
-                        th:insert="app/icd/uc::form-input(label='创建日期', name='date', disabled=true)"/>
-                <th:block
-                        th:insert="app/icd/uc::form-input(label='WEB路径', name='urlPath', disabled=true, btn='生成|关闭', btnClick='onMakeUrlPathClick(1)|onMakeUrlPathClick(0)')"/>
-                <th:block
-                        th:insert="app/icd/uc::form-input(label='API票据', name='apiToken', disabled=true, btn='生成|关闭', btnClick='onMakeApiTokenClick(1)|onMakeApiTokenClick(0)')"/>
-                <th:block
-                        th:insert="app/icd/uc::form-input(label='端对端加密', name='encryptionKey', disabled=true, btn='生成|关闭', btnClick='onMakeEncryptionClick(1)|onMakeEncryptionClick(0)')"/>
-            </common-form>
-            <common-form-btn></common-form-btn>
-        </th:block>
-    </common-content>
-</th:block>
+<div class="m-3 p-2 rounded shadow bg-content">
+    <form>
+        <div class="row row-cols-1 row-cols-md-2">
+            <div class="col mt-2">
+                <div class="row">
+                    <label class="col-4 col-form-label text-end">用户ID</label>
+                    <div class="col-8">
+                        <input class="form-control" name="id" disabled/>
+                    </div>
+                </div>
+            </div>
+            <div class="col mt-2">
+                <div class="row">
+                    <label class="col-4 col-form-label text-end">用户名</label>
+                    <div class="col-8">
+                        <input class="form-control" name="name" disabled/>
+                    </div>
+                </div>
+            </div>
+            <div class="col mt-2">
+                <div class="row">
+                    <label class="col-4 col-form-label text-end">邮箱</label>
+                    <div class="col-8">
+                        <input class="form-control" name="email" disabled/>
+                    </div>
+                </div>
+            </div>
+            <div class="col mt-2">
+                <div class="row">
+                    <label class="col-4 col-form-label text-end">创建日期</label>
+                    <div class="col-8">
+                        <input class="form-control" name="date" disabled/>
+                    </div>
+                </div>
+            </div>
+            <div class="col mt-2">
+                <div class="row">
+                    <label class="col-4 col-form-label text-end">WEB路径</label>
+                    <div class="col-8">
+                        <div class="input-group">
+                            <input class="form-control" name="urlPath" style="width: 100px" disabled>
+                            <button class="btn btn-outline-secondary" type="button" onclick="onMakeUrlPathClick(1)">
+                                生成
+                            </button>
+                            <button class="btn btn-outline-secondary" type="button" onclick="onMakeUrlPathClick(0)">
+                                关闭
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col mt-2">
+                <div class="row">
+                    <label class="col-4 col-form-label text-end">API-TOKEN</label>
+                    <div class="col-8">
+                        <div class="input-group">
+                            <input class="form-control" name="apiToken" disabled>
+                            <button class="btn btn-outline-secondary" type="button" onclick="onMakeApiTokenClick(1)">
+                                生成
+                            </button>
+                            <button class="btn btn-outline-secondary" type="button" onclick="onMakeApiTokenClick(0)">
+                                关闭
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col mt-2">
+                <div class="row">
+                    <label class="col-4 col-form-label text-end">端对端加密</label>
+                    <div class="col-8">
+                        <div class="input-group">
+                            <input class="form-control" name="encryptionKey" disabled>
+                            <button class="btn btn-outline-secondary" type="button" onclick="onMakeEncryptionClick(1)">
+                                生成
+                            </button>
+                            <button class="btn btn-outline-secondary" type="button" onclick="onMakeEncryptionClick(0)">
+                                关闭
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
 <script>
     $(function () {
-        $("form").initData()
+        $.ajaxByData("/app/self_set/init").success(data => {
+            $("form").bindValue(data)
+        }).post()
     })
 
     /**

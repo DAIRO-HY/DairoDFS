@@ -101,9 +101,6 @@ func startWebServer(port int) {
 		writeToTemplate(writer, templates, body)
 	})
 	http.HandleFunc("/app/install/create_admin", func(writer http.ResponseWriter, request *http.Request) {
-		if !inerceptor.LoginValidate(writer, request) {
-			return
-		}
 		var body any = nil
 		controllerappinstallcreateadmin.Init(writer, request)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
@@ -111,9 +108,6 @@ func startWebServer(port int) {
 		writeToTemplate(writer, templates, body)
 	})
 	http.HandleFunc("/app/install/create_admin/add_admin", func(writer http.ResponseWriter, request *http.Request) {
-		if !inerceptor.LoginValidate(writer, request) {
-			return
-		}
 		paramMap := makeParamMap(request)
 		inForm := getForm[controllerappinstallcreateadminform.CreateAdminForm](paramMap)
 		validBody := validateForm(inForm)
@@ -153,17 +147,28 @@ func startWebServer(port int) {
 			return
 		}
 		var body any = nil
-		controllerappselfset.Init()
+		controllerappselfset.Html()
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 		templates := append([]string{"resources/templates/app/self_set.html"}, COMMON_TEMPLATES...)
 		writeToTemplate(writer, templates, body)
 	})
-	http.HandleFunc("/app/self_set123", func(writer http.ResponseWriter, request *http.Request) {
+	http.HandleFunc("/app/self_set/init", func(writer http.ResponseWriter, request *http.Request) {
 		if !inerceptor.LoginValidate(writer, request) {
 			return
 		}
 		var body any = nil
-		body = controllerappselfset.InitData()
+		body = controllerappselfset.Init()
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+		writeToResponse(writer, body)
+	})
+	http.HandleFunc("/app/self_set/make_api_token", func(writer http.ResponseWriter, request *http.Request) {
+		if !inerceptor.LoginValidate(writer, request) {
+			return
+		}
+		paramMap := makeParamMap(request)
+		flag := getInt(paramMap, "flag")
+		var body any = nil
+		controllerappselfset.MakeApiToken(flag)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 		writeToResponse(writer, body)
 	})

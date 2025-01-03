@@ -12,7 +12,7 @@ import (
 // LoginValidate 管理员登录验证
 // @interceptor:before
 // @include:/**
-// @exclude:/app/login**
+// @exclude:/app/login**,/app/install**
 func LoginValidate(writer http.ResponseWriter, request *http.Request) bool {
 
 	//获取APP登录票据
@@ -31,7 +31,7 @@ func LoginValidate(writer http.ResponseWriter, request *http.Request) bool {
 		reject(writer, request)
 		return false
 	}
-	GoroutineLocal.Set(application.USER_ID, userId)
+	GoroutineLocal.Set(application.USER_ID, *userId)
 	return true
 }
 
