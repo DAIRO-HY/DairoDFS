@@ -96,7 +96,7 @@ func Update(dto dto.UserDto) {
  * @param id 用户ID
  * @param urlPath URL路径前缀
  */
-func SetUrlPath(id int64, urlPath string) {
+func SetUrlPath(id int64, urlPath *string) {
 	DBUtil.ExecIgnoreError("update user set urlPath = ? where id = ?", urlPath, id)
 }
 
@@ -114,7 +114,7 @@ func SetApiToken(id int64, apiToken *string) {
  * @param id 用户ID
  * @param encryptionKey URL路径前缀
  */
-func SetEncryptionKey(id int64, encryptionKey string) {
+func SetEncryptionKey(id int64, encryptionKey *string) {
 	DBUtil.ExecIgnoreError(`update user set encryptionKey = ? where id = ?`, encryptionKey, id)
 }
 

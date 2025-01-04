@@ -1,8 +1,10 @@
 package String
 
 import (
+	application "DairoDFS/appication"
 	"DairoDFS/exception"
 	"crypto/md5"
+	"encoding/base64"
 	"encoding/hex"
 	"strings"
 )
@@ -11,6 +13,11 @@ import (
 func ToMd5(str string) string {
 	hash := md5.Sum([]byte(str))
 	return hex.EncodeToString(hash[:])
+}
+
+// 将字节数组转base64字符串
+func ToBase64(data []byte) string {
+	return base64.StdEncoding.EncodeToString(data)
 }
 
 /**
@@ -63,4 +70,22 @@ func ToDfsFileNameList(name string) ([]string, error) {
 		name = name[:len(name)-1]
 	}
 	return strings.Split(name, "/"), nil
+}
+
+/**
+ * 将数字转换成较短的字母组合
+ */
+func ToShortString(target int64) string {
+	target -= 1
+	charLen := int64(len(application.SHORT_CHAR))
+	shortSB := ""
+	for {
+		index := target % charLen
+		shortSB = application.SHORT_CHAR[index:index+1] + shortSB
+		target /= charLen
+		if target == 0 {
+			break
+		}
+	}
+	return shortSB
 }

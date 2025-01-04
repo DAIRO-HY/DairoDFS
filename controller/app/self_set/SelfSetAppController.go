@@ -1,11 +1,13 @@
 package self_set
 
 import (
+	application "DairoDFS/appication"
 	"DairoDFS/controller/app/self_set/form"
 	"DairoDFS/dao/UserDao"
 	"DairoDFS/extension/Date"
 	"DairoDFS/extension/String"
 	"DairoDFS/util/LoginState"
+	"math/rand"
 	"strconv"
 	"time"
 )
@@ -55,37 +57,48 @@ func MakeApiToken(flag int) {
 	UserDao.SetApiToken(loginId, &apiToken)
 }
 
-//
-//    /**
-//     * 生成web访问路径前缀
-//     */
-//    @PostMapping("/make_url_path")
-//    @ResponseBody
-//    fun makeUrlPath(flag: Int) {
-//        val id = super.loginId
-//        if (flag == 0) {
-//            this.userDao.setUrlPath(id, null)
-//            return
-//        }
-//        val timespan = System.currentTimeMillis() - Constant.BASE_TIME
-//        val urlPath = timespan.toShortString
-//        this.userDao.setUrlPath(id, urlPath)
-//    }
-//
-//    /**
-//     * 生成端对端加密
-//     */
-//    @PostMapping("/make_encryption")
-//    @ResponseBody
-//    fun makeEncryption(flag: Int) {
-//        val id = super.loginId
-//        if (flag == 0) {
-//            this.userDao.setEncryptionKey(id, null)
-//            return
-//        }
-//        val encryptionDataArray = ByteArray(128) { it.toByte() }
-//        encryptionDataArray.shuffle()
-//        val encryptionKey = encryptionDataArray.base64
-//        this.userDao.setEncryptionKey(id, encryptionKey)
-//    }
+/**
+ * 生成web访问路径前缀
+ */
+//@post:/app/self_set/make_url_path
+func MakeUrlPath(flag int) {
+	loginId := LoginState.LoginId()
+	if flag == 0 {
+		UserDao.SetUrlPath(loginId, nil)
+		return
+	}
+	timespan := time.Now().UnixMilli() - application.BASE_TIME
+	urlPath := String.ToShortString(timespan)
+	UserDao.SetUrlPath(loginId, &urlPath)
+}
+
+/**
+ * 生成端对端加密
+ */
+//@post:/app/self_set/make_encryption
+func MakeEncryption(flag int) {
+	loginId := LoginState.LoginId()
+	if flag == 0 {
+		UserDao.SetEncryptionKey(loginId, nil)
+		return
+	}
+
+	encryptionDataArray := make([]byte, 128)
+	for i := 0; i < 128; i++ {
+		encryptionDataArray[i] = byte(i)
+	}
+	shuffle(encryptionDataArray)
+	encryptionKey := String.ToBase64(encryptionDataArray)
+	UserDao.SetEncryptionKey(loginId, &encryptionKey)
+}
+
+// shuffle 打乱数组顺序
+func shuffle(slice []byte) {
+	rand.Seed(time.Now().UnixNano()) // 使用当前时间作为随机数种子
+	for i := len(slice) - 1; i > 0; i-- {
+		j := rand.Intn(i + 1) // 生成 [0, i] 范围内的随机数
+		slice[i], slice[j] = slice[j], slice[i]
+	}
+}
+
 //}

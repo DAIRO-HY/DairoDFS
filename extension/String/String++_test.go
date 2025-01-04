@@ -1,6 +1,7 @@
 package String
 
 import (
+	"fmt"
 	"testing"
 )
 
@@ -42,4 +43,8 @@ func TestGetParentPath5(t *testing.T) {
 	if parent != "\\abc/def" {
 		t.Error("失败")
 	}
+}
+
+func TestToShortString(t *testing.T) {
+	fmt.Println(ToShortString(1879756789))
 }

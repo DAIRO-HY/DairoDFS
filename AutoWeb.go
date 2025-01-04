@@ -172,6 +172,28 @@ func startWebServer(port int) {
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 		writeToResponse(writer, body)
 	})
+	http.HandleFunc("/app/self_set/make_url_path", func(writer http.ResponseWriter, request *http.Request) {
+		if !inerceptor.LoginValidate(writer, request) {
+			return
+		}
+		paramMap := makeParamMap(request)
+		flag := getInt(paramMap, "flag")
+		var body any = nil
+		controllerappselfset.MakeUrlPath(flag)
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+		writeToResponse(writer, body)
+	})
+	http.HandleFunc("/app/self_set/make_encryption", func(writer http.ResponseWriter, request *http.Request) {
+		if !inerceptor.LoginValidate(writer, request) {
+			return
+		}
+		paramMap := makeParamMap(request)
+		flag := getInt(paramMap, "flag")
+		var body any = nil
+		controllerappselfset.MakeEncryption(flag)
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+		writeToResponse(writer, body)
+	})
 
 	// 启动服务器
 	err := http.ListenAndServe(fmt.Sprintf(":%d", port), nil)
