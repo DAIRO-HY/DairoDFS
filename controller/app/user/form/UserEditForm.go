@@ -1,6 +1,8 @@
 package form
 
-import "DairoDFS/dao/UserDao"
+import (
+	"DairoDFS/dao/UserDao"
+)
 
 type UserEditForm struct {
 
@@ -23,7 +25,6 @@ type UserEditForm struct {
 	Pwd *string `json:"pwd"`
 }
 
-// @AssertTrue(message = "用户名已经存在")
 func (mine *UserEditForm) IsName() *string {
 	msg := "用户名已经存在"
 	existsUser := UserDao.SelectByName(*mine.Name)
@@ -39,7 +40,6 @@ func (mine *UserEditForm) IsName() *string {
 	return nil
 }
 
-// @AssertTrue(message = "密码必填")
 func (mine *UserEditForm) IsPwd() *string {
 	msg := "密码必填"
 	if mine.Id == nil && mine.Pwd == nil { //创建用户时密码必填

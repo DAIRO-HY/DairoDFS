@@ -11,3 +11,8 @@ type LoginAppInForm struct {
 	/** 设备唯一标识 **/
 	DeviceId string `validate:"required"`
 }
+
+func (mine *LoginAppInForm) IsNameAndPwd() *string {
+	msg := "这是一段测试错误"
+	return &msg
+}
