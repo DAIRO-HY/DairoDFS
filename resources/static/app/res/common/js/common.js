@@ -95,3 +95,21 @@ function dateFormat(date, pattern = "yyyy-MM-dd hh:mm:ss") {
     }
     return pattern;
 }
+
+/**
+ * 获取url参数
+ * @param key
+ * @returns {string}
+ */
+function getParam(key) {
+
+    // 获取当前页面的 URL
+    const urlParams = new URLSearchParams(window.location.search);
+
+    // 获取单个参数值
+    const value = urlParams.get(key);
+    if (value == null) {
+        return ""
+    }
+    return value
+}

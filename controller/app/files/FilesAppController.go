@@ -3,7 +3,7 @@ package files
 /** 文件列表页面 **/
 //@get:/app/files
 //@templates:app/files.html
-func Init() {}
+func Html() {}
 
 //@Operation(summary = "获取文件列表")
 //    @PostMapping("/get_list")

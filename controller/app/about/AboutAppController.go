@@ -5,4 +5,4 @@ package about
  */
 //@get:/app/about
 //@templates:app/about.html
-func Init() {}
+func Html() {}

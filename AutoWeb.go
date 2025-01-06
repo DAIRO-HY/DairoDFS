@@ -12,7 +12,10 @@ import (
 	controllerapplogin "DairoDFS/controller/app/login"
 	controllerapploginform "DairoDFS/controller/app/login/form"
 	controllerappselfset "DairoDFS/controller/app/self_set"
+	controllerappuser "DairoDFS/controller/app/user"
+	controllerappuserform "DairoDFS/controller/app/user/form"
 	inerceptor "DairoDFS/inerceptor"
+	"net/url"
 
 	"embed"
 	"encoding/json"
@@ -25,7 +28,6 @@ import (
 	"io/fs"
 	"log"
 	"net/http"
-	"reflect"
 	"strconv"
 	"strings"
 )
@@ -85,7 +87,7 @@ func startWebServer(port int) {
 			return
 		}
 		var body any = nil
-		controllerappabout.Init()
+		controllerappabout.Html()
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 		templates := append([]string{"resources/templates/app/about.html"}, COMMON_TEMPLATES...)
 		writeToTemplate(writer, templates, body)
@@ -95,7 +97,7 @@ func startWebServer(port int) {
 			return
 		}
 		var body any = nil
-		controllerappfiles.Init()
+		controllerappfiles.Html()
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 		templates := append([]string{"resources/templates/app/files.html"}, COMMON_TEMPLATES...)
 		writeToTemplate(writer, templates, body)
@@ -108,8 +110,21 @@ func startWebServer(port int) {
 		writeToTemplate(writer, templates, body)
 	})
 	http.HandleFunc("/app/install/create_admin/add_admin", func(writer http.ResponseWriter, request *http.Request) {
-		paramMap := makeParamMap(request)
-		inForm := getForm[controllerappinstallcreateadminform.CreateAdminForm](paramMap)
+		query := request.URL.Query()
+		//解析post表单
+		request.ParseForm()
+		postForm := request.PostForm
+		inForm := controllerappinstallcreateadminform.CreateAdminForm{}
+		inFormName := getStringArray(query, postForm, "name")
+		if inFormName != nil { // 如果参数存在
+			inForm.Name = inFormName[0]
+		}
+
+		inFormPwd := getStringArray(query, postForm, "pwd")
+		if inFormPwd != nil { // 如果参数存在
+			inForm.Pwd = inFormPwd[0]
+		}
+
 		validBody := validateForm(inForm)
 		if validBody != nil {
 			writeFieldError(writer, validBody)
@@ -128,15 +143,46 @@ func startWebServer(port int) {
 		writeToTemplate(writer, templates, body)
 	})
 	http.HandleFunc("/app/login/do-login", func(writer http.ResponseWriter, request *http.Request) {
-		paramMap := makeParamMap(request)
-		loginForm := getForm[controllerapploginform.LoginAppInForm](paramMap)
+		query := request.URL.Query()
+		//解析post表单
+		request.ParseForm()
+		postForm := request.PostForm
+		loginForm := controllerapploginform.LoginAppInForm{}
+		loginFormName := getStringArray(query, postForm, "name")
+		if loginFormName != nil { // 如果参数存在
+			loginForm.Name = &loginFormName[0]
+		}
+
+		loginFormPwd := getStringArray(query, postForm, "pwd")
+		if loginFormPwd != nil { // 如果参数存在
+			loginForm.Pwd = &loginFormPwd[0]
+		}
+
+		loginFormDeviceId := getStringArray(query, postForm, "deviceId")
+		if loginFormDeviceId != nil { // 如果参数存在
+			loginForm.DeviceId = &loginFormDeviceId[0]
+		}
+
 		validBody := validateForm(loginForm)
 		if validBody != nil {
 			writeFieldError(writer, validBody)
 			return
 		}
-		_clientFlag := getInt(paramMap, "_clientFlag")
-		_version := getInt(paramMap, "_version")
+		loginFormIsNameAndPwdMsg := loginForm.IsNameAndPwd()
+		if loginFormIsNameAndPwdMsg != nil { // 表单相关验证失败
+			writeFieldFormError(writer, *loginFormIsNameAndPwdMsg, "name", "pwd")
+			return
+		}
+		var _clientFlag int // 初始化变量
+		_clientFlagArr := getIntArray(query, postForm, "_clientFlag")
+		if _clientFlagArr != nil { // 如果参数存在
+			_clientFlag = _clientFlagArr[0]
+		}
+		var _version int // 初始化变量
+		_versionArr := getIntArray(query, postForm, "_version")
+		if _versionArr != nil { // 如果参数存在
+			_version = _versionArr[0]
+		}
 		var body any = nil
 		body = controllerapplogin.DoLogin(loginForm, _clientFlag, _version)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
@@ -165,8 +211,15 @@ func startWebServer(port int) {
 		if !inerceptor.LoginValidate(writer, request) {
 			return
 		}
-		paramMap := makeParamMap(request)
-		flag := getInt(paramMap, "flag")
+		query := request.URL.Query()
+		//解析post表单
+		request.ParseForm()
+		postForm := request.PostForm
+		var flag int // 初始化变量
+		flagArr := getIntArray(query, postForm, "flag")
+		if flagArr != nil { // 如果参数存在
+			flag = flagArr[0]
+		}
 		var body any = nil
 		controllerappselfset.MakeApiToken(flag)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
@@ -176,8 +229,15 @@ func startWebServer(port int) {
 		if !inerceptor.LoginValidate(writer, request) {
 			return
 		}
-		paramMap := makeParamMap(request)
-		flag := getInt(paramMap, "flag")
+		query := request.URL.Query()
+		//解析post表单
+		request.ParseForm()
+		postForm := request.PostForm
+		var flag int // 初始化变量
+		flagArr := getIntArray(query, postForm, "flag")
+		if flagArr != nil { // 如果参数存在
+			flag = flagArr[0]
+		}
 		var body any = nil
 		controllerappselfset.MakeUrlPath(flag)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
@@ -187,10 +247,130 @@ func startWebServer(port int) {
 		if !inerceptor.LoginValidate(writer, request) {
 			return
 		}
-		paramMap := makeParamMap(request)
-		flag := getInt(paramMap, "flag")
+		query := request.URL.Query()
+		//解析post表单
+		request.ParseForm()
+		postForm := request.PostForm
+		var flag int // 初始化变量
+		flagArr := getIntArray(query, postForm, "flag")
+		if flagArr != nil { // 如果参数存在
+			flag = flagArr[0]
+		}
 		var body any = nil
 		controllerappselfset.MakeEncryption(flag)
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+		writeToResponse(writer, body)
+	})
+	http.HandleFunc("/app/user_edit", func(writer http.ResponseWriter, request *http.Request) {
+		if !inerceptor.LoginValidate(writer, request) {
+			return
+		}
+		var body any = nil
+		controllerappuser.EditHtml()
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+		templates := append([]string{"resources/templates/app/user_edit.html"}, COMMON_TEMPLATES...)
+		writeToTemplate(writer, templates, body)
+	})
+	http.HandleFunc("/app/user_edit/init", func(writer http.ResponseWriter, request *http.Request) {
+		if !inerceptor.LoginValidate(writer, request) {
+			return
+		}
+		query := request.URL.Query()
+		//解析post表单
+		request.ParseForm()
+		postForm := request.PostForm
+		var id int64 // 初始化变量
+		idArr := getInt64Array(query, postForm, "id")
+		if idArr != nil { // 如果参数存在
+			id = idArr[0]
+		}
+		var body any = nil
+		body = controllerappuser.EditInit(id)
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+		writeToResponse(writer, body)
+	})
+	http.HandleFunc("/app/user_edit/edit", func(writer http.ResponseWriter, request *http.Request) {
+		if !inerceptor.LoginValidate(writer, request) {
+			return
+		}
+		query := request.URL.Query()
+		//解析post表单
+		request.ParseForm()
+		postForm := request.PostForm
+		inForm := controllerappuserform.UserEditInoutForm{}
+		inFormId := getInt64Array(query, postForm, "id")
+		if inFormId != nil { // 如果参数存在
+			inForm.Id = &inFormId[0]
+		}
+
+		inFormName := getStringArray(query, postForm, "name")
+		if inFormName != nil { // 如果参数存在
+			inForm.Name = &inFormName[0]
+		}
+
+		inFormEmail := getStringArray(query, postForm, "email")
+		if inFormEmail != nil { // 如果参数存在
+			inForm.Email = &inFormEmail[0]
+		}
+
+		inFormState := getInt8Array(query, postForm, "state")
+		if inFormState != nil { // 如果参数存在
+			inForm.State = &inFormState[0]
+		}
+
+		inFormDate := getStringArray(query, postForm, "date")
+		if inFormDate != nil { // 如果参数存在
+			inForm.Date = &inFormDate[0]
+		}
+
+		inFormPwd := getStringArray(query, postForm, "pwd")
+		if inFormPwd != nil { // 如果参数存在
+			inForm.Pwd = &inFormPwd[0]
+		}
+
+		filedError := map[string]*[]string{}
+		isNotEmpty(filedError, "Name", inForm.Name, "")     // 非空验证
+		isLength(filedError, "Name", inForm.Name, 2, 3, "") // 输入长度验证
+		if len(filedError) > 0 {
+			writeFieldError(writer, filedError)
+			return
+		}
+		validBody := validateForm(inForm)
+		if validBody != nil {
+			writeFieldError(writer, validBody)
+			return
+		}
+		inFormIsNameMsg := inForm.IsName()
+		if inFormIsNameMsg != nil { // 表单相关验证失败
+			writeFieldFormError(writer, *inFormIsNameMsg, "name")
+			return
+		}
+		inFormIsPwdMsg := inForm.IsPwd()
+		if inFormIsPwdMsg != nil { // 表单相关验证失败
+			writeFieldFormError(writer, *inFormIsPwdMsg, "pwd")
+			return
+		}
+		var body any = nil
+		controllerappuser.Edit(inForm)
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+		writeToResponse(writer, body)
+	})
+	http.HandleFunc("/app/user_list", func(writer http.ResponseWriter, request *http.Request) {
+		if !inerceptor.LoginValidate(writer, request) {
+			return
+		}
+		var body any = nil
+		controllerappuser.ListHtml()
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+		templates := append([]string{"resources/templates/app/user_list.html"}, COMMON_TEMPLATES...)
+		writeToTemplate(writer, templates, body)
+	})
+	http.HandleFunc("/app/user_list/init", func(writer http.ResponseWriter, request *http.Request) {
+		if !inerceptor.LoginValidate(writer, request) {
+			return
+		}
+		var body any = nil
+		body = controllerappuser.ListInit()
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 		writeToResponse(writer, body)
 	})
@@ -202,114 +382,171 @@ func startWebServer(port int) {
 	}
 }
 
-// 生成参数Map
-func makeParamMap(request *http.Request) map[string][]string {
-	query := request.URL.Query()
-
-	//解析post表单
-	request.ParseForm()
-	postParams := request.PostForm
-
-	//将参数转换成Map
-	paramMap := make(map[string][]string)
-	for key, v := range query {
-		paramMap[key] = v
+// 获取string数组类型的参数
+func getStringArray(query url.Values, postForm url.Values, key string) []string {
+	value, isExists := postForm[key]
+	if isExists {
+		return value
 	}
-	for key, v := range postParams {
-		paramMap[key] = v
+	value, isExists = query[key]
+	if isExists {
+		return value
 	}
-	return paramMap
+	return nil
 }
 
-// 获取表单实例
-func getForm[T any](paramMap map[string][]string) T {
+// 获取int数组类型的参数
+func getIntArray(query url.Values, postForm url.Values, key string) []int {
+	valueArray := getStringArray(query, postForm, key)
+	if valueArray == nil {
+		return nil
+	}
+	value := make([]int, len(valueArray))
+	for i, it := range valueArray {
+		value[i], _ = strconv.Atoi(it)
+	}
+	return value
+}
 
-	// 创建结构体实例
-	targetForm := new(T)
-	reflectForm := reflect.ValueOf(targetForm).Elem()
-	argType := reflect.TypeOf(*targetForm)
+// 获取int8数组类型的参数
+func getInt8Array(query url.Values, postForm url.Values, key string) []int8 {
+	valueArray := getStringArray(query, postForm, key)
+	if valueArray == nil {
+		return nil
+	}
+	value := make([]int8, len(valueArray))
+	for i, it := range valueArray {
+		i8, _ := strconv.Atoi(it)
+		value[i] = int8(i8)
+	}
+	return value
+}
 
-	// 遍历结构体字段
-	for j := 0; j < argType.NumField(); j++ {
-		field := argType.Field(j)
-		fieldName := field.Name
+// 获取int16数组类型的参数
+func getInt16Array(query url.Values, postForm url.Values, key string) []int16 {
+	valueArray := getStringArray(query, postForm, key)
+	if valueArray == nil {
+		return nil
+	}
+	value := make([]int16, len(valueArray))
+	for i, it := range valueArray {
+		i16, _ := strconv.Atoi(it)
+		value[i] = int16(i16)
+	}
+	return value
+}
 
-		//得到参数值
-		value := paramMap[fieldName]
-		if value == nil {
-			//将首字母小写再去获取参数
-			lowerKey := strings.ToLower(fieldName[:1]) + fieldName[1:]
-			value = paramMap[lowerKey]
+// 获取int32数组类型的参数
+func getInt32Array(query url.Values, postForm url.Values, key string) []int32 {
+	valueArray := getStringArray(query, postForm, key)
+	if valueArray == nil {
+		return nil
+	}
+	value := make([]int32, len(valueArray))
+	for i, it := range valueArray {
+		i32, _ := strconv.Atoi(it)
+		value[i] = int32(i32)
+	}
+	return value
+}
+
+// 获取int64数组类型的参数
+func getInt64Array(query url.Values, postForm url.Values, key string) []int64 {
+	valueArray := getStringArray(query, postForm, key)
+	if valueArray == nil {
+		return nil
+	}
+	value := make([]int64, len(valueArray))
+	for i, it := range valueArray {
+		i64, _ := strconv.ParseInt(it, 10, 64)
+		value[i] = i64
+	}
+	return value
+}
+
+// 获取float32数组类型的参数
+func getFloat32Array(query url.Values, postForm url.Values, key string) []float32 {
+	valueArray := getStringArray(query, postForm, key)
+	if valueArray == nil {
+		return nil
+	}
+	value := make([]float32, len(valueArray))
+	for i, it := range valueArray {
+		f32, _ := strconv.ParseFloat(it, 32)
+		value[i] = float32(f32)
+	}
+	return value
+}
+
+// 获取float64数组类型的参数
+func getFloat64Array(query url.Values, postForm url.Values, key string) []float64 {
+	valueArray := getStringArray(query, postForm, key)
+	if valueArray == nil {
+		return nil
+	}
+	value := make([]float64, len(valueArray))
+	for i, it := range valueArray {
+		f64, _ := strconv.ParseFloat(it, 64)
+		value[i] = f64
+	}
+	return value
+}
+
+// 获取Bool数组类型的参数
+func getBoolArray(query url.Values, postForm url.Values, key string) []bool {
+	valueArray := getStringArray(query, postForm, key)
+	if valueArray == nil {
+		return nil
+	}
+	value := make([]bool, len(valueArray))
+	for i, it := range valueArray {
+		value[i] = it == "true"
+	}
+	return value
+}
+
+// 非空检查
+func isNotEmpty(fieldError map[string]*[]string, field string, targetValue any, msg string) {
+	message := "该栏必填"
+	if targetValue.(any) == nil {
+		addFieldErr(fieldError, field, message)
+		return
+	}
+	value := fmt.Sprintf("%v", targetValue)
+	if len(value) == 0 { //判断是否为空字符串
+		addFieldErr(fieldError, field, message)
+	}
+}
+
+// 输入长度检查
+func isLength(fieldError map[string]*[]string, field string, targetValue any, min int, max int, msg string) {
+	value := ""
+	if targetValue != nil {
+		value = fmt.Sprintf("%v", targetValue)
+	}
+	lengtn := len(value)
+	message := ""
+	if min > 0 && lengtn < min { //比较最小长度
+		message = fmt.Sprintf("长度必须至少为%d个字符", min)
+	} else if max > 0 && lengtn > max {
+		message = fmt.Sprintf("长度不能超过%d个字符", max)
+	} else {
+	}
+	addFieldErr(fieldError, field, message)
+}
+
+// 添加表单检查错误消息
+func addFieldErr(fieldError map[string]*[]string, field string, message string) {
+	if message != "" {
+		field = strings.ToLower(field[:1]) + field[1:]
+		messages, isExists := fieldError[field]
+		if !isExists {
+			var temp []string
+			messages = &temp
+			fieldError[field] = messages
 		}
-		if value == nil {
-			continue
-		}
-
-		// 设置字段值（这里我们设置为示例值）
-		switch field.Type.Kind() {
-		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-
-			// 设置整数字段
-			intValue, _ := strconv.ParseInt(value[0], 10, 64)
-			reflectForm.Field(j).SetInt(intValue)
-		case reflect.Float32, reflect.Float64:
-			floatValue, _ := strconv.ParseFloat(value[0], 64)
-			reflectForm.Field(j).SetFloat(floatValue)
-		case reflect.String:
-			reflectForm.Field(j).SetString(value[0]) // 设置字符串字段
-		}
+		*messages = append(*messages, message)
 	}
-	return *targetForm
-}
-
-// 获取string类型的参数
-func getString(paramMap map[string][]string, key string) string {
-	value := paramMap[key]
-	if value == nil {
-		return ""
-	}
-	rValue := value[0]
-	return rValue
-}
-
-// 获取int类型的参数
-func getInt(paramMap map[string][]string, key string) int {
-	value := paramMap[key]
-	if value == nil {
-		return 0
-	}
-	rValue, _ := strconv.Atoi(value[0])
-	return rValue
-}
-
-// 获取int类型的参数
-func getInt64(paramMap map[string][]string, key string) int64 {
-	value := paramMap[key]
-	if value == nil {
-		return 0
-	}
-	rValue, _ := strconv.ParseInt(value[0], 10, 64)
-	return rValue
-}
-
-// 获取float32类型的参数
-func getFloat32(paramMap map[string][]string, key string) float32 {
-	value := paramMap[key]
-	if value == nil {
-		return 0
-	}
-	rValue, _ := strconv.ParseFloat(value[0], 32)
-	return float32(rValue)
-}
-
-// 获取float64类型的参数
-func getFloat64(paramMap map[string][]string, key string) float64 {
-	value := paramMap[key]
-	if value == nil {
-		return 0
-	}
-	rValue, _ := strconv.ParseFloat(value[0], 64)
-	return rValue
 }
 
 // 表单验证
@@ -339,12 +576,31 @@ func validateForm(form any) any {
 }
 
 // 返回表单验证失败结果
-func writeFieldError(writer http.ResponseWriter, validBody any){
+func writeFieldError(writer http.ResponseWriter, validBody any) {
 
 	// 设置 Content-Type 头部信息
 	writer.Header().Set("Content-Type", "text/plain;charset=UTF-8")
 	writer.WriteHeader(http.StatusInternalServerError) // 设置状态码
-	writeToResponse(writer,validBody)
+	writeToResponse(writer, validBody)
+}
+
+// 返回表单相关验证失败结果
+func writeFieldFormError(writer http.ResponseWriter, msg string, fileds ...string) {
+
+	// 设置 Content-Type 头部信息
+	writer.Header().Set("Content-Type", "text/plain;charset=UTF-8")
+	writer.WriteHeader(http.StatusInternalServerError) // 设置状态码
+
+	fieldError := map[string][]string{}
+	for _, it := range fileds {
+		fieldError[it] = []string{msg}
+	}
+	body := map[string]any{
+		"code": 2,
+		"msg":  "参数错误",
+		"data": fieldError,
+	}
+	writeToResponse(writer, body)
 }
 
 // 返回结果

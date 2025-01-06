@@ -1,26 +1,21 @@
 ﻿<!DOCTYPE html>
-<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org" xmlns="">
+<html lang="zh-CN">
 <head>
+    {{template "head" .}}
     <title>用户</title>
 </head>
 <body>
 {{template "top-bar" .}}
-<th:block th:insert="app/icd/uc::content">
-    <common-content>
-        <div id="table"></div>
-    </common-content>
-</th:block>
-<script th:inline="javascript">
+<div class="m-3 p-2 rounded shadow bg-content">
+    <div id="table"></div>
+</div>
+<script>
     addContentBarBtn("添加", () => {
         location.href = "user_edit"
     })
     $(function () {
-        init()
+        $.ajaxByData("/app/user_list/init").success(data => fillDataTable(data)).post()
     })
-
-    function init() {
-        $("#table").initData(data => fillDataTable(data))
-    }
 
     /**
      * 填充表格数据

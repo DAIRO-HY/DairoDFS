@@ -1,17 +1,11 @@
 ﻿<!DOCTYPE html>
-<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org" xmlns="">
+<html lang="zh-CN">
 <head>
+    {{template "head" .}}
     <title>用户编辑</title>
 </head>
 <body>
 {{template "top-bar" .}}
-
-<div class="mx-3 mt-3 px-3 row g-0 rounded shadow bg-content-bar" style="line-height: 44px;">
-    <div class="col-6 fs-5">用户编辑</div>
-    <div class="col-6 text-end" style="font-size: 0;">
-    </div>
-</div>
-
 <div class="m-3 p-2 rounded shadow bg-content">
     <form id="form" action="user_edit/edit">
         <input type="hidden" name="id">
@@ -55,7 +49,9 @@
 </div>
 <script>
     $(function () {
-        $("form").initData()
+        $.ajaxByData("/app/user_edit/init?id=" + getParam("id")).success(data=>{
+            $("form").bindValue(data)
+        }).post()
     })
 
     function onSubmitClick() {

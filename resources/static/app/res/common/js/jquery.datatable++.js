@@ -152,7 +152,7 @@
                 lengthMenu: [10, 20, 30, 50, 100],
                 pageLength: 100,
                 language: {
-                    url: "/plugins/datatable/datatables-zh.json",
+                    url: "/static/plugins/datatable/datatables-zh.json",
                     // sInfo: customSettings.paging ? "_TOTAL_ 件中 _START_ から _END_ まで表示" : "検索結果：_TOTAL_件",
                     // sInfoEmpty: "検索結果：0件",
                     // emptyTable: "対象なし",
@@ -250,7 +250,7 @@
             //Jquery.DataTable一列目のソートイコン初期の際に、いつも,表示されるバグ対応
             settings.columns.unshift({title: "", data: null, visible: false})
             settings.drawCallback = function () {
-                $table.find("tbody>tr>td>div[operateDiv]>i").on("click", function () {//操作ボタンのイコンのクリックイベント
+                $table.find("tbody>tr>td>div[operateDiv]>i").off("click").on("click", function () {//操作ボタンのイコンのクリックイベント
                     const index = parseInt($(this).data("index"))
                     const item = settings.data[index]
                     const icon = $(this).data("icon")

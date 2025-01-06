@@ -6,7 +6,6 @@ import (
 	"DairoDFS/dao/UserDao"
 	"DairoDFS/dao/UserTokenDao"
 	"DairoDFS/dao/dto"
-	"DairoDFS/exception"
 	"DairoDFS/extension/String"
 	"DairoDFS/util/DBUtil"
 	"net/http"
@@ -26,16 +25,10 @@ func Init(writer http.ResponseWriter, request *http.Request) {
 /** 用户登录 */
 //@post:/app/login/do-login
 func DoLogin(loginForm form.LoginAppInForm, _clientFlag int, _version int) any {
-	userDto := UserDao.SelectByName(loginForm.Name)
-	if userDto == nil { //用户不存在
-		return exception.LOGIN_ERROR()
-	}
-	if loginForm.Pwd != *userDto.Pwd { //密码不正确
-		return exception.LOGIN_ERROR()
-	}
+	userDto := UserDao.SelectByName(*loginForm.Name)
 
 	//删除已经存在登录记录
-	UserTokenDao.DeleteByUserIdAndDeviceId(*userDto.Id, loginForm.DeviceId)
+	UserTokenDao.DeleteByUserIdAndDeviceId(*userDto.Id, *loginForm.DeviceId)
 
 	//登录token
 	token := strconv.FormatInt(time.Now().UnixMicro(), 10)
@@ -54,7 +47,7 @@ func DoLogin(loginForm form.LoginAppInForm, _clientFlag int, _version int) any {
 		ClientFlag: &_clientFlag,
 		Version:    &_version,
 		Token:      &token,
-		DeviceId:   &loginForm.DeviceId,
+		DeviceId:   loginForm.DeviceId,
 	}
 
 	//添加一条登录记录
