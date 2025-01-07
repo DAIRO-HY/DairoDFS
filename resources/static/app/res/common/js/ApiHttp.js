@@ -185,7 +185,7 @@ class ApiHttp {
     addFiledError(fieldError) {
         for (let key in fieldError) {
             const messages = fieldError[key]
-            const error = messages.join(";")
+            const error = messages.join("；") + "。"
             const $input = $(`[name="${key}"]`)
             $input.addClass("is-invalid")
             const $parent = $input.parent()

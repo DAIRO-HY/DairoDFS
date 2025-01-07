@@ -12,10 +12,11 @@ type UserEditInoutForm struct {
 	/** 用户名 **/
 	//@NotEmpty
 	//@Length(min=2,max=32)
-	Name *string `json:"name" validate:"required,min=2,max=32"`
+	Name *string `json:"name"`
 
 	/** 用户电子邮箱 **/
-	Email *string `json:"email" validate:"email"`
+	//@Email
+	Email *string `json:"email"`
 
 	/** 用户状态 **/
 	State *int8 `json:"state"`
