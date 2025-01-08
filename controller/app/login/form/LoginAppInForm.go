@@ -17,14 +17,14 @@ type LoginAppInForm struct {
 }
 
 // 用户名密码验证
-func (mine *LoginAppInForm) IsNameAndPwd() *string {
+func (mine LoginAppInForm) IsNameAndPwd() string {
 	msg := "用户名或密码错误"
 	userDto := UserDao.SelectByName(*mine.Name)
 	if userDto == nil { //用户不存在
-		return &msg
+		return msg
 	}
 	if *mine.Pwd != *userDto.Pwd { //密码不正确
-		return &msg
+		return msg
 	}
-	return nil
+	return ""
 }

@@ -28,25 +28,37 @@ type UserEditInoutForm struct {
 	Pwd *string `json:"pwd"`
 }
 
-func (mine UserEditInoutForm) IsName() *string {
+// 验证用户名
+func (mine UserEditInoutForm) IsName() string {
 	msg := "用户名已经存在"
 	existsUser := UserDao.SelectByName(*mine.Name)
 	if mine.Id == nil { //创建用户时
 		if existsUser != nil {
-			return &msg
+			return msg
 		}
 	} else {
 		if existsUser != nil && *existsUser.Id != *mine.Id {
-			return &msg
+			return msg
 		}
 	}
-	return nil
+	return ""
 }
 
-func (mine UserEditInoutForm) IsPwd() *string {
+// 验证密码
+func (mine UserEditInoutForm) IsPwd() string {
 	msg := "密码必填"
 	if mine.Id == nil && mine.Pwd == nil { //创建用户时密码必填
-		return &msg
+		return msg
 	}
-	return nil
+	return ""
+}
+
+// 邮箱验证
+func (mine UserEditInoutForm) IsEmail() string {
+	msg := "该邮箱已经被其他用户使用"
+	existsUser := UserDao.SelectByEmail(*mine.Email)
+	if existsUser != nil && *existsUser.Id != *mine.Id {
+		return msg
+	}
+	return ""
 }
