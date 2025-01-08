@@ -13,7 +13,7 @@ import (
 /**
  * 管理员账号初始化
  */
-//@get:/app/install/create_admin
+//@Get:/app/install/create_admin
 //@templates:app/install/create_admin.html
 func Init(writer http.ResponseWriter, request *http.Request) {
 	if *UserDao.IsInit() { //管理员账号已经存在
@@ -22,7 +22,7 @@ func Init(writer http.ResponseWriter, request *http.Request) {
 }
 
 // 账号初始化API
-// @post:/app/install/create_admin/add_admin
+// @Post:/app/install/create_admin/add_admin
 func AddAdmin(inForm form.CreateAdminForm) any {
 	if *UserDao.IsInit() { //管理员用户只能被创建一次
 		return exception.NOT_ALLOW()

@@ -28,7 +28,7 @@ type UserEditInoutForm struct {
 	Pwd *string `json:"pwd"`
 }
 
-func (mine *UserEditInoutForm) IsName() *string {
+func (mine UserEditInoutForm) IsName() *string {
 	msg := "用户名已经存在"
 	existsUser := UserDao.SelectByName(*mine.Name)
 	if mine.Id == nil { //创建用户时
@@ -43,7 +43,7 @@ func (mine *UserEditInoutForm) IsName() *string {
 	return nil
 }
 
-func (mine *UserEditInoutForm) IsPwd() *string {
+func (mine UserEditInoutForm) IsPwd() *string {
 	msg := "密码必填"
 	if mine.Id == nil && mine.Pwd == nil { //创建用户时密码必填
 		return &msg

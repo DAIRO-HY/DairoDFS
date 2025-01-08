@@ -16,14 +16,14 @@ const PWD_PLACEHOLDER = "********************************"
 /**
  * 初始化
  */
-//@get:/app/user_edit
+//@Get:/app/user_edit
 //@templates:app/user_edit.html
 func EditHtml() {}
 
 /**
  * 页面初始化
  */
-//@post:/app/user_edit/init
+//@Post:/app/user_edit/init
 func EditInit(id int64) form.UserEditInoutForm {
 	if id != 0 {
 		userDto := UserDao.SelectOne(id)
@@ -45,7 +45,7 @@ func EditInit(id int64) form.UserEditInoutForm {
 /**
  * 添加或更新数据
  */
-//@post:/app/user_edit/edit
+//@Post:/app/user_edit/edit
 func Edit(inForm form.UserEditInoutForm) {
 	userDto := dto.UserDto{
 		Id:    inForm.Id,

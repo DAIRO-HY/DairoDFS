@@ -1,13 +1,13 @@
 package app
 
 // 页面初始化
-// @get:/
+// @Get:/
 // @templates:index.html
 func Home() {
 }
 
 // 页面初始化
-// @get:/app
+// @Get:/app
 // @templates:index.html
 func Init() {
 }

@@ -1,7 +1,7 @@
 package files
 
 /** 文件列表页面 **/
-//@get:/app/files
+//@Get:/app/files
 //@templates:app/files.html
 func Html() {}
 

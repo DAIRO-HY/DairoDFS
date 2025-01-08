@@ -14,14 +14,14 @@ import (
 /**
  * 初始化
  */
-//@get:/app/user_list
+//@Get:/app/user_list
 //@templates:app/user_list.html
 func ListHtml() {}
 
 /**
  * 页面初始化
  */
-//@post:/app/user_list/init
+//@Post:/app/user_list/init
 func ListInit() []form.UserListOutForm {
 	dtoList := UserDao.SelectAll()
 	var userList []form.UserListOutForm

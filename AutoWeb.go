@@ -50,6 +50,11 @@ func startWebServer(port int) {
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.FS(staticFS))))
 
 	http.HandleFunc("/", func(writer http.ResponseWriter, request *http.Request) {
+		if request.Method != "GET" {
+			writer.WriteHeader(http.StatusMethodNotAllowed) // 设置状态码
+			writer.Write([]byte("Method Not Allowed"))
+			return
+		}
 		if !inerceptor.LoginValidate(writer, request) {
 			return
 		}
@@ -60,6 +65,11 @@ func startWebServer(port int) {
 		writeToTemplate(writer, templates, body)
 	})
 	http.HandleFunc("/app", func(writer http.ResponseWriter, request *http.Request) {
+		if request.Method != "GET" {
+			writer.WriteHeader(http.StatusMethodNotAllowed) // 设置状态码
+			writer.Write([]byte("Method Not Allowed"))
+			return
+		}
 		if !inerceptor.LoginValidate(writer, request) {
 			return
 		}
@@ -70,6 +80,11 @@ func startWebServer(port int) {
 		writeToTemplate(writer, templates, body)
 	})
 	http.HandleFunc("/app/about", func(writer http.ResponseWriter, request *http.Request) {
+		if request.Method != "GET" {
+			writer.WriteHeader(http.StatusMethodNotAllowed) // 设置状态码
+			writer.Write([]byte("Method Not Allowed"))
+			return
+		}
 		if !inerceptor.LoginValidate(writer, request) {
 			return
 		}
@@ -80,6 +95,11 @@ func startWebServer(port int) {
 		writeToTemplate(writer, templates, body)
 	})
 	http.HandleFunc("/app/files", func(writer http.ResponseWriter, request *http.Request) {
+		if request.Method != "GET" {
+			writer.WriteHeader(http.StatusMethodNotAllowed) // 设置状态码
+			writer.Write([]byte("Method Not Allowed"))
+			return
+		}
 		if !inerceptor.LoginValidate(writer, request) {
 			return
 		}
@@ -90,6 +110,11 @@ func startWebServer(port int) {
 		writeToTemplate(writer, templates, body)
 	})
 	http.HandleFunc("/app/install/create_admin", func(writer http.ResponseWriter, request *http.Request) {
+		if request.Method != "GET" {
+			writer.WriteHeader(http.StatusMethodNotAllowed) // 设置状态码
+			writer.Write([]byte("Method Not Allowed"))
+			return
+		}
 		var body any = nil
 		controllerappinstallcreateadmin.Init(writer, request)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
@@ -97,18 +122,23 @@ func startWebServer(port int) {
 		writeToTemplate(writer, templates, body)
 	})
 	http.HandleFunc("/app/install/create_admin/add_admin", func(writer http.ResponseWriter, request *http.Request) {
+		if request.Method != "POST" {
+			writer.WriteHeader(http.StatusMethodNotAllowed) // 设置状态码
+			writer.Write([]byte("Method Not Allowed"))
+			return
+		}
 		query := request.URL.Query()
 		//解析post表单
 		request.ParseForm()
 		postForm := request.PostForm
-		inForm:=controllerappinstallcreateadminform.CreateAdminForm{}
-		inFormName := getStringArray(query,postForm,"name")
-		if inFormName != nil {// 如果参数存在
+		inForm := controllerappinstallcreateadminform.CreateAdminForm{}
+		inFormName := getStringArray(query, postForm, "name")
+		if inFormName != nil { // 如果参数存在
 			inForm.Name = inFormName[0]
 		}
 
-		inFormPwd := getStringArray(query,postForm,"pwd")
-		if inFormPwd != nil {// 如果参数存在
+		inFormPwd := getStringArray(query, postForm, "pwd")
+		if inFormPwd != nil { // 如果参数存在
 			inForm.Pwd = inFormPwd[0]
 		}
 
@@ -118,6 +148,11 @@ func startWebServer(port int) {
 		writeToResponse(writer, body)
 	})
 	http.HandleFunc("/app/login", func(writer http.ResponseWriter, request *http.Request) {
+		if request.Method != "GET" {
+			writer.WriteHeader(http.StatusMethodNotAllowed) // 设置状态码
+			writer.Write([]byte("Method Not Allowed"))
+			return
+		}
 		var body any = nil
 		controllerapplogin.Init(writer, request)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
@@ -125,23 +160,28 @@ func startWebServer(port int) {
 		writeToTemplate(writer, templates, body)
 	})
 	http.HandleFunc("/app/login/do-login", func(writer http.ResponseWriter, request *http.Request) {
+		if request.Method != "POST" {
+			writer.WriteHeader(http.StatusMethodNotAllowed) // 设置状态码
+			writer.Write([]byte("Method Not Allowed"))
+			return
+		}
 		query := request.URL.Query()
 		//解析post表单
 		request.ParseForm()
 		postForm := request.PostForm
-		loginForm:=controllerapploginform.LoginAppInForm{}
-		loginFormName := getStringArray(query,postForm,"name")
-		if loginFormName != nil {// 如果参数存在
+		loginForm := controllerapploginform.LoginAppInForm{}
+		loginFormName := getStringArray(query, postForm, "name")
+		if loginFormName != nil { // 如果参数存在
 			loginForm.Name = &loginFormName[0]
 		}
 
-		loginFormPwd := getStringArray(query,postForm,"pwd")
-		if loginFormPwd != nil {// 如果参数存在
+		loginFormPwd := getStringArray(query, postForm, "pwd")
+		if loginFormPwd != nil { // 如果参数存在
 			loginForm.Pwd = &loginFormPwd[0]
 		}
 
-		loginFormDeviceId := getStringArray(query,postForm,"deviceId")
-		if loginFormDeviceId != nil {// 如果参数存在
+		loginFormDeviceId := getStringArray(query, postForm, "deviceId")
+		if loginFormDeviceId != nil { // 如果参数存在
 			loginForm.DeviceId = &loginFormDeviceId[0]
 		}
 
@@ -166,6 +206,11 @@ func startWebServer(port int) {
 		writeToResponse(writer, body)
 	})
 	http.HandleFunc("/app/self_set", func(writer http.ResponseWriter, request *http.Request) {
+		if request.Method != "GET" {
+			writer.WriteHeader(http.StatusMethodNotAllowed) // 设置状态码
+			writer.Write([]byte("Method Not Allowed"))
+			return
+		}
 		if !inerceptor.LoginValidate(writer, request) {
 			return
 		}
@@ -176,6 +221,11 @@ func startWebServer(port int) {
 		writeToTemplate(writer, templates, body)
 	})
 	http.HandleFunc("/app/self_set/init", func(writer http.ResponseWriter, request *http.Request) {
+		if request.Method != "POST" {
+			writer.WriteHeader(http.StatusMethodNotAllowed) // 设置状态码
+			writer.Write([]byte("Method Not Allowed"))
+			return
+		}
 		if !inerceptor.LoginValidate(writer, request) {
 			return
 		}
@@ -185,6 +235,11 @@ func startWebServer(port int) {
 		writeToResponse(writer, body)
 	})
 	http.HandleFunc("/app/self_set/make_api_token", func(writer http.ResponseWriter, request *http.Request) {
+		if request.Method != "POST" {
+			writer.WriteHeader(http.StatusMethodNotAllowed) // 设置状态码
+			writer.Write([]byte("Method Not Allowed"))
+			return
+		}
 		if !inerceptor.LoginValidate(writer, request) {
 			return
 		}
@@ -203,6 +258,11 @@ func startWebServer(port int) {
 		writeToResponse(writer, body)
 	})
 	http.HandleFunc("/app/self_set/make_url_path", func(writer http.ResponseWriter, request *http.Request) {
+		if request.Method != "POST" {
+			writer.WriteHeader(http.StatusMethodNotAllowed) // 设置状态码
+			writer.Write([]byte("Method Not Allowed"))
+			return
+		}
 		if !inerceptor.LoginValidate(writer, request) {
 			return
 		}
@@ -221,6 +281,11 @@ func startWebServer(port int) {
 		writeToResponse(writer, body)
 	})
 	http.HandleFunc("/app/self_set/make_encryption", func(writer http.ResponseWriter, request *http.Request) {
+		if request.Method != "POST" {
+			writer.WriteHeader(http.StatusMethodNotAllowed) // 设置状态码
+			writer.Write([]byte("Method Not Allowed"))
+			return
+		}
 		if !inerceptor.LoginValidate(writer, request) {
 			return
 		}
@@ -239,6 +304,11 @@ func startWebServer(port int) {
 		writeToResponse(writer, body)
 	})
 	http.HandleFunc("/app/user_edit", func(writer http.ResponseWriter, request *http.Request) {
+		if request.Method != "GET" {
+			writer.WriteHeader(http.StatusMethodNotAllowed) // 设置状态码
+			writer.Write([]byte("Method Not Allowed"))
+			return
+		}
 		if !inerceptor.LoginValidate(writer, request) {
 			return
 		}
@@ -249,6 +319,11 @@ func startWebServer(port int) {
 		writeToTemplate(writer, templates, body)
 	})
 	http.HandleFunc("/app/user_edit/init", func(writer http.ResponseWriter, request *http.Request) {
+		if request.Method != "POST" {
+			writer.WriteHeader(http.StatusMethodNotAllowed) // 设置状态码
+			writer.Write([]byte("Method Not Allowed"))
+			return
+		}
 		if !inerceptor.LoginValidate(writer, request) {
 			return
 		}
@@ -267,6 +342,11 @@ func startWebServer(port int) {
 		writeToResponse(writer, body)
 	})
 	http.HandleFunc("/app/user_edit/edit", func(writer http.ResponseWriter, request *http.Request) {
+		if request.Method != "POST" {
+			writer.WriteHeader(http.StatusMethodNotAllowed) // 设置状态码
+			writer.Write([]byte("Method Not Allowed"))
+			return
+		}
 		if !inerceptor.LoginValidate(writer, request) {
 			return
 		}
@@ -278,43 +358,43 @@ func startWebServer(port int) {
 		// 记录表单验证错误信息
 		filedError := map[string]*[]string{}
 		validName := getStringArray(query, postForm, "name")
-		isNotEmpty(filedError, "name", validName) // 非空验证
-		isLength(filedError, "name", validName, intP(2), intP(32))// 输入长度验证
+		isNotEmpty(filedError, "name", validName)                  // 非空验证
+		isLength(filedError, "name", validName, intP(2), intP(32)) // 输入长度验证
 		validEmail := getStringArray(query, postForm, "email")
 		isEmail(filedError, "email", validEmail) // 邮箱格式验证
-		if len(filedError) > 0{ // 有表单验证错误信息
+		if len(filedError) > 0 {                 // 有表单验证错误信息
 			writeFieldError(writer, filedError)
 			return
 		}
 
-		inForm:=controllerappuserform.UserEditInoutForm{}
-		inFormId := getInt64Array(query,postForm,"id")
-		if inFormId != nil {// 如果参数存在
+		inForm := controllerappuserform.UserEditInoutForm{}
+		inFormId := getInt64Array(query, postForm, "id")
+		if inFormId != nil { // 如果参数存在
 			inForm.Id = &inFormId[0]
 		}
 
-		inFormName := getStringArray(query,postForm,"name")
-		if inFormName != nil {// 如果参数存在
+		inFormName := getStringArray(query, postForm, "name")
+		if inFormName != nil { // 如果参数存在
 			inForm.Name = &inFormName[0]
 		}
 
-		inFormEmail := getStringArray(query,postForm,"email")
-		if inFormEmail != nil {// 如果参数存在
+		inFormEmail := getStringArray(query, postForm, "email")
+		if inFormEmail != nil { // 如果参数存在
 			inForm.Email = &inFormEmail[0]
 		}
 
-		inFormState := getInt8Array(query,postForm,"state")
-		if inFormState != nil {// 如果参数存在
+		inFormState := getInt8Array(query, postForm, "state")
+		if inFormState != nil { // 如果参数存在
 			inForm.State = &inFormState[0]
 		}
 
-		inFormDate := getStringArray(query,postForm,"date")
-		if inFormDate != nil {// 如果参数存在
+		inFormDate := getStringArray(query, postForm, "date")
+		if inFormDate != nil { // 如果参数存在
 			inForm.Date = &inFormDate[0]
 		}
 
-		inFormPwd := getStringArray(query,postForm,"pwd")
-		if inFormPwd != nil {// 如果参数存在
+		inFormPwd := getStringArray(query, postForm, "pwd")
+		if inFormPwd != nil { // 如果参数存在
 			inForm.Pwd = &inFormPwd[0]
 		}
 
@@ -334,6 +414,11 @@ func startWebServer(port int) {
 		writeToResponse(writer, body)
 	})
 	http.HandleFunc("/app/user_list", func(writer http.ResponseWriter, request *http.Request) {
+		if request.Method != "GET" {
+			writer.WriteHeader(http.StatusMethodNotAllowed) // 设置状态码
+			writer.Write([]byte("Method Not Allowed"))
+			return
+		}
 		if !inerceptor.LoginValidate(writer, request) {
 			return
 		}
@@ -344,6 +429,11 @@ func startWebServer(port int) {
 		writeToTemplate(writer, templates, body)
 	})
 	http.HandleFunc("/app/user_list/init", func(writer http.ResponseWriter, request *http.Request) {
+		if request.Method != "POST" {
+			writer.WriteHeader(http.StatusMethodNotAllowed) // 设置状态码
+			writer.Write([]byte("Method Not Allowed"))
+			return
+		}
 		if !inerceptor.LoginValidate(writer, request) {
 			return
 		}

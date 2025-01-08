@@ -14,7 +14,7 @@ import (
 )
 
 /** 页面初始化 */
-//@get:/app/login
+//@Get:/app/login
 //@templates:app/login.html
 func Init(writer http.ResponseWriter, request *http.Request) {
 	if !*UserDao.IsInit() { //是否已经初始化
@@ -23,7 +23,7 @@ func Init(writer http.ResponseWriter, request *http.Request) {
 }
 
 /** 用户登录 */
-//@post:/app/login/do-login
+//@Post:/app/login/do-login
 func DoLogin(loginForm form.LoginAppInForm, _clientFlag int, _version int) any {
 	userDto := UserDao.SelectByName(*loginForm.Name)
 
