@@ -48,3 +48,11 @@ func TestGetParentPath5(t *testing.T) {
 func TestToShortString(t *testing.T) {
 	fmt.Println(ToShortString(1879756789))
 }
+
+func TestMakeRandNumber(t *testing.T) {
+	fmt.Println(MakeRandNumber(10))
+}
+
+func TestMakeRandStr(t *testing.T) {
+	fmt.Println(MakeRandStr(32))
+}

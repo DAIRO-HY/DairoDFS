@@ -1,7 +1,7 @@
 package PSDUtil
 
 import (
-	application "DairoDFS/appication"
+	application "DairoDFS/application"
 	"DairoDFS/util/ImageUtil"
 	"DairoDFS/util/ShellUtil"
 )

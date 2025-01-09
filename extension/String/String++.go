@@ -1,12 +1,14 @@
 package String
 
 import (
-	application "DairoDFS/appication"
+	application "DairoDFS/application"
 	"DairoDFS/exception"
 	"crypto/md5"
 	"encoding/base64"
 	"encoding/hex"
+	"math/rand"
 	"strings"
+	"time"
 )
 
 // 将字符串转换成md5
@@ -88,4 +90,28 @@ func ToShortString(target int64) string {
 		}
 	}
 	return shortSB
+}
+
+// 生成一段随机数字
+func MakeRandNumber(count int) string {
+	sourceStr := "0123456789"
+	return MakeRandStrBySourceStr(sourceStr, count)
+}
+
+// 生成一段随机字符串
+func MakeRandStr(count int) string {
+	sourceStr := "0123456789QWERTYUIOPASDFGHJKLZXCVBNMqwertyuiopasdfghjklzxcvbnm"
+	return MakeRandStrBySourceStr(sourceStr, count)
+}
+
+// 生成一段随机字符串
+func MakeRandStrBySourceStr(sourceStr string, count int) string {
+	source := rand.NewSource(time.Now().UnixMicro())
+	r := rand.New(source)
+	target := ""
+	for i := 0; i < count; i++ {
+		index := r.Intn(len(sourceStr))
+		target += sourceStr[index : index+1]
+	}
+	return target
 }

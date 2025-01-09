@@ -1,7 +1,7 @@
 package PSDUtil
 
 import (
-	application "DairoDFS/appication"
+	application "DairoDFS/application"
 	"fmt"
 	"os"
 	"testing"

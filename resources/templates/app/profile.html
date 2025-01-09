@@ -1,16 +1,11 @@
 ﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
+    {{template "head" .}}
     <title>配置</title>
 </head>
 <body>
 {{template "top-bar" .}}
-
-<div class="mx-3 mt-3 px-3 row g-0 rounded shadow bg-content-bar" style="line-height: 44px;">
-    <div class="col-6 fs-5">配置</div>
-    <div class="col-6 text-end" style="font-size: 0;">
-    </div>
-</div>
 <div class="m-3 p-2 rounded shadow bg-content">
     <form id="form" action="/app/profile/update">
         <div class="row">
@@ -57,7 +52,7 @@
             <div class="col-10">
                 <div class="input-group">
                     <input class="form-control" name="token" style="max-width: 280px" disabled>
-                    <button class="btn btn-primary" onclick="onMakeTokenClick()">生成</button>
+                    <button type="button" class="btn btn-primary" onclick="onMakeTokenClick()">生成</button>
                 </div>
             </div>
         </div>
@@ -78,7 +73,7 @@
     })
 
     function initData() {
-        $.ajaxByData("/app/profile").success(data => {
+        $.ajaxByData("/app/profile/init").success(data => {
             $("form").bindValue(data)
             const token = data.token
             let syncUrl = location.origin + "/distributed/" + token

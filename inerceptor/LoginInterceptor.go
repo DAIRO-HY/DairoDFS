@@ -1,7 +1,7 @@
 package inerceptor
 
 import (
-	application "DairoDFS/appication"
+	application "DairoDFS/application"
 	"DairoDFS/dao/UserTokenDao"
 	"DairoDFS/exception"
 	"DairoDFS/util/GoroutineLocal"

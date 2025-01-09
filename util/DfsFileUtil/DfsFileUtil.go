@@ -1,7 +1,7 @@
 package DfsFileUtil
 
 import (
-	"DairoDFS/appication/SystemConfig"
+	"DairoDFS/application/SystemConfig"
 	"DairoDFS/dao/DfsFileDao"
 	"DairoDFS/dao/LocalFileDao"
 	"DairoDFS/dao/dto"

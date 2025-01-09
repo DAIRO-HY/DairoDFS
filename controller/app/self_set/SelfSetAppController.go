@@ -1,7 +1,7 @@
 package self_set
 
 import (
-	application "DairoDFS/appication"
+	application "DairoDFS/application"
 	"DairoDFS/controller/app/self_set/form"
 	"DairoDFS/dao/UserDao"
 	"DairoDFS/extension/Date"

@@ -1,7 +1,7 @@
 package DfsFileUtil
 
 import (
-	"DairoDFS/appication/SystemConfig"
+	"DairoDFS/application/SystemConfig"
 	_ "embed"
 	"fmt"
 	"log"

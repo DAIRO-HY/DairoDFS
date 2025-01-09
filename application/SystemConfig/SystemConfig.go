@@ -1,6 +1,7 @@
 package SystemConfig
 
 import (
+	"DairoDFS/application"
 	"DairoDFS/extension/String"
 	"DairoDFS/util/LogUtil"
 	"encoding/json"
@@ -30,7 +31,7 @@ type SystemConfig struct {
 	/**
 	 * 文件上传限制(MB)
 	 */
-	UploadMaxSize uint64
+	UploadMaxSize int64
 
 	/**
 	 * 文件保存文件夹列表
@@ -58,21 +59,21 @@ var instance *SystemConfig
 func Instance() *SystemConfig {
 	if instance == nil {
 		readLock.Lock()
-		_, err := os.Stat(appication.SYSTEM_JSON_PATH)
+		_, err := os.Stat(application.SYSTEM_JSON_PATH)
 		if os.IsNotExist(err) { //若配置文件不存在
 			timeNow := strconv.FormatInt(time.Now().UnixMilli(), 10)
 
 			//创建一个新的实列
 			instance = &SystemConfig{
 				UploadMaxSize:  10 * 1024 * 1024 * 1024, //默认文件上传限制10GB
-				SaveFolderList: []string{appication.DataPath},
+				SaveFolderList: []string{application.DataPath},
 				SyncDomains:    []string{},
 				Token:          String.ToMd5(timeNow),
 			}
 			Save()
 		} else {
 			instance = &SystemConfig{}
-			data, _ := os.ReadFile(appication.SYSTEM_JSON_PATH)
+			data, _ := os.ReadFile(application.SYSTEM_JSON_PATH)
 			readJsonErr := json.Unmarshal(data, instance)
 			if readJsonErr != nil {
 				LogUtil.Error1("读取JSON配置文件失败:", readJsonErr)
@@ -88,16 +89,16 @@ func Instance() *SystemConfig {
  * 数据持久化
  */
 func Save() {
-	_, err := os.Stat(appication.SYSTEM_JSON_PATH)
+	_, err := os.Stat(application.SYSTEM_JSON_PATH)
 	if os.IsNotExist(err) { //文件不存在时创建文件夹
-		mkdirErr := os.MkdirAll(String.FileParent(appication.SYSTEM_JSON_PATH), os.ModePerm)
+		mkdirErr := os.MkdirAll(String.FileParent(application.SYSTEM_JSON_PATH), os.ModePerm)
 		if mkdirErr != nil {
 			LogUtil.Error1("文件夹创建失败：", mkdirErr)
 			return
 		}
 	}
 	jsonData, _ := json.Marshal(Instance())
-	writeErr := os.WriteFile(appication.SYSTEM_JSON_PATH, jsonData, 0644)
+	writeErr := os.WriteFile(application.SYSTEM_JSON_PATH, jsonData, 0644)
 	if writeErr != nil {
 		fmt.Println(err)
 	}

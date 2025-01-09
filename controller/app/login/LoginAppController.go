@@ -1,7 +1,7 @@
 package login
 
 import (
-	application "DairoDFS/appication"
+	application "DairoDFS/application"
 	"DairoDFS/controller/app/login/form"
 	"DairoDFS/dao/UserDao"
 	"DairoDFS/dao/UserTokenDao"

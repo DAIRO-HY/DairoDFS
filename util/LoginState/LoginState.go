@@ -1,7 +1,7 @@
 package LoginState
 
 import (
-	application "DairoDFS/appication"
+	application "DairoDFS/application"
 	"DairoDFS/util/GoroutineLocal"
 )
 

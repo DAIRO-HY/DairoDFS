@@ -11,6 +11,10 @@ import (
 	controllerappinstallcreateadminform "DairoDFS/controller/app/install/create_admin/form"
 	controllerapplogin "DairoDFS/controller/app/login"
 	controllerapploginform "DairoDFS/controller/app/login/form"
+	controllerappmodifypwd "DairoDFS/controller/app/modify_pwd"
+	controllerappmodifypwdform "DairoDFS/controller/app/modify_pwd/form"
+	controllerappprofile "DairoDFS/controller/app/profile"
+	controllerappprofileform "DairoDFS/controller/app/profile/form"
 	controllerappselfset "DairoDFS/controller/app/self_set"
 	controllerappuser "DairoDFS/controller/app/user"
 	controllerappuserform "DairoDFS/controller/app/user/form"
@@ -218,6 +222,179 @@ func startWebServer(port int) {
 		}
 		var body any = nil
 		body = controllerapplogin.DoLogin(loginForm, _clientFlag, _version)
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+		writeToResponse(writer, body)
+	})
+	http.HandleFunc("/app/modify_pwd", func(writer http.ResponseWriter, request *http.Request) {
+		if request.Method != "GET" {
+			writer.WriteHeader(http.StatusMethodNotAllowed) // 设置状态码
+			writer.Write([]byte("Method Not Allowed"))
+			return
+		}
+		if !inerceptor.LoginValidate(writer, request) {
+			return
+		}
+		var body any = nil
+		controllerappmodifypwd.Html()
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+		templates := append([]string{"resources/templates/app/modify_pwd.html"}, COMMON_TEMPLATES...)
+		writeToTemplate(writer, templates, body)
+	})
+	http.HandleFunc("/app/modify_pwd/modify", func(writer http.ResponseWriter, request *http.Request) {
+		if request.Method != "POST" {
+			writer.WriteHeader(http.StatusMethodNotAllowed) // 设置状态码
+			writer.Write([]byte("Method Not Allowed"))
+			return
+		}
+		if !inerceptor.LoginValidate(writer, request) {
+			return
+		}
+		query := request.URL.Query()
+		//解析post表单
+		request.ParseForm()
+		postForm := request.PostForm
+
+		// 记录表单验证错误信息
+		filedError := map[string][]string{}
+		validOldPwd := getStringArray(query, postForm, "oldPwd")
+		isNotBlank(filedError, "oldPwd", validOldPwd) // 非空白验证
+		isLength(filedError, "oldPwd", validOldPwd, 4, 32)// 输入长度验证
+		validPwd := getStringArray(query, postForm, "pwd")
+		isNotBlank(filedError, "pwd", validPwd) // 非空白验证
+		isLength(filedError, "pwd", validPwd, 4, 32)// 输入长度验证
+		if len(filedError) > 0{ // 有表单验证错误信息
+			writeFieldError(writer, filedError)
+			return
+		}
+
+		inForm:=controllerappmodifypwdform.ModifyPwdAppForm{}
+		inFormOldPwd := getStringArray(query,postForm,"oldPwd")
+		if inFormOldPwd != nil {// 如果参数存在
+			inForm.OldPwd = inFormOldPwd[0]
+		}
+
+		inFormPwd := getStringArray(query,postForm,"pwd")
+		if inFormPwd != nil {// 如果参数存在
+			inForm.Pwd = inFormPwd[0]
+		}
+
+		inFormIsOldPwdMsg := inForm.IsOldPwd()
+		if inFormIsOldPwdMsg != "" { // 表单相关验证失败
+			writeFieldFormError(writer, inFormIsOldPwdMsg, "oldPwd")
+			return
+		}
+		var body any = nil
+		body = controllerappmodifypwd.Modify(inForm)
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+		writeToResponse(writer, body)
+	})
+	http.HandleFunc("/app/profile", func(writer http.ResponseWriter, request *http.Request) {
+		if request.Method != "GET" {
+			writer.WriteHeader(http.StatusMethodNotAllowed) // 设置状态码
+			writer.Write([]byte("Method Not Allowed"))
+			return
+		}
+		if !inerceptor.LoginValidate(writer, request) {
+			return
+		}
+		var body any = nil
+		controllerappprofile.Html()
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+		templates := append([]string{"resources/templates/app/profile.html"}, COMMON_TEMPLATES...)
+		writeToTemplate(writer, templates, body)
+	})
+	http.HandleFunc("/app/profile/init", func(writer http.ResponseWriter, request *http.Request) {
+		if request.Method != "POST" {
+			writer.WriteHeader(http.StatusMethodNotAllowed) // 设置状态码
+			writer.Write([]byte("Method Not Allowed"))
+			return
+		}
+		if !inerceptor.LoginValidate(writer, request) {
+			return
+		}
+		var body any = nil
+		body = controllerappprofile.Init()
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+		writeToResponse(writer, body)
+	})
+	http.HandleFunc("/app/profile/update", func(writer http.ResponseWriter, request *http.Request) {
+		if request.Method != "POST" {
+			writer.WriteHeader(http.StatusMethodNotAllowed) // 设置状态码
+			writer.Write([]byte("Method Not Allowed"))
+			return
+		}
+		if !inerceptor.LoginValidate(writer, request) {
+			return
+		}
+		query := request.URL.Query()
+		//解析post表单
+		request.ParseForm()
+		postForm := request.PostForm
+
+		// 记录表单验证错误信息
+		filedError := map[string][]string{}
+		validUploadMaxSize := getStringArray(query, postForm, "uploadMaxSize")
+		isDigits(filedError, "uploadMaxSize", validUploadMaxSize, 11, 0)// 数值值区间验证
+		isNotBlank(filedError, "uploadMaxSize", validUploadMaxSize) // 非空白验证
+		validFolders := getStringArray(query, postForm, "folders")
+		isNotBlank(filedError, "folders", validFolders) // 非空白验证
+		if len(filedError) > 0{ // 有表单验证错误信息
+			writeFieldError(writer, filedError)
+			return
+		}
+
+		form:=controllerappprofileform.ProfileForm{}
+		formOpenSqlLog := getBoolArray(query,postForm,"openSqlLog")
+		if formOpenSqlLog != nil {// 如果参数存在
+			form.OpenSqlLog = formOpenSqlLog[0]
+		}
+
+		formHasReadOnly := getBoolArray(query,postForm,"hasReadOnly")
+		if formHasReadOnly != nil {// 如果参数存在
+			form.HasReadOnly = formHasReadOnly[0]
+		}
+
+		formUploadMaxSize := getInt64Array(query,postForm,"uploadMaxSize")
+		if formUploadMaxSize != nil {// 如果参数存在
+			form.UploadMaxSize = formUploadMaxSize[0]
+		}
+
+		formFolders := getStringArray(query,postForm,"folders")
+		if formFolders != nil {// 如果参数存在
+			form.Folders = formFolders[0]
+		}
+
+		formSyncDomains := getStringArray(query,postForm,"syncDomains")
+		if formSyncDomains != nil {// 如果参数存在
+			form.SyncDomains = formSyncDomains[0]
+		}
+
+		formToken := getStringArray(query,postForm,"token")
+		if formToken != nil {// 如果参数存在
+			form.Token = formToken[0]
+		}
+
+		formIsFoldersMsg := form.IsFolders()
+		if formIsFoldersMsg != "" { // 表单相关验证失败
+			writeFieldFormError(writer, formIsFoldersMsg, "folders")
+			return
+		}
+		var body any = nil
+		body = controllerappprofile.Update(form)
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+		writeToResponse(writer, body)
+	})
+	http.HandleFunc("/app/profile/make_token", func(writer http.ResponseWriter, request *http.Request) {
+		if request.Method != "POST" {
+			writer.WriteHeader(http.StatusMethodNotAllowed) // 设置状态码
+			writer.Write([]byte("Method Not Allowed"))
+			return
+		}
+		if !inerceptor.LoginValidate(writer, request) {
+			return
+		}
+		var body any = nil
+		controllerappprofile.MakeToken()
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 		writeToResponse(writer, body)
 	})
@@ -602,6 +779,19 @@ func isNotEmpty(fieldError map[string][]string, field string, value []string) {
 		return
 	}
 	if len(value[0]) == 0 { //判断是否为空字符串
+		addFieldErr(fieldError, field, message)
+		return
+	}
+}
+
+// 非空白字符检查
+func isNotBlank(fieldError map[string][]string, field string, value []string) {
+	message := "不能为空白"
+	if value == nil {
+		addFieldErr(fieldError, field, message)
+		return
+	}
+	if len(strings.TrimSpace(value[0])) == 0 { //判断是否为空字符串
 		addFieldErr(fieldError, field, message)
 		return
 	}

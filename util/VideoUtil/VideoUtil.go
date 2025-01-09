@@ -1,7 +1,7 @@
 package VideoUtil
 
 import (
-	application "DairoDFS/appication"
+	application "DairoDFS/application"
 	"DairoDFS/exception"
 	"DairoDFS/util/ImageUtil"
 	"DairoDFS/util/ShellUtil"
