@@ -16,14 +16,14 @@ func Add(dto dto.ShareDto) {
 /**
  * 通过ID获取一条数据
  */
-func SelectOne(id int64) *dto.ShareDto {
+func SelectOne(id int64) (dto.ShareDto, bool) {
 	return DBUtil.SelectOne[dto.ShareDto]("select * from share where id = ?", id)
 }
 
 /**
  * 获取所有分享列表
  */
-func SelectByUser(userId int64) []*dto.ShareDto {
+func SelectByUser(userId int64) []dto.ShareDto {
 	return DBUtil.SelectList[dto.ShareDto](`select id, title, pwd, folder, thumb, folderFlag, fileCount, endDate, date
         from share where userId = ?`, userId)
 }

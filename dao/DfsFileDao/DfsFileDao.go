@@ -28,7 +28,7 @@ func Add(fileDto dto.DfsFileDto) {
  * 通过id获取一条数据
  * @param id 文件ID
  */
-func SelectOne(id int64) *dto.DfsFileDto {
+func SelectOne(id int64) (dto.DfsFileDto, bool) {
 	return DBUtil.SelectOne[dto.DfsFileDto]("select * from dfs_file where id = ?", id)
 }
 
@@ -38,7 +38,7 @@ func SelectOne(id int64) *dto.DfsFileDto {
  * @param name 文件名
  * @return 文件信息
  */
-func SelectByParentIdAndName(userId int64, parentId int64, name string) *dto.DfsFileDto {
+func SelectByParentIdAndName(userId int64, parentId int64, name string) (dto.DfsFileDto, bool) {
 	return DBUtil.SelectOne[dto.DfsFileDto](
 		`select * from dfs_file where userId = ?
           and parentId = ?
@@ -53,7 +53,7 @@ func SelectByParentIdAndName(userId int64, parentId int64, name string) *dto.Dfs
  * @param name 文件名
  * @return 文件信息
  */
-func SelectIdByParentIdAndName(userId int64, parentId int64, name string) *int64 {
+func SelectIdByParentIdAndName(userId int64, parentId int64, name string) int64 {
 	return DBUtil.SelectSingleOneIgnoreError[int64](`select id from dfs_file where userId = ?
           and parentId = ?
           and name COLLATE NOCASE = ?
@@ -66,7 +66,7 @@ func SelectIdByParentIdAndName(userId int64, parentId int64, name string) *int64
  * @param names 文件名列表
  * @return 文件ID
  */
-func SelectIdByPath(userId int64, names []string) *int64 {
+func SelectIdByPath(userId int64, names []string) int64 {
 	sql := ""
 	for range names {
 		sql += "select id from dfs_file where userId = " + strconv.FormatInt(userId, 10) + " and parentId = ("
@@ -83,7 +83,7 @@ func SelectIdByPath(userId int64, names []string) *int64 {
  * @param parentId 文件夹id
  * @return 子文件列表
  */
-func SelectSubFileIdAndName(userId int64, parentId int64) []*dto.DfsFileDto {
+func SelectSubFileIdAndName(userId int64, parentId int64) []dto.DfsFileDto {
 	return DBUtil.SelectList[dto.DfsFileDto](`select id, name, localId from dfs_file where userId = ?
           and parentId = ?
           and isHistory = 0
@@ -111,7 +111,7 @@ func SelectSubFile(userId int64, parentId int64) []*dto.DfsFileThumbDto {
  * @param userId 用户ID
  * @return 已删除的文件
  */
-func SelectDelete(userId int64) []*dto.DfsFileThumbDto {
+func SelectDelete(userId int64) []dto.DfsFileThumbDto {
 	sql := `select df.id, df.name, df.size, df.localId, df.deleteDate, thumbDf.id > 0 as hasThumb
         from dfs_file as df
                  left join dfs_file as thumbDf
@@ -126,7 +126,7 @@ func SelectDelete(userId int64) []*dto.DfsFileThumbDto {
  * 获取所有回收站超时的数据
  * @return 已删除的文件
  */
-func SelectIdsByDeleteAndTimeout(time int64) []*int64 {
+func SelectIdsByDeleteAndTimeout(time int64) []int64 {
 	sql := "select id from dfs_file where deleteDate < ? limit 1000"
 	return DBUtil.SelectList[int64](sql, time)
 }
@@ -137,7 +137,7 @@ func SelectIdsByDeleteAndTimeout(time int64) []*int64 {
  * @param id 文件id
  * @return 历史版本列表
  */
-func SelectHistory(userId int64, id int64) []*dto.DfsFileDto {
+func SelectHistory(userId int64, id int64) []dto.DfsFileDto {
 	sql := `select id, size, date from dfs_file where userId = ?
           and parentId = (select parentId from dfs_file where id = ?)
           and name = (select name from dfs_file where id = ?)
@@ -149,7 +149,7 @@ func SelectHistory(userId int64, id int64) []*dto.DfsFileDto {
 /**
  * 获取尚未处理的数据
  */
-func SelectNoHandle() []*dto.DfsFileDto {
+func SelectNoHandle() []dto.DfsFileDto {
 	return DBUtil.SelectList[dto.DfsFileDto]("select * from dfs_file where localId > 0 and state = 0 order by id asc limit 1000")
 }
 
@@ -227,7 +227,7 @@ func SetState(id int64, state int8, stateMsg string) {
 /**
  * 验证文件存储ID权限
  */
-func ValidLocalId(userId int64, localId int64) *bool {
+func ValidLocalId(userId int64, localId int64) bool {
 	return DBUtil.SelectSingleOneIgnoreError[bool]("select count(*) > 0 from dfs_file where userId = ? and localId = ?", userId, localId)
 }
 
@@ -237,7 +237,7 @@ func ValidLocalId(userId int64, localId int64) *bool {
  * @param name 附属文件标题
  * @return 附属文件信息
  */
-func SelectExtra(parentId int64, name string) *dto.DfsFileDto {
+func SelectExtra(parentId int64, name string) (dto.DfsFileDto, bool) {
 	sql := `select * from dfs_file where parentId = ? and name = ? and isExtra = 1`
 	return DBUtil.SelectOne[dto.DfsFileDto](sql, parentId, name)
 }
@@ -247,7 +247,7 @@ func SelectExtra(parentId int64, name string) *dto.DfsFileDto {
  * @param id dfs文件ID
  * @return 附属文件信息
  */
-func SelectExtraNames(id int64) []*string {
+func SelectExtraNames(id int64) []string {
 	sql := "select name from dfs_file where parentId = ? and isExtra = 1"
 	return DBUtil.SelectList[string](sql, id)
 }
@@ -257,7 +257,7 @@ func SelectExtraNames(id int64) []*string {
  * @param localId 本地存储id
  * @return 属性
  */
-func SelectPropertyByLocalId(localId int64) *string {
+func SelectPropertyByLocalId(localId int64) string {
 	sql := "select property from dfs_file where localId = ? and state = 1 and property is not null limit 1"
 	return DBUtil.SelectSingleOneIgnoreError[string](sql, localId)
 }
@@ -267,7 +267,7 @@ func SelectPropertyByLocalId(localId int64) *string {
  * @param localId 本地存储id
  * @return 附属文件列表
  */
-func SelectExtraFileByLocalId(localId int64) []*dto.DfsFileDto {
+func SelectExtraFileByLocalId(localId int64) []dto.DfsFileDto {
 	sql := `select * from dfs_file where parentId = (select id from dfs_file where localId = ? and state = 1 limit 1) and isExtra = 1`
 	return DBUtil.SelectList[dto.DfsFileDto](sql, localId)
 }
@@ -277,7 +277,7 @@ func SelectExtraFileByLocalId(localId int64) []*dto.DfsFileDto {
  * @param id 文件id
  * @return 附属文件列表
  */
-func SelectExtraListById(id int64) []*dto.DfsFileDto {
+func SelectExtraListById(id int64) []dto.DfsFileDto {
 	sql := "select * from dfs_file where parentId = ? and isExtra = 1"
 	return DBUtil.SelectList[dto.DfsFileDto](sql, id)
 }
@@ -287,7 +287,7 @@ func SelectExtraListById(id int64) []*dto.DfsFileDto {
  * @param id 文件id
  * @return 文件夹下的所有文件及文件夹，包括历史文件，已删除文件
  */
-func SelectAllChildList(id int64) []*dto.DfsFileDto {
+func SelectAllChildList(id int64) []dto.DfsFileDto {
 	sql := `select * from dfs_file where parentId = ?`
 	return DBUtil.SelectList[dto.DfsFileDto](sql, id)
 }
@@ -296,7 +296,7 @@ func SelectAllChildList(id int64) []*dto.DfsFileDto {
  * 文件是否正在使用中
  * @param id 本地文件id
  */
-func IsFileUsing(id int64) *bool {
+func IsFileUsing(id int64) bool {
 	sql := `select count(*) > 0 from dfs_file where localId = ?`
 	return DBUtil.SelectSingleOneIgnoreError[bool](sql, id)
 }

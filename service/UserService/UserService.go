@@ -18,7 +18,7 @@ import (
 func Add(dto dto.UserDto) {
 	date := time.Now()
 	id := DBUtil.ID()
-	dto.Date = &date
-	dto.Id = &id
+	dto.Date = date
+	dto.Id = id
 	UserDao.Add(dto)
 }

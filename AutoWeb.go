@@ -169,20 +169,36 @@ func startWebServer(port int) {
 		//解析post表单
 		request.ParseForm()
 		postForm := request.PostForm
+
+		// 记录表单验证错误信息
+		filedError := map[string][]string{}
+		validName := getStringArray(query, postForm, "name")
+		isNotEmpty(filedError, "name", validName) // 非空验证
+		isLength(filedError, "name", validName, 2, 32)// 输入长度验证
+		validPwd := getStringArray(query, postForm, "pwd")
+		isNotEmpty(filedError, "pwd", validPwd) // 非空验证
+		isLength(filedError, "pwd", validPwd, 2, 32)// 输入长度验证
+		validDeviceId := getStringArray(query, postForm, "deviceId")
+		isNotEmpty(filedError, "deviceId", validDeviceId) // 非空验证
+		if len(filedError) > 0{ // 有表单验证错误信息
+			writeFieldError(writer, filedError)
+			return
+		}
+
 		loginForm:=controllerapploginform.LoginAppInForm{}
 		loginFormName := getStringArray(query,postForm,"name")
 		if loginFormName != nil {// 如果参数存在
-			loginForm.Name = &loginFormName[0]
+			loginForm.Name = loginFormName[0]
 		}
 
 		loginFormPwd := getStringArray(query,postForm,"pwd")
 		if loginFormPwd != nil {// 如果参数存在
-			loginForm.Pwd = &loginFormPwd[0]
+			loginForm.Pwd = loginFormPwd[0]
 		}
 
 		loginFormDeviceId := getStringArray(query,postForm,"deviceId")
 		if loginFormDeviceId != nil {// 如果参数存在
-			loginForm.DeviceId = &loginFormDeviceId[0]
+			loginForm.DeviceId = loginFormDeviceId[0]
 		}
 
 		loginFormIsNameAndPwdMsg := loginForm.IsNameAndPwd()
@@ -356,10 +372,10 @@ func startWebServer(port int) {
 		postForm := request.PostForm
 
 		// 记录表单验证错误信息
-		filedError := map[string]*[]string{}
+		filedError := map[string][]string{}
 		validName := getStringArray(query, postForm, "name")
 		isNotEmpty(filedError, "name", validName) // 非空验证
-		isLength(filedError, "name", validName, intP(2), intP(32))// 输入长度验证
+		isLength(filedError, "name", validName, 2, 32)// 输入长度验证
 		validEmail := getStringArray(query, postForm, "email")
 		isEmail(filedError, "email", validEmail) // 邮箱格式验证
 		if len(filedError) > 0{ // 有表单验证错误信息
@@ -370,32 +386,32 @@ func startWebServer(port int) {
 		inForm:=controllerappuserform.UserEditInoutForm{}
 		inFormId := getInt64Array(query,postForm,"id")
 		if inFormId != nil {// 如果参数存在
-			inForm.Id = &inFormId[0]
+			inForm.Id = inFormId[0]
 		}
 
 		inFormName := getStringArray(query,postForm,"name")
 		if inFormName != nil {// 如果参数存在
-			inForm.Name = &inFormName[0]
+			inForm.Name = inFormName[0]
 		}
 
 		inFormEmail := getStringArray(query,postForm,"email")
 		if inFormEmail != nil {// 如果参数存在
-			inForm.Email = &inFormEmail[0]
+			inForm.Email = inFormEmail[0]
 		}
 
 		inFormState := getInt8Array(query,postForm,"state")
 		if inFormState != nil {// 如果参数存在
-			inForm.State = &inFormState[0]
+			inForm.State = inFormState[0]
 		}
 
 		inFormDate := getStringArray(query,postForm,"date")
 		if inFormDate != nil {// 如果参数存在
-			inForm.Date = &inFormDate[0]
+			inForm.Date = inFormDate[0]
 		}
 
 		inFormPwd := getStringArray(query,postForm,"pwd")
 		if inFormPwd != nil {// 如果参数存在
-			inForm.Pwd = &inFormPwd[0]
+			inForm.Pwd = inFormPwd[0]
 		}
 
 		inFormIsNameMsg := inForm.IsName()
@@ -579,7 +595,7 @@ func getBoolArray(query url.Values, postForm url.Values, key string) []bool {
 }
 
 // 非空字符检查
-func isNotEmpty(fieldError map[string]*[]string, field string, value []string) {
+func isNotEmpty(fieldError map[string][]string, field string, value []string) {
 	message := "不能为空"
 	if value == nil {
 		addFieldErr(fieldError, field, message)
@@ -592,33 +608,33 @@ func isNotEmpty(fieldError map[string]*[]string, field string, value []string) {
 }
 
 // 输入长度检查
-func isLength(fieldError map[string]*[]string, field string, value []string, min *int, max *int) {
+func isLength(fieldError map[string][]string, field string, value []string, min int, max int) {
 
 	//字符个数
 	length := 0
 	if value != nil {
 		length = utf8.RuneCountInString(value[0])
 	}
-	if min != nil && max != nil {
-		if length < *min || length > *max {
-			message := fmt.Sprintf("长度必须在%d～%d个字符之间", *min, *max)
+	if min != -1 && max != -1 {
+		if length < min || length > max {
+			message := fmt.Sprintf("长度必须在%d～%d个字符之间", min, max)
 			addFieldErr(fieldError, field, message)
 		}
 		return
 	}
-	if min != nil && length < *min { //比较最小长度
-		message := fmt.Sprintf("长度至少输入%d个字符", *min)
+	if min != -1 && length < min { //比较最小长度
+		message := fmt.Sprintf("长度至少输入%d个字符", min)
 		addFieldErr(fieldError, field, message)
 		return
 	}
-	if max != nil && length > *max { //比较最大长度
-		message := fmt.Sprintf("长度不能超过%d个字符", *max)
+	if max != -1 && length > max { //比较最大长度
+		message := fmt.Sprintf("长度不能超过%d个字符", max)
 		addFieldErr(fieldError, field, message)
 	}
 }
 
 // 数值大小检查
-func isLimit(fieldError map[string]*[]string, field string, value []string, min *float64, max *float64) {
+func isLimit(fieldError map[string][]string, field string, value []string, min *float64, max *float64) {
 	if value == nil { //不需要验证空
 		return
 	}
@@ -648,7 +664,7 @@ func isLimit(fieldError map[string]*[]string, field string, value []string, min 
 }
 
 // 数值检查
-func isDigits(fieldError map[string]*[]string, field string, value []string, integer int, fraction int) {
+func isDigits(fieldError map[string][]string, field string, value []string, integer int, fraction int) {
 	if value == nil { //不需要验证空
 		return
 	}
@@ -697,7 +713,7 @@ func isDigits(fieldError map[string]*[]string, field string, value []string, int
 // - lower 是否允许小写字母
 // - number 是否允许数字
 // - symbol 是否允许符号
-func isHalf(fieldError map[string]*[]string, field string, value []string, upper bool, lower bool, number bool, symbol bool) {
+func isHalf(fieldError map[string][]string, field string, value []string, upper bool, lower bool, number bool, symbol bool) {
 	if value == nil { //不需要验证空
 		return
 	}
@@ -747,7 +763,7 @@ func isHalf(fieldError map[string]*[]string, field string, value []string, upper
 }
 
 // 是否邮箱地址判断
-func isEmail(fieldError map[string]*[]string, field string, value []string) {
+func isEmail(fieldError map[string][]string, field string, value []string) {
 	if value == nil { //不需要验证空
 		return
 	}
@@ -779,20 +795,17 @@ func floatToStr(f float64) string {
 }
 
 // 添加表单检查错误消息
-func addFieldErr(fieldError map[string]*[]string, field string, message string) {
-
+func addFieldErr(fieldError map[string][]string, field string, message string) {
 	field = strings.ToLower(field[:1]) + field[1:]
-	messages, isExists := fieldError[field]
-	if !isExists {
-		var temp []string
-		messages = &temp
-		fieldError[field] = messages
+	_, isExist := fieldError[field]
+	if !isExist {
+		fieldError[field] = []string{}
 	}
-	*messages = append(*messages, message)
+	fieldError[field] = append(fieldError[field], message)
 }
 
 // 返回表单验证失败结果
-func writeFieldError(writer http.ResponseWriter, fieldError map[string]*[]string) {
+func writeFieldError(writer http.ResponseWriter, fieldError map[string][]string) {
 
 	// 设置 Content-Type 头部信息
 	writer.Header().Set("Content-Type", "text/plain;charset=UTF-8")

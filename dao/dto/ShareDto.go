@@ -7,55 +7,55 @@ type ShareDto struct {
 	/**
 	 * id
 	 */
-	Id *int64
+	Id int64
 
 	/**
 	 * 分享标题
 	 */
-	Title *string
+	Title string
 
 	/**
 	 * 所属用户ID
 	 */
-	UserId *int64
+	UserId int64
 
 	/**
 	 * 加密分享
 	 */
-	Pwd *string
+	Pwd string
 
 	/**
 	 * 分享的文件夹
 	 */
-	Folder *string
+	Folder string
 
 	/**
 	 * 分享的文件夹或文件名,用|分割
 	 */
-	Names *string
+	Names string
 
 	/**
 	 * 缩略图
 	 */
-	Thumb *int64
+	Thumb int64
 
 	/**
 	 * 是否是一个文件夹
 	 */
-	FolderFlag *bool
+	FolderFlag bool
 
 	/**
 	 * 文件数
 	 */
-	FileCount *int
+	FileCount int
 
 	/**
 	 * 结束日期
 	 */
-	EndDate *int64
+	EndDate int64
 
 	/**
 	 * 创建日期
 	 */
-	Date *time.Time
+	Date time.Time
 }

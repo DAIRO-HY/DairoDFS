@@ -10,35 +10,35 @@ type SqlLogDto struct {
 	/**
 	 * 主键
 	 */
-	Id *int64
+	Id int64
 
 	/**
 	 * 日志时间
 	 */
-	Date *time.Time
+	Date time.Time
 
 	/**
 	 * sql文
 	 */
-	Sql *string
+	Sql string
 
 	/**
 	 * 参数Json
 	 */
-	Param *string
+	Param string
 
 	/**
 	 * 状态 0：待执行 1：执行完成 2：执行失败
 	 */
-	State *int
+	State int
 
 	/**
 	 * 日志来源IP
 	 */
-	Source *string
+	Source string
 
 	/**
 	 * 错误消息
 	 */
-	Err *string
+	Err string
 }

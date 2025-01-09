@@ -36,12 +36,12 @@ func init() {
 * 更新表结构
  */
 func upgrade() {
-	version := SelectSingleOneIgnoreError[int]("PRAGMA USER_VERSION")
-	if *version == 0 {
+	version, _ := SelectSingleOne[int]("PRAGMA USER_VERSION")
+	if version == 0 {
 		create()
 
 	}
-	if *version > 0 {
+	if version > 0 {
 	}
 
 	//设置数据库版本号

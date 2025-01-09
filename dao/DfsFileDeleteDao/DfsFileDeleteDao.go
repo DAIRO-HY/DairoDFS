@@ -26,7 +26,7 @@ func SetDeleteDate(id int64, time int64) {
  * 获取所有超时的数据
  * @param time 时间戳
  */
-func SelectIdsByTimeout(time int64) []*dto.DfsFileDto {
+func SelectIdsByTimeout(time int64) []dto.DfsFileDto {
 	return DBUtil.SelectList[dto.DfsFileDto]("select * from dfs_file_delete where deleteDate < ? limit 1000", time)
 }
 

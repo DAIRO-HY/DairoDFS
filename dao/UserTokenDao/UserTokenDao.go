@@ -18,7 +18,7 @@ func Add(dto dto.UserTokenDto) {
  * 通过登录Token获取会员ID
  * @param token 登录Token
  */
-func GetByUserIdByToken(token string) *int64 {
+func GetByUserIdByToken(token string) int64 {
 	return DBUtil.SelectSingleOneIgnoreError[int64]("select userId from user_token where token = ?", token)
 }
 
@@ -26,7 +26,7 @@ func GetByUserIdByToken(token string) *int64 {
  * 获取某个用户的登录记录
  * @param userId 用户ID
  */
-func ListByUserId(userId int64) []*dto.UserTokenDto {
+func ListByUserId(userId int64) []dto.UserTokenDto {
 	return DBUtil.SelectList[dto.UserTokenDto]("select * from user_token where userId = ? order by date", userId)
 }
 

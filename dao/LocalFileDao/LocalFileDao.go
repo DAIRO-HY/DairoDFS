@@ -16,7 +16,7 @@ func Add(dto dto.LocalFileDto) {
  * 通过id获取一条数据
  * @param id 文件ID
  */
-func SelectOne(id int64) *dto.LocalFileDto {
+func SelectOne(id int64) (dto.LocalFileDto, bool) {
 	return DBUtil.SelectOne[dto.LocalFileDto](`select * from local_file where id = ?`, id)
 }
 
@@ -24,6 +24,6 @@ func SelectOne(id int64) *dto.LocalFileDto {
  * 通过文件MD5获取一条数据
  * @param md5 文件MD5
  */
-func SelectByFileMd5(md5 string) *dto.LocalFileDto {
+func SelectByFileMd5(md5 string) (dto.LocalFileDto, bool) {
 	return DBUtil.SelectOne[dto.LocalFileDto](`select * from local_file where md5 = ?`, md5)
 }

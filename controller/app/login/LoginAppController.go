@@ -17,7 +17,7 @@ import (
 //@Get:/app/login
 //@templates:app/login.html
 func Init(writer http.ResponseWriter, request *http.Request) {
-	if !*UserDao.IsInit() { //是否已经初始化
+	if !UserDao.IsInit() { //是否已经初始化
 		http.Redirect(writer, request, "/app/install/create_admin", http.StatusFound)
 	}
 }
@@ -25,38 +25,35 @@ func Init(writer http.ResponseWriter, request *http.Request) {
 /** 用户登录 */
 //@Post:/app/login/do-login
 func DoLogin(loginForm form.LoginAppInForm, _clientFlag int, _version int) any {
-	userDto := UserDao.SelectByName(*loginForm.Name)
+	userDto, _ := UserDao.SelectByName(loginForm.Name)
 
 	//删除已经存在登录记录
-	UserTokenDao.DeleteByUserIdAndDeviceId(*userDto.Id, *loginForm.DeviceId)
+	UserTokenDao.DeleteByUserIdAndDeviceId(userDto.Id, loginForm.DeviceId)
 
 	//登录token
 	token := strconv.FormatInt(time.Now().UnixMicro(), 10)
 	token = String.ToMd5(token)
 
-	id := DBUtil.ID()
-	date := time.Now()
-
 	//TODO:
 	ip := "0.0.0.0"
 	userTokenDto := dto.UserTokenDto{
-		Id:         &id,
+		Id:         DBUtil.ID(),
 		UserId:     userDto.Id,
-		Date:       &date,
-		Ip:         &ip,
-		ClientFlag: &_clientFlag,
-		Version:    &_version,
-		Token:      &token,
+		Date:       time.Now(),
+		Ip:         ip,
+		ClientFlag: _clientFlag,
+		Version:    _version,
+		Token:      token,
 		DeviceId:   loginForm.DeviceId,
 	}
 
 	//添加一条登录记录
 	UserTokenDao.Add(userTokenDto)
-	userTokenList := UserTokenDao.ListByUserId(*userDto.Id)
+	userTokenList := UserTokenDao.ListByUserId(userDto.Id)
 	for len(userTokenList) > application.UserTokenLimit { //挤掉以前的登录记录
 
 		//删除登录记录
-		UserTokenDao.DeleteByToken(*userTokenList[0].Token)
+		UserTokenDao.DeleteByToken(userTokenList[0].Token)
 
 		//移除第一个元素
 		userTokenList = userTokenList[1:]

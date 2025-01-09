@@ -26,15 +26,15 @@ func EditHtml() {}
 //@Post:/app/user_edit/init
 func EditInit(id int64) form.UserEditInoutForm {
 	if id != 0 {
-		userDto := UserDao.SelectOne(id)
-		date := Date.Format(*userDto.Date)
+		userDto, _ := UserDao.SelectOne(id)
+		date := Date.Format(userDto.Date)
 		pwd := PWD_PLACEHOLDER
 		return form.UserEditInoutForm{
 			Id:    userDto.Id,
 			Name:  userDto.Name,
-			Pwd:   &pwd,
+			Pwd:   pwd,
 			Email: userDto.Email,
-			Date:  &date,
+			Date:  date,
 			State: userDto.State,
 		}
 	} else {
@@ -53,19 +53,12 @@ func Edit(inForm form.UserEditInoutForm) {
 		Email: inForm.Email,
 		State: inForm.State,
 	}
-	if inForm.Id == nil {
+	if inForm.Id == 0 {
 		UserService.Add(userDto)
 	} else {
 		UserDao.Update(userDto)
 	}
-	if *inForm.Pwd != PWD_PLACEHOLDER { //更新密码
-		UserDao.SetPwd(*inForm.Id, *inForm.Pwd)
+	if inForm.Pwd != PWD_PLACEHOLDER { //更新密码
+		UserDao.SetPwd(inForm.Id, inForm.Pwd)
 	}
-	//} catch (e: Exception) {
-	//    val message = e.message ?: throw e
-	//    if (message.contains("UNIQUE constraint failed: user.email")) {//该邮箱已被其他用户注册
-	//        throw ErrorCode.EXISTS_EMAIL
-	//    }
-	//    throw e
-	//}
 }

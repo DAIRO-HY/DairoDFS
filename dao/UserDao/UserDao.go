@@ -19,7 +19,7 @@ func Add(dto dto.UserDto) {
  * @param id 用户ID
  * @return 用户信息
  */
-func SelectOne(id int64) *dto.UserDto {
+func SelectOne(id int64) (dto.UserDto, bool) {
 	return DBUtil.SelectOne[dto.UserDto]("select * from user where id = ?", id)
 }
 
@@ -27,7 +27,7 @@ func SelectOne(id int64) *dto.UserDto {
  * 获取管理员账户
  * @return 用户信息
  */
-func SelectAdminId() *int64 {
+func SelectAdminId() int64 {
 	return DBUtil.SelectSingleOneIgnoreError[int64]("select id from user order by id limit 1")
 }
 
@@ -36,7 +36,7 @@ func SelectAdminId() *int64 {
  * @param email 邮箱
  * @return 用户信息
  */
-func SelectByEmail(email string) *dto.UserDto {
+func SelectByEmail(email string) (dto.UserDto, bool) {
 	return DBUtil.SelectOne[dto.UserDto]("select * from user where email = ?", email)
 }
 
@@ -45,7 +45,7 @@ func SelectByEmail(email string) *dto.UserDto {
  * @param name 用户名
  * @return 用户信息
  */
-func SelectByName(name string) *dto.UserDto {
+func SelectByName(name string) (dto.UserDto, bool) {
 	return DBUtil.SelectOne[dto.UserDto]("select * from user where name = ?", name)
 }
 
@@ -54,7 +54,7 @@ func SelectByName(name string) *dto.UserDto {
  * @param apiToken 用户ApiToken
  * @return 用户ID
  */
-func SelectIdByApiToken(apiToken string) *int64 {
+func SelectIdByApiToken(apiToken string) int64 {
 	return DBUtil.SelectSingleOneIgnoreError[int64](`select id from user where apiToken = ? and state = 1`, apiToken)
 }
 
@@ -63,7 +63,7 @@ func SelectIdByApiToken(apiToken string) *int64 {
  * @param urlPath 文件访问前缀
  * @return 用户ID
  */
-func SelectIdByUrlPath(urlPath string) *int64 {
+func SelectIdByUrlPath(urlPath string) int64 {
 	return DBUtil.SelectSingleOneIgnoreError[int64]("select id from user where urlPath = ? and state = 1", urlPath)
 }
 
@@ -71,14 +71,14 @@ func SelectIdByUrlPath(urlPath string) *int64 {
  * 获取所有用户
  * @return 所有用户列表
  */
-func SelectAll() []*dto.UserDto {
+func SelectAll() []dto.UserDto {
 	return DBUtil.SelectList[dto.UserDto]("select * from user")
 }
 
 /**
  * 判断是否已经初始化
  */
-func IsInit() *bool {
+func IsInit() bool {
 	return DBUtil.SelectSingleOneIgnoreError[bool]("select count(*) > 0 from user")
 }
 

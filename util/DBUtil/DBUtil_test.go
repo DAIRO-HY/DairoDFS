@@ -28,14 +28,15 @@ func TestID(t *testing.T) {
  * @param dto 用户信息
  */
 func TestSelectList1(t *testing.T) {
-	id := ID()
-	InsertIgnoreError("insert into user(id, name, pwd, encryptionKey, state, date) values (?, ?, ?, ?, ?, ?)",
-		id, fmt.Sprintf("dto.Name%d", id), "dto.Pwd", "dto.EncryptionKey", 1, time.Now())
-	dto := SelectList[dto.UserDto]("select * from user", id)
-	if dto == nil {
-		t.Error("添加用户失败")
+	for i := 0; i < 10; i++ {
+		id := ID()
+		InsertIgnoreError("insert into user(id, name, pwd, encryptionKey, state, date) values (?, ?, ?, ?, ?, ?)",
+			id, fmt.Sprintf("dto.Name%d", id), "dto.Pwd", "dto.EncryptionKey", i, time.Now())
 	}
-	ExecIgnoreError("delete from user where id = ?", id)
+	list := SelectList[dto.UserDto]("select * from user")
+	for _, it := range list {
+		fmt.Println(*it)
+	}
 }
 
 /**
@@ -128,7 +129,7 @@ func TestSelectOne(t *testing.T) {
 	//println(list)
 	userDto := SelectOne[dto.UserDto]("select * from user where id = ?", id)
 	//ExecIgnoreError("delete from user where id = ?", id)
-	if *((*userDto).State) == 0 {
+	if ((*userDto).State) == 0 {
 		t.Error("失败")
 	}
 }

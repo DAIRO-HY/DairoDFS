@@ -90,13 +90,13 @@ func Insert(insert string, args ...any) (int64, error) {
 }
 
 // SelectSingleOneIgnoreError 查询第一个数据并忽略错误
-func SelectSingleOneIgnoreError[T any](query string, args ...any) *T {
+func SelectSingleOneIgnoreError[T any](query string, args ...any) T {
 	value, _ := SelectSingleOne[T](query, args...)
 	return value
 }
 
 // SelectSingleOne 查询第一个数据
-func SelectSingleOne[T any](query string, args ...any) (*T, error) {
+func SelectSingleOne[T any](query string, args ...any) (T, error) {
 	row := DBConn.QueryRow(query, args...)
 	var value *T
 
@@ -105,18 +105,18 @@ func SelectSingleOne[T any](query string, args ...any) (*T, error) {
 	err := row.Scan(&value)
 	if err != nil {
 		LogUtil.Debug(fmt.Sprintf("error: %q, sql: %s", err, query))
-		return nil, err // 返回默认值和错误
+		return *new(T), err // 返回默认值和错误
 	}
-	return value, nil
+	return *value, nil
 }
 
 // SelectOne 查询第一个数据
-func SelectOne[T any](query string, args ...any) *T {
+func SelectOne[T any](query string, args ...any) (T, bool) {
 	dtoList := SelectList[T](query, args...)
 	if len(dtoList) == 0 {
-		return nil
+		return *new(T), false
 	}
-	return dtoList[0]
+	return dtoList[0], true
 }
 
 // SelectList 查询列表
@@ -148,7 +148,7 @@ func SelectListBk[T any](query string, args ...any) []*T {
 }
 
 // SelectList 查询列表
-func SelectList[T any](query string, args ...any) []*T {
+func SelectList[T any](query string, args ...any) []T {
 	rows, err := DBConn.Query(query, args...)
 	if err != nil {
 		LogUtil.Error(fmt.Sprintf("查询数据失败:%s: err:%q", query, err))
@@ -163,12 +163,17 @@ func SelectList[T any](query string, args ...any) []*T {
 		return nil
 	}
 
-	// 创建一个[]interface{}的slice, 每个元素指向values中的对应位置
-	valuePtrs := make([]any, len(columns))
+	//用来存储扫描值的列表
+	scanList := make([]any, len(columns))
+	for i := 0; i < len(columns); i++ {
+		scanList[i] = new(any) //为了解决null值数据，使用双重指针
+	}
+
+	// 存储实体类里的指针
+	fieldPointList := make([]any, len(columns))
 
 	// 创建一个空切片
-	dtoList := make([]*T, 0) // 初始化空切片
-
+	dtoList := make([]T, 0) // 初始化空切片
 	for rows.Next() {
 		dtoT := new(T)
 		if CommonUtil.IsBaseType(*dtoT) { //这是一个基本数据类型
@@ -176,7 +181,7 @@ func SelectList[T any](query string, args ...any) []*T {
 				LogUtil.Error(fmt.Sprintf("数据扫描失败:%s: err:%q", query, scanErr))
 				return nil
 			}
-			dtoList = append(dtoList, dtoT)
+			dtoList = append(dtoList, *dtoT)
 			continue
 		}
 		reflectDto := reflect.ValueOf(dtoT).Elem()
@@ -185,21 +190,75 @@ func SelectList[T any](query string, args ...any) []*T {
 			//结构体中的变量名
 			varName := strings.ToUpper(string(column[0])) + column[1:]
 			field := reflectDto.FieldByName(varName)
-			if !field.IsValid() { //结构体中不存在该变量
-				var temp any
-				temp = nil
-				valuePtrs[i] = &temp
-			} else {
-				valuePtrs[i] = field.Addr().Interface()
+			if field.IsValid() { //获取指针，忽略结构体中不存在该变量
+				fieldPointList[i] = field.Addr().Interface()
 			}
 		}
 
-		// 将当前行的数据扫描到valuePtrs中
-		if scanErr := rows.Scan(valuePtrs...); scanErr != nil {
+		// 将当前行的数据扫描到scanList中
+		if scanErr := rows.Scan(scanList...); scanErr != nil {
 			LogUtil.Error(fmt.Sprintf("数据扫描失败:%s: err:%q", query, scanErr))
 			return nil
 		}
-		dtoList = append(dtoList, dtoT)
+		for i, it := range fieldPointList {
+			value := *scanList[i].(*any)
+			if value == nil {
+				continue
+			}
+			switch fieldPoint := it.(type) {
+			case *int:
+				*fieldPoint = int(value.(int64))
+			case *int8:
+				*fieldPoint = int8(value.(int64))
+			case *int16:
+				*fieldPoint = int16(value.(int64))
+			case *int32:
+				*fieldPoint = int32(value.(int64))
+			case *int64:
+				*fieldPoint = value.(int64)
+			case *float64:
+				*fieldPoint = value.(float64)
+			case *float32:
+				*fieldPoint = float32(value.(float64))
+			case *bool:
+				*fieldPoint = value.(bool)
+			case *string:
+				*fieldPoint = value.(string)
+			case *time.Time:
+				*fieldPoint = value.(time.Time)
+			case **int:
+				temp := int(value.(int64))
+				*fieldPoint = &temp
+			case **int8:
+				temp := int8(value.(int64))
+				*fieldPoint = &temp
+			case **int16:
+				temp := int16(value.(int64))
+				*fieldPoint = &temp
+			case **int32:
+				temp := int32(value.(int64))
+				*fieldPoint = &temp
+			case **int64:
+				temp := value.(int64)
+				*fieldPoint = &temp
+			case **float64:
+				temp := value.(float64)
+				*fieldPoint = &temp
+			case **float32:
+				temp := float32(value.(float64))
+				*fieldPoint = &temp
+			case **bool:
+				temp := value.(bool)
+				*fieldPoint = &temp
+			case **string:
+				temp := value.(string)
+				*fieldPoint = &temp
+			case **time.Time:
+				temp := value.(time.Time)
+				*fieldPoint = &temp
+			}
+		}
+		dtoList = append(dtoList, *dtoT)
 	}
 	return dtoList
 }
@@ -221,14 +280,14 @@ func SelectToListMap(query string, args ...any) []map[string]any {
 	}
 
 	// 创建一个[]interface{}的slice, 每个元素指向values中的对应位置
-	valuePtrs := make([]interface{}, len(columns))
+	valuePtrs := make([]any, len(columns))
 
 	// 创建一个空切片
 	list := make([]map[string]any, 0) // 初始化空切片
 	for rows.Next() {
 
 		// 创建一个长度与列数相同的slice来存放查询结果
-		values := make([]interface{}, len(columns))
+		values := make([]any, len(columns))
 		for i := range values {
 			valuePtrs[i] = &values[i]
 		}

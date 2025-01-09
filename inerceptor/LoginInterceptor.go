@@ -27,11 +27,11 @@ func LoginValidate(writer http.ResponseWriter, request *http.Request) bool {
 		return false
 	}
 	userId := UserTokenDao.GetByUserIdByToken(token)
-	if userId == nil { //用户未登录
+	if userId == 0 { //用户未登录
 		reject(writer, request)
 		return false
 	}
-	GoroutineLocal.Set(application.USER_ID, *userId)
+	GoroutineLocal.Set(application.USER_ID, userId)
 	return true
 }
 

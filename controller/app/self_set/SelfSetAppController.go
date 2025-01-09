@@ -29,13 +29,12 @@ func Html() {}
 //@Post:/app/self_set/init
 func Init() form.SelfSetForm {
 	loginId := LoginState.LoginId()
-	userDto := UserDao.SelectOne(loginId)
-	date := Date.Format(*userDto.Date)
+	userDto, _ := UserDao.SelectOne(loginId)
 	return form.SelfSetForm{
 		Id:            userDto.Id,
 		Name:          userDto.Name,
 		Email:         userDto.Email,
-		Date:          &date,
+		Date:          Date.Format(userDto.Date),
 		UrlPath:       userDto.UrlPath,
 		ApiToken:      userDto.ApiToken,
 		EncryptionKey: userDto.EncryptionKey,
