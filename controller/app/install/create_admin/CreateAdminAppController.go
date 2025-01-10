@@ -14,10 +14,10 @@ import (
  * 管理员账号初始化
  */
 //@Get:/app/install/create_admin
-//@templates:app/install/create_admin.html
+//@Html:app/install/create_admin.html
 func Init(writer http.ResponseWriter, request *http.Request) {
 	if UserDao.IsInit() { //管理员账号已经存在
-		http.Redirect(writer, request, "/app/login", http.StatusFound)
+		http.Redirect(writer, request, "/app/login.html", http.StatusFound)
 	}
 }
 

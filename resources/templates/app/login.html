@@ -41,7 +41,7 @@
         $("form").ajaxByForm().add("pwd", hexMD5($("input[name='pwd']").val())).success(token => {
             localStorage.setItem("name", $("input[name='name']").val())
             document.cookie = "token=" + token + "; max-age=3153600000; path=/";
-            window.location.href = "/app/files"
+            window.location.href = "/app/files.html"
         }).post()
     }
 

@@ -33,10 +33,23 @@ func TestSelectList1(t *testing.T) {
 		InsertIgnoreError("insert into user(id, name, pwd, encryptionKey, state, date) values (?, ?, ?, ?, ?, ?)",
 			id, fmt.Sprintf("dto.Name%d", id), "dto.Pwd", "dto.EncryptionKey", i, time.Now())
 	}
-	list := SelectList[dto.UserDto]("select * from user")
+	list := SelectList[dto.UserDto]("select *,urlPath as id2,id as id3 from user")
 	for _, it := range list {
-		fmt.Println(*it)
+		fmt.Println(it)
 	}
+}
+
+/**
+ * 添加一条数据
+ * @param dto 用户信息
+ */
+func TestSelectList4(t *testing.T) {
+	id := ID()
+	InsertIgnoreError("insert into user(id, name, pwd, encryptionKey, state, date) values (?, ?, ?, ?, ?, ?)",
+		id, fmt.Sprintf("dto.Name%d", id), "dto.Pwd", "dto.EncryptionKey", 1, time.Now())
+	SelectList[dto.UserDto]("select *,urlPath as id2,id as id3 from user")
+	SelectListNull[dto.UserDto]("select *,urlPath as id2,id as id3 from user")
+	ExecIgnoreError("delete from user where id = ?", id)
 }
 
 /**
@@ -127,9 +140,9 @@ func TestSelectOne(t *testing.T) {
 		id, strconv.FormatInt(id, 10), "dto.Pwd", "dto.Email", "dto.EncryptionKey", 0, 123456789)
 	//list := SelectList[int64]("select urlPath from user where id = ?", id)
 	//println(list)
-	userDto := SelectOne[dto.UserDto]("select * from user where id = ?", id)
+	userDto, _ := SelectOne[dto.UserDto]("select * from user where id = ?", id)
 	//ExecIgnoreError("delete from user where id = ?", id)
-	if ((*userDto).State) == 0 {
+	if (userDto.State) == 0 {
 		t.Error("失败")
 	}
 }

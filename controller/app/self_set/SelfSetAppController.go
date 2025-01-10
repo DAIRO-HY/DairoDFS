@@ -12,21 +12,17 @@ import (
 	"time"
 )
 
-/**
- * 系统设置
- */
+// 系统设置
+//@Group:/app/self_set
 
-/**
- * 页面初始化
- */
-//@Get:/app/self_set
-//@templates:app/self_set.html
+// 页面初始化
+// @Html:.html
 func Html() {}
 
 /**
  * 页面初始化
  */
-//@Post:/app/self_set/init
+//@Post:/init
 func Init() form.SelfSetForm {
 	loginId := LoginState.LoginId()
 	userDto, _ := UserDao.SelectOne(loginId)
@@ -44,7 +40,7 @@ func Init() form.SelfSetForm {
 /**
  * 生成API票据
  */
-//@Post:/app/self_set/make_api_token
+//@Post:/make_api_token
 func MakeApiToken(flag int) {
 	loginId := LoginState.LoginId()
 	if flag == 0 {
@@ -59,7 +55,7 @@ func MakeApiToken(flag int) {
 /**
  * 生成web访问路径前缀
  */
-//@Post:/app/self_set/make_url_path
+//@Post:/make_url_path
 func MakeUrlPath(flag int) {
 	loginId := LoginState.LoginId()
 	if flag == 0 {
@@ -74,7 +70,7 @@ func MakeUrlPath(flag int) {
 /**
  * 生成端对端加密
  */
-//@Post:/app/self_set/make_encryption
+//@Post:/make_encryption
 func MakeEncryption(flag int) {
 	loginId := LoginState.LoginId()
 	if flag == 0 {
@@ -99,5 +95,3 @@ func shuffle(slice []byte) {
 		slice[i], slice[j] = slice[j], slice[i]
 	}
 }
-
-//}

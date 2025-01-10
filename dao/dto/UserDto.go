@@ -7,7 +7,9 @@ type UserDto struct {
 	/**
 	 * 主键
 	 */
-	Id int64
+	Id  int64
+	Id2 int64
+	Id3 *int64
 
 	/**
 	 * 用户名

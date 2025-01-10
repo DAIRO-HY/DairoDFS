@@ -1,8 +1,5 @@
 package user
 
-/**
- * 用户编辑
- */
 import (
 	"DairoDFS/controller/app/user/form"
 	"DairoDFS/dao/UserDao"
@@ -13,17 +10,19 @@ import (
 
 const PWD_PLACEHOLDER = "********************************"
 
+//用户编辑
+//@Group:/app/user_edit
+
 /**
  * 初始化
  */
-//@Get:/app/user_edit
-//@templates:app/user_edit.html
+//@Html:.html
 func EditHtml() {}
 
 /**
  * 页面初始化
  */
-//@Post:/app/user_edit/init
+//@Post:/init
 func EditInit(id int64) form.UserEditInoutForm {
 	if id != 0 {
 		userDto, _ := UserDao.SelectOne(id)
@@ -45,7 +44,7 @@ func EditInit(id int64) form.UserEditInoutForm {
 /**
  * 添加或更新数据
  */
-//@Post:/app/user_edit/edit
+//@Post:/edit
 func Edit(inForm form.UserEditInoutForm) {
 	userDto := dto.UserDto{
 		Id:    inForm.Id,

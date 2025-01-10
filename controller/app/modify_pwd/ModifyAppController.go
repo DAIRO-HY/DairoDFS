@@ -8,19 +8,17 @@ import (
 	"DairoDFS/util/LoginState"
 )
 
-/**
- * 密码修改
- */
+//密码修改
+//@Group:/app/modify_pwd
 
 /**
  * 页面初始化
  */
-//@Get:/app/modify_pwd
-//@Templates:app/modify_pwd.html
+//@Html:.html
 func Html() {}
 
 // 修改密码
-// @Post:/app/modify_pwd/modify
+// @Post:/modify
 func Modify(inForm form.ModifyPwdAppForm) error {
 	userId := LoginState.LoginId()
 	newPwd := String.ToMd5(inForm.Pwd)

@@ -7,21 +7,19 @@ import (
 	"strings"
 )
 
-/**
- * 系统配置
- */
+//系统配置
+//@Group:/app/profile
 
 /**
  * 页面初始化
  */
-//@Get:/app/profile
-//@Templates:app/profile.html
+//@Html:.html
 func Html() {}
 
 /**
  * 页面数据初始化
  */
-//@Post:/app/profile/init
+//@Post:/init
 func Init() form.ProfileForm {
 	inForm := form.ProfileForm{}
 	systemConfig := SystemConfig.Instance()
@@ -37,7 +35,7 @@ func Init() form.ProfileForm {
 /**
  * 页面初始化
  */
-//@Post:/app/profile/update
+//@Post:/update
 func Update(form form.ProfileForm) error {
 	folders := strings.Split(form.Folders, "\n")
 	systemConfig := SystemConfig.Instance()

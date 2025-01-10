@@ -11,7 +11,7 @@
 </div>
 <script>
     addContentBarBtn("添加", () => {
-        location.href = "user_edit"
+        location.href = "user_edit.html"
     })
     $(function () {
         $.ajaxByData("/app/user_list/init").success(data => fillDataTable(data)).post()
@@ -30,7 +30,7 @@
             checkbox: true,
             iconBtns: {
                 "bi-pencil-square": function (item) {
-                    location.href = "/app/user_edit?id=" + item.id
+                    location.href = "/app/user_edit.html?id=" + item.id
                 }
             },
             columns: [

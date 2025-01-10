@@ -1,8 +1,9 @@
 package files
 
-/** 文件列表页面 **/
-//@Get:/app/files
-//@templates:app/files.html
+// 文件列表页面
+//@Group:/app/files
+
+// @Html:.html
 func Html() {}
 
 //@Operation(summary = "获取文件列表")

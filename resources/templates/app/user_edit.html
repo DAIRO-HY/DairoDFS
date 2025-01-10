@@ -60,7 +60,7 @@
             pwd = hexMD5(pwd)
         }
         $("form").ajaxByForm().add("pwd", pwd).success(() => {
-            location.href = "/app/user_list"
+            location.href = "/app/user_list.html"
         }).post()
     }
 </script>

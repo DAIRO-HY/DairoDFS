@@ -65,8 +65,7 @@ func startWebServer(port int) {
 		var body any = nil
 		controllerapp.Home()
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-		templates := append([]string{"resources/templates/index.html"}, COMMON_TEMPLATES...)
-		writeToTemplate(writer, templates, body)
+		writeToResponse(writer, body)
 	})
 	http.HandleFunc("/app", func(writer http.ResponseWriter, request *http.Request) {
 		if request.Method != "GET" {
@@ -80,10 +79,9 @@ func startWebServer(port int) {
 		var body any = nil
 		controllerapp.Init()
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-		templates := append([]string{"resources/templates/index.html"}, COMMON_TEMPLATES...)
-		writeToTemplate(writer, templates, body)
+		writeToResponse(writer, body)
 	})
-	http.HandleFunc("/app/about", func(writer http.ResponseWriter, request *http.Request) {
+	http.HandleFunc("/app/about.html", func(writer http.ResponseWriter, request *http.Request) {
 		if request.Method != "GET" {
 			writer.WriteHeader(http.StatusMethodNotAllowed) // 设置状态码
 			writer.Write([]byte("Method Not Allowed"))
@@ -95,10 +93,9 @@ func startWebServer(port int) {
 		var body any = nil
 		controllerappabout.Html()
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-		templates := append([]string{"resources/templates/app/about.html"}, COMMON_TEMPLATES...)
-		writeToTemplate(writer, templates, body)
+		writeToTemplate(writer, body, "resources/templates/app/about.html", "resources/templates/app/include/head.html", "resources/templates/app/include/top-bar.html")
 	})
-	http.HandleFunc("/app/files", func(writer http.ResponseWriter, request *http.Request) {
+	http.HandleFunc("/app/files.html", func(writer http.ResponseWriter, request *http.Request) {
 		if request.Method != "GET" {
 			writer.WriteHeader(http.StatusMethodNotAllowed) // 设置状态码
 			writer.Write([]byte("Method Not Allowed"))
@@ -110,8 +107,7 @@ func startWebServer(port int) {
 		var body any = nil
 		controllerappfiles.Html()
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-		templates := append([]string{"resources/templates/app/files.html"}, COMMON_TEMPLATES...)
-		writeToTemplate(writer, templates, body)
+		writeToTemplate(writer, body, "resources/templates/app/files.html", "resources/templates/app/include/head.html", "resources/templates/app/include/top-bar.html", "resources/templates/app/include/files/files_toolbar.html")
 	})
 	http.HandleFunc("/app/install/create_admin", func(writer http.ResponseWriter, request *http.Request) {
 		if request.Method != "GET" {
@@ -122,8 +118,7 @@ func startWebServer(port int) {
 		var body any = nil
 		controllerappinstallcreateadmin.Init(writer, request)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-		templates := append([]string{"resources/templates/app/install/create_admin.html"}, COMMON_TEMPLATES...)
-		writeToTemplate(writer, templates, body)
+		writeToTemplate(writer, body, "resources/templates/app/install/create_admin.html", "resources/templates/app/include/head.html")
 	})
 	http.HandleFunc("/app/install/create_admin/add_admin", func(writer http.ResponseWriter, request *http.Request) {
 		if request.Method != "POST" {
@@ -151,7 +146,7 @@ func startWebServer(port int) {
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 		writeToResponse(writer, body)
 	})
-	http.HandleFunc("/app/login", func(writer http.ResponseWriter, request *http.Request) {
+	http.HandleFunc("/app/login.html", func(writer http.ResponseWriter, request *http.Request) {
 		if request.Method != "GET" {
 			writer.WriteHeader(http.StatusMethodNotAllowed) // 设置状态码
 			writer.Write([]byte("Method Not Allowed"))
@@ -160,8 +155,7 @@ func startWebServer(port int) {
 		var body any = nil
 		controllerapplogin.Init(writer, request)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-		templates := append([]string{"resources/templates/app/login.html"}, COMMON_TEMPLATES...)
-		writeToTemplate(writer, templates, body)
+		writeToTemplate(writer, body, "resources/templates/app/login.html", "resources/templates/app/include/head.html")
 	})
 	http.HandleFunc("/app/login/do-login", func(writer http.ResponseWriter, request *http.Request) {
 		if request.Method != "POST" {
@@ -225,7 +219,18 @@ func startWebServer(port int) {
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 		writeToResponse(writer, body)
 	})
-	http.HandleFunc("/app/modify_pwd", func(writer http.ResponseWriter, request *http.Request) {
+	http.HandleFunc("/app/login/logout", func(writer http.ResponseWriter, request *http.Request) {
+		if request.Method != "POST" {
+			writer.WriteHeader(http.StatusMethodNotAllowed) // 设置状态码
+			writer.Write([]byte("Method Not Allowed"))
+			return
+		}
+		var body any = nil
+		controllerapplogin.Logout(request)
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+		writeToResponse(writer, body)
+	})
+	http.HandleFunc("/app/modify_pwd.html", func(writer http.ResponseWriter, request *http.Request) {
 		if request.Method != "GET" {
 			writer.WriteHeader(http.StatusMethodNotAllowed) // 设置状态码
 			writer.Write([]byte("Method Not Allowed"))
@@ -237,8 +242,7 @@ func startWebServer(port int) {
 		var body any = nil
 		controllerappmodifypwd.Html()
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-		templates := append([]string{"resources/templates/app/modify_pwd.html"}, COMMON_TEMPLATES...)
-		writeToTemplate(writer, templates, body)
+		writeToTemplate(writer, body, "resources/templates/app/modify_pwd.html", "resources/templates/app/include/head.html")
 	})
 	http.HandleFunc("/app/modify_pwd/modify", func(writer http.ResponseWriter, request *http.Request) {
 		if request.Method != "POST" {
@@ -288,7 +292,7 @@ func startWebServer(port int) {
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 		writeToResponse(writer, body)
 	})
-	http.HandleFunc("/app/profile", func(writer http.ResponseWriter, request *http.Request) {
+	http.HandleFunc("/app/profile.html", func(writer http.ResponseWriter, request *http.Request) {
 		if request.Method != "GET" {
 			writer.WriteHeader(http.StatusMethodNotAllowed) // 设置状态码
 			writer.Write([]byte("Method Not Allowed"))
@@ -300,8 +304,7 @@ func startWebServer(port int) {
 		var body any = nil
 		controllerappprofile.Html()
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-		templates := append([]string{"resources/templates/app/profile.html"}, COMMON_TEMPLATES...)
-		writeToTemplate(writer, templates, body)
+		writeToTemplate(writer, body, "resources/templates/app/profile.html", "resources/templates/app/include/head.html", "resources/templates/app/include/top-bar.html")
 	})
 	http.HandleFunc("/app/profile/init", func(writer http.ResponseWriter, request *http.Request) {
 		if request.Method != "POST" {
@@ -384,7 +387,7 @@ func startWebServer(port int) {
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 		writeToResponse(writer, body)
 	})
-	http.HandleFunc("/app/profile/make_token", func(writer http.ResponseWriter, request *http.Request) {
+	http.HandleFunc("/app/profile/app/profile/make_token", func(writer http.ResponseWriter, request *http.Request) {
 		if request.Method != "POST" {
 			writer.WriteHeader(http.StatusMethodNotAllowed) // 设置状态码
 			writer.Write([]byte("Method Not Allowed"))
@@ -398,7 +401,7 @@ func startWebServer(port int) {
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 		writeToResponse(writer, body)
 	})
-	http.HandleFunc("/app/self_set", func(writer http.ResponseWriter, request *http.Request) {
+	http.HandleFunc("/app/self_set.html", func(writer http.ResponseWriter, request *http.Request) {
 		if request.Method != "GET" {
 			writer.WriteHeader(http.StatusMethodNotAllowed) // 设置状态码
 			writer.Write([]byte("Method Not Allowed"))
@@ -410,8 +413,7 @@ func startWebServer(port int) {
 		var body any = nil
 		controllerappselfset.Html()
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-		templates := append([]string{"resources/templates/app/self_set.html"}, COMMON_TEMPLATES...)
-		writeToTemplate(writer, templates, body)
+		writeToTemplate(writer, body, "resources/templates/app/self_set.html", "resources/templates/app/include/head.html", "resources/templates/app/include/top-bar.html")
 	})
 	http.HandleFunc("/app/self_set/init", func(writer http.ResponseWriter, request *http.Request) {
 		if request.Method != "POST" {
@@ -496,7 +498,7 @@ func startWebServer(port int) {
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 		writeToResponse(writer, body)
 	})
-	http.HandleFunc("/app/user_edit", func(writer http.ResponseWriter, request *http.Request) {
+	http.HandleFunc("/app/user_edit.html", func(writer http.ResponseWriter, request *http.Request) {
 		if request.Method != "GET" {
 			writer.WriteHeader(http.StatusMethodNotAllowed) // 设置状态码
 			writer.Write([]byte("Method Not Allowed"))
@@ -508,8 +510,7 @@ func startWebServer(port int) {
 		var body any = nil
 		controllerappuser.EditHtml()
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-		templates := append([]string{"resources/templates/app/user_edit.html"}, COMMON_TEMPLATES...)
-		writeToTemplate(writer, templates, body)
+		writeToTemplate(writer, body, "resources/templates/app/user_edit.html", "resources/templates/app/include/head.html", "resources/templates/app/include/top-bar.html")
 	})
 	http.HandleFunc("/app/user_edit/init", func(writer http.ResponseWriter, request *http.Request) {
 		if request.Method != "POST" {
@@ -611,7 +612,7 @@ func startWebServer(port int) {
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 		writeToResponse(writer, body)
 	})
-	http.HandleFunc("/app/user_list", func(writer http.ResponseWriter, request *http.Request) {
+	http.HandleFunc("/app/user_list.html", func(writer http.ResponseWriter, request *http.Request) {
 		if request.Method != "GET" {
 			writer.WriteHeader(http.StatusMethodNotAllowed) // 设置状态码
 			writer.Write([]byte("Method Not Allowed"))
@@ -623,8 +624,7 @@ func startWebServer(port int) {
 		var body any = nil
 		controllerappuser.ListHtml()
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-		templates := append([]string{"resources/templates/app/user_list.html"}, COMMON_TEMPLATES...)
-		writeToTemplate(writer, templates, body)
+		writeToTemplate(writer, body, "resources/templates/app/user_list.html", "resources/templates/app/include/head.html", "resources/templates/app/include/top-bar.html")
 	})
 	http.HandleFunc("/app/user_list/init", func(writer http.ResponseWriter, request *http.Request) {
 		if request.Method != "POST" {
@@ -1064,7 +1064,7 @@ func writeToResponse(writer http.ResponseWriter, body any) {
 }
 
 // 写入html模板
-func writeToTemplate(writer http.ResponseWriter, templates []string, data any) {
+func writeToTemplate(writer http.ResponseWriter, data any, templates ...string) {
 
 	// 解析嵌入的模板
 	t, err := template.ParseFS(templatesFiles, templates...)

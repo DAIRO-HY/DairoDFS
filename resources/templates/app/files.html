@@ -8,7 +8,7 @@
 {{template "top-bar" .}}
 
 <!--文件操作导航视图-->
-<th:block th:include="app/icd/files/files_toolbar :: files_toolbar"/>
+{{template "files_toolbar" .}}
 
 <!--文件上传进度试图-->
 <th:block th:include="app/icd/files/files_upload :: files_upload"/>

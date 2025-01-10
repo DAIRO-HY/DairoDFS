@@ -9,22 +9,22 @@
         <div class="collapse navbar-collapse" id="navbarSupportedContent">
             <ul class="navbar-nav me-auto">
                 <li class="nav-item">
-                    <a class="nav-link" href="/app/files">文件</a>
+                    <a class="nav-link" href="/app/files.html">文件</a>
                 </li>
                 <li class="nav-item" th:if="${IS_ADMIN}">
-                    <a class="nav-link" href="/app/user_list">用户</a>
+                    <a class="nav-link" href="/app/user_list.html">用户</a>
                 </li>
                 <li class="nav-item" th:if="${IS_ADMIN}">
-                    <a class="nav-link" href="/app/profile">配置</a>
+                    <a class="nav-link" href="/app/profile.html">配置</a>
                 </li>
                 <li class="nav-item" th:if="${IS_ADMIN}">
-                    <a class="nav-link" href="/app/sync">同步</a>
+                    <a class="nav-link" href="/app/sync.html">同步</a>
                 </li>
                 <li class="nav-item" th:if="${IS_ADMIN}">
-                    <a class="nav-link" href="/app/advanced">高级</a>
+                    <a class="nav-link" href="/app/advanced.html">高级</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="/app/about">关于</a>
+                    <a class="nav-link" href="/app/about.html">关于</a>
                 </li>
             </ul>
             <div class="dropdown text-start text-sm-end" style="width: 160px">
@@ -35,22 +35,22 @@
                 </button>
                 <ul class="dropdown-menu">
                     <li>
-                        <a class="dropdown-item" href="/app/my_share"><i
+                        <a class="dropdown-item" href="/app/my_share.html"><i
                                 class="bi bi-share me-2"></i>我的分享</a>
                     </li>
                     <li>
-                        <a class="dropdown-item" href="/app/trash"><i
+                        <a class="dropdown-item" href="/app/trash.html"><i
                                 class="bi bi-trash2 me-2"></i>垃圾箱</a>
                     </li>
                     <li>
                         <hr class="dropdown-divider">
                     </li>
                     <li>
-                        <a class="dropdown-item" href="/app/self_set">
+                        <a class="dropdown-item" href="/app/self_set.html">
                             <i class="bi bi-gear me-2"></i>设置</a>
                     </li>
                     <li>
-                        <a class="dropdown-item" href="/app/modify_pwd"><i
+                        <a class="dropdown-item" href="/app/modify_pwd.html"><i
                                 class="bi bi-shield-lock me-2"></i>修改密码</a>
                     </li>
                     <li>

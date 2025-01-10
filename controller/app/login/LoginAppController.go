@@ -13,9 +13,11 @@ import (
 	"time"
 )
 
+//登录页面
+//@Group:/app/login
+
 /** 页面初始化 */
-//@Get:/app/login
-//@templates:app/login.html
+//@Html:.html
 func Init(writer http.ResponseWriter, request *http.Request) {
 	if !UserDao.IsInit() { //是否已经初始化
 		http.Redirect(writer, request, "/app/install/create_admin", http.StatusFound)
@@ -23,7 +25,7 @@ func Init(writer http.ResponseWriter, request *http.Request) {
 }
 
 /** 用户登录 */
-//@Post:/app/login/do-login
+//@Post:/do-login
 func DoLogin(loginForm form.LoginAppInForm, _clientFlag int, _version int) any {
 	userDto, _ := UserDao.SelectByName(loginForm.Name)
 
@@ -61,15 +63,26 @@ func DoLogin(loginForm form.LoginAppInForm, _clientFlag int, _version int) any {
 	return token
 }
 
-//
-//    /**
-//     * 退出登录
-//     */
-//    @PostMapping("/logout")
-//    @ResponseBody
-//    fun logout(session: HttpSession) {
-//        session.removeAttribute("LOGIN_DATE")
-//    }
+/**
+ * 退出登录
+ */
+//@Post:/logout
+func Logout(request *http.Request) {
+
+	//获取APP登录票据
+	cookieToken, _ := request.Cookie("token")
+	if cookieToken == nil {
+		return
+	}
+	token := cookieToken.Value
+	if len(token) == 0 {
+		return
+	}
+
+	//删除登录记录
+	UserTokenDao.DeleteByToken(token)
+}
+
 //
 //    /**
 //     * 忘记密码
