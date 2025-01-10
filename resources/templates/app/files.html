@@ -11,16 +11,16 @@
 {{template "files_toolbar" .}}
 
 <!--文件上传进度试图-->
-<th:block th:include="app/icd/files/files_upload :: files_upload"/>
+{{template "files_upload" .}}
 
 <!--文件列表视图-->
-<th:block th:include="app/icd/files_list :: files_list"/>
+{{template "files_list" .}}
 
 <!--右键菜单视图-->
-<th:block th:include="app/icd/files/files_right_option :: files_right_option"/>
+{{template "files_right_option" .}}
 
 <!--分享画面-->
-<th:block th:include="app/icd/files/files_share :: files_share"/>
+{{template "files_share" .}}
 
 <!--分享明细dialog-->
 <th:block th:include="app/icd/share_detail_dialog :: share_detail_dialog"/>
