@@ -39,11 +39,12 @@
      */
     let fileList = []
 
-    $(function () {
-        init()
-    })
-
-    function init() {
+    /**
+     * 文件列表请求api
+     */
+    let listApi
+    function initFileList(url) {
+        listApi = url
 
         //绑定文件空白右键点击事件
         bindEmptyRightClick()
@@ -158,7 +159,7 @@
      * 加载文件列表数据
      */
     function loadFileData(folder) {
-        $.ajaxByData(location.pathname + "/get_list?folder=" + folder).success(data => {
+        $.ajaxByData(listApi + "?folder=" + folder).success(data => {
             data.forEach(item => item.checked = false)
             data = data.sort(item => item.fileFlag ? 1 : -1)
 

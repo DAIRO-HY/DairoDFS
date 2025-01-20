@@ -95,7 +95,7 @@ func SelectSubFileIdAndName(userId int64, parentId int64) []dto.DfsFileDto {
  * @param parentId 文件夹id
  * @return 子文件列表
  */
-func SelectSubFile(userId int64, parentId int64) []*dto.DfsFileThumbDto {
+func SelectSubFile(userId int64, parentId int64) []dto.DfsFileThumbDto {
 	return DBUtil.SelectList[dto.DfsFileThumbDto](`select df.id, df.name, df.size, df.date, df.localId, thumbDf.id > 0 as hasThumb
         from dfs_file as df
                  left join dfs_file as thumbDf

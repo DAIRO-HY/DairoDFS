@@ -1,7 +1,7 @@
 package String
 
 import (
-	application "DairoDFS/application"
+	"DairoDFS/application"
 	"DairoDFS/exception"
 	"crypto/md5"
 	"encoding/base64"
@@ -63,7 +63,7 @@ func ToDfsFileNameList(name string) ([]string, error) {
 	//TODO:这里是否需要检查路径的正确行，待验证
 	//DfsFileUtil.CheckPath(name)
 	if len(name) == 0 {
-		return []string{}, nil
+		return []string{""}, nil
 	}
 	if !strings.HasPrefix(name, "/") {
 		return nil, exception.Biz("文件路径必须以/开头")

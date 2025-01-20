@@ -150,7 +150,7 @@
             alert("请选择要删除的文件或文件夹")
             return
         }
-        $.ajaxByData("files/delete").add("paths", paths).success(() => {
+        $.ajaxByData("/app/files/delete").add("paths", paths).success(() => {
             reload()
         }).post()
     }
@@ -169,7 +169,7 @@
         if (file.name === name) {
             return
         }
-        $.ajaxByData("files/rename").addAll({
+        $.ajaxByData("/app/files/rename").addAll({
             sourcePath: sourcePath,
             name: name
         }).success(() => {
@@ -230,9 +230,9 @@
 
         let url
         if (type === "1") {
-            url = "files/move"
+            url = "/app/files/move"
         } else {
-            url = "files/copy"
+            url = "/app/files/copy"
         }
 
         $.ajaxByData(url).addAll({

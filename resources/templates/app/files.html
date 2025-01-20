@@ -28,6 +28,9 @@
 <!--文件属性dialog-->
 <th:block th:include="app/icd/file_property_dialog :: file_property_dialog"/>
 <script>
+    $(function(){
+        initFileList("/app/files/get_list")
+    })
 </script>
 </body>
 </html>

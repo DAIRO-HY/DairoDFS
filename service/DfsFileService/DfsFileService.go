@@ -7,8 +7,10 @@ import (
 	"DairoDFS/exception"
 	"DairoDFS/extension/String"
 	"DairoDFS/util/DBUtil"
+	"DairoDFS/util/DfsFileUtil"
 	"fmt"
 	"io"
+	"os"
 	"strings"
 	"time"
 )
@@ -21,32 +23,28 @@ import (
  * 添加一个文件或文件夹
  */
 func AddFile(fileDto dto.DfsFileDto, isOverWrite bool) error {
-	if *fileDto.LocalId == 0 {
+	if fileDto.LocalId == 0 {
 		return exception.Biz("本地存储文件ID不能为空")
 	}
-	existDto := DfsFileDao.SelectByParentIdAndName(*fileDto.UserId, *fileDto.ParentId, *fileDto.Name)
-	if existDto != nil {
+	existDto, isExists := DfsFileDao.SelectByParentIdAndName(fileDto.UserId, fileDto.ParentId, fileDto.Name)
+	if isExists {
 		if existDto.IsFolder() {
-			return exception.Biz("已存在同名文件夹:" + *fileDto.Name)
+			return exception.Biz("已存在同名文件夹:" + fileDto.Name)
 		}
 		if existDto.LocalId == fileDto.LocalId { //同一个文件,直接成功
 			return nil
 		}
 		if !isOverWrite { //文件已经存在,在不允许覆盖的情况下,直接报错义务错误
-			return exception.EXISTS_FILE(*fileDto.Name)
+			return exception.EXISTS_FILE(fileDto.Name)
 		}
 	}
-
-	now := time.Now()
-	id := DBUtil.ID()
-
-	fileDto.Date = &now
-	fileDto.Id = &id
+	fileDto.Date = time.Now()
+	fileDto.Id = DBUtil.ID()
 
 	//添加文件
 	DfsFileDao.Add(fileDto)
-	if existDto != nil && isOverWrite { //将已经存在的文件标记为历史版本
-		DfsFileDao.SetHistory(*existDto.Id)
+	if isExists && isOverWrite { //将已经存在的文件标记为历史版本
+		DfsFileDao.SetHistory(existDto.Id)
 	}
 	return nil
 }
@@ -55,17 +53,12 @@ func AddFile(fileDto dto.DfsFileDto, isOverWrite bool) error {
  * 添加文件夹
  */
 func AddFolder(folderDto dto.DfsFileDto) error {
-	existDto := DfsFileDao.SelectByParentIdAndName(*folderDto.UserId, *folderDto.ParentId, *folderDto.Name)
-	if existDto != nil {
+	_, isExists := DfsFileDao.SelectByParentIdAndName(folderDto.UserId, folderDto.ParentId, folderDto.Name)
+	if isExists {
 		return exception.BizCode(1001, "文件或文件夹已经存在")
 	}
-
-	date := time.Now()
-	id := DBUtil.ID()
-
-	folderDto.LocalId = new(int64)
-	folderDto.Date = &date
-	folderDto.Id = &id
+	folderDto.LocalId = 0
+	folderDto.Date = time.Now()
 	DfsFileDao.Add(folderDto)
 	return nil
 }
@@ -83,17 +76,17 @@ func GetIdByFolder(userId int64, folder string, isCreate bool) (int64, error) {
 		return 0, err
 	}
 	var folderId = DfsFileDao.SelectIdByPath(userId, names)
-	if folderId != nil {
-		return *folderId, nil
+	if folderId != 0 {
+		return folderId, nil
 	}
 	if isCreate {
 		id, mkErr := Mkdirs(userId, folder)
 		if mkErr != nil {
 			return 0, mkErr
 		}
-		folderId = &id
+		folderId = id
 	}
-	return *folderId, nil
+	return folderId, nil
 }
 
 /**
@@ -130,7 +123,7 @@ func Copy(userId int64, sourcePaths []string, targetFolder string, isOverWrite b
 			return err
 		}
 		fileId := DfsFileDao.SelectIdByPath(userId, nameList)
-		fileDto := DfsFileDao.SelectOne(*fileId)
+		fileDto, _ := DfsFileDao.SelectOne(fileId)
 		if fileDto.IsFolder() { //源目录是一个文件夹
 			_, mkdirErr := Mkdirs(userId, targetPath)
 			if mkdirErr != nil {
@@ -143,8 +136,8 @@ func Copy(userId int64, sourcePaths []string, targetFolder string, isOverWrite b
 			}
 			fileName := String.FileName(targetPath)
 			createFileDto := dto.DfsFileDto{
-				ParentId:    &folderId,
-				Name:        &fileName,
+				ParentId:    folderId,
+				Name:        fileName,
 				LocalId:     fileDto.LocalId,
 				Size:        fileDto.Size,
 				ContentType: fileDto.ContentType,
@@ -184,7 +177,7 @@ func makeNameNo(userId int64, targetPath string) (string, error) {
 	var endNameName string
 	lastDotIndex := strings.LastIndex(name, ".")
 	if lastDotIndex != -1 { //路径包含点
-		existFileDto := DfsFileDao.SelectByParentIdAndName(userId, parentId, name)
+		existFileDto, _ := DfsFileDao.SelectByParentIdAndName(userId, parentId, name)
 		if existFileDto.IsFile() {
 			startName = name[:lastDotIndex]
 			endNameName = name[lastDotIndex:]
@@ -198,7 +191,7 @@ func makeNameNo(userId int64, targetPath string) (string, error) {
 	}
 	for i := 0; i < 10000; i++ {
 		newName := fmt.Sprintf("%s(%d)%s", startName, i, endNameName)
-		if DfsFileDao.SelectIdByParentIdAndName(userId, parentId, newName) == nil {
+		if DfsFileDao.SelectIdByParentIdAndName(userId, parentId, newName) == 0 {
 			return newName, nil
 		}
 	}
@@ -241,25 +234,25 @@ func Move(userId int64, sourcePaths []string, targetFolder string, isOverWrite b
 			return err
 		}
 		fileId := DfsFileDao.SelectIdByPath(userId, nameList)
-		sourceFileDto := DfsFileDao.SelectOne(*fileId)
+		sourceFileDto, _ := DfsFileDao.SelectOne(fileId)
 		if sourceFileDto.IsFolder() { //源目录是一个文件夹
 			_, mkErr := Mkdirs(userId, targetPath)
 			if mkErr != nil {
 				return mkErr
 			}
-			afterDeleteFolderList = append(afterDeleteFolderList, *sourceFileDto)
+			afterDeleteFolderList = append(afterDeleteFolderList, sourceFileDto)
 		} else {
 			folderId, folderErr := GetIdByFolder(userId, String.FileParent(targetPath), true)
 			if folderErr != nil {
 				return folderErr
 			}
-			existFileDto := DfsFileDao.SelectByParentIdAndName(userId, folderId, *sourceFileDto.Name)
-			if existFileDto == nil { //文件不存在时,移动文件包括版本记录
-				sourceFileDto.ParentId = &folderId
+			existFileDto, isExists := DfsFileDao.SelectByParentIdAndName(userId, folderId, sourceFileDto.Name)
+			if !isExists { //文件不存在时,移动文件包括版本记录
+				sourceFileDto.ParentId = folderId
 
 				fileName := String.FileName(targetPath)
-				sourceFileDto.Name = &fileName
-				DfsFileDao.Move(*sourceFileDto)
+				sourceFileDto.Name = fileName
+				DfsFileDao.Move(sourceFileDto)
 			} else { //目标文件已经存在
 				if existFileDto.IsFolder() { //移动的对象一个时文件一个是文件夹,禁止移动
 					return exception.EXISTS(targetPath)
@@ -269,17 +262,17 @@ func Move(userId int64, sourcePaths []string, targetFolder string, isOverWrite b
 				}
 
 				fileName := String.FileName(targetPath)
-				sourceFileDto.ParentId = &folderId
-				sourceFileDto.Name = &fileName
-				DfsFileDao.Move(*sourceFileDto)
+				sourceFileDto.ParentId = folderId
+				sourceFileDto.Name = fileName
+				DfsFileDao.Move(sourceFileDto)
 
 				//将已经存在的文件标记为历史版本
-				DfsFileDao.SetHistory(*existFileDto.Id)
+				DfsFileDao.SetHistory(existFileDto.Id)
 			}
 		}
 	}
 	for _, it := range afterDeleteFolderList { //删除源文件夹,不能在移动的途中删除文件夹,否则导致无法找到要移动的文件
-		DfsFileDao.Delete(*it.Id)
+		DfsFileDao.Delete(it.Id)
 	}
 	return nil
 }
@@ -295,16 +288,16 @@ func Rename(userId int64, sourcePath string, name string) error {
 
 	//获取源目录文件id
 	fileId := DfsFileDao.SelectIdByPath(userId, nameList)
-	if fileId == nil {
+	if fileId == 0 {
 		return exception.Biz("移动源目录不存在")
 	}
-	fileDto := DfsFileDao.SelectOne(*fileId)
-	existFileDto := DfsFileDao.SelectByParentIdAndName(userId, *fileDto.ParentId, name)
-	if existFileDto != nil && *existFileDto.Id != *fileId { //existFileDto.id != fileId判断是否同一个文件,有可能仅仅时将文件名大小写转换的可能
+	fileDto, _ := DfsFileDao.SelectOne(fileId)
+	existFileDto, isExists := DfsFileDao.SelectByParentIdAndName(userId, fileDto.ParentId, name)
+	if isExists && existFileDto.Id != fileId { //existFileDto.id != fileId判断是否同一个文件,有可能仅仅时将文件名大小写转换的可能
 		return exception.Biz("路径[" + String.FileParent(sourcePath) + "/" + name + "]已存在")
 	}
-	fileDto.Name = &name
-	DfsFileDao.Move(*fileDto)
+	fileDto.Name = name
+	DfsFileDao.Move(fileDto)
 	return nil
 }
 
@@ -322,14 +315,14 @@ func recursionMakeSourceToTargetMap(userId int64, sourcePath string, targetPath 
 		return err
 	}
 	fileId := DfsFileDao.SelectIdByPath(userId, nameList)
-	if fileId == nil {
+	if fileId == 0 {
 		return exception.Biz("文件路径:[" + sourcePath + "]不存在")
 	}
-	fileDto := DfsFileDao.SelectOne(*fileId)
+	fileDto, _ := DfsFileDao.SelectOne(fileId)
 	if fileDto.IsFolder() { //这是一个文件夹
-		for _, it := range DfsFileDao.SelectSubFileIdAndName(userId, *fileId) {
-			subSourcePath := sourcePath + "/" + *it.Name
-			subTargetPath := targetPath + "/" + *it.Name
+		for _, it := range DfsFileDao.SelectSubFileIdAndName(userId, fileId) {
+			subSourcePath := sourcePath + "/" + it.Name
+			subTargetPath := targetPath + "/" + it.Name
 			err2 := recursionMakeSourceToTargetMap(userId, subSourcePath, subTargetPath, sourceToTargetMap)
 			if err2 != nil {
 				return err2
@@ -350,11 +343,11 @@ func SetDelete(userId int64, path string) error {
 		return err
 	}
 	dfsFileId := DfsFileDao.SelectIdByPath(userId, nameList)
-	if dfsFileId == nil {
+	if dfsFileId == 0 {
 		return exception.Biz("找不到指定目录:" + path)
 	}
-	dsfFileDto := DfsFileDao.SelectOne(*dfsFileId)
-	DfsFileDao.SetDelete(*dsfFileDto.Id, time.Now().UnixMilli())
+	dsfFileDto, _ := DfsFileDao.SelectOne(dfsFileId)
+	DfsFileDao.SetDelete(dsfFileDto.Id, time.Now().UnixMilli())
 	return nil
 }
 
@@ -378,12 +371,12 @@ func Mkdirs(userId int64, path string) (int64, error) {
 	for _, it := range nameList {
 		curPathSB += "/" + it
 		if !isCreatModel {
-			folderDto := DfsFileDao.SelectByParentIdAndName(userId, lastFolderId, it)
-			if folderDto != nil { //父级文件夹已经存在
+			folderDto, isExists := DfsFileDao.SelectByParentIdAndName(userId, lastFolderId, it)
+			if isExists { //父级文件夹已经存在
 				if folderDto.IsFile() {
 					return 0, exception.Biz(curPathSB + "是一个文件,不允许创建文件夹")
 				}
-				lastFolderId = *folderDto.Id
+				lastFolderId = folderDto.Id
 				continue
 			}
 
@@ -391,16 +384,17 @@ func Mkdirs(userId int64, path string) (int64, error) {
 			isCreatModel = true
 		}
 		createFolderDto := dto.DfsFileDto{
-			UserId:   &userId,
-			Name:     &it,
-			ParentId: &lastFolderId,
-			Size:     new(int64),
+			Id:       DBUtil.ID(),
+			UserId:   userId,
+			Name:     it,
+			ParentId: lastFolderId,
+			Size:     0,
 		}
 		addErr := AddFolder(createFolderDto)
 		if addErr != nil {
 			return 0, addErr
 		}
-		lastFolderId = *createFolderDto.Id
+		lastFolderId = createFolderDto.Id
 	}
 	return lastFolderId, nil
 }
@@ -412,12 +406,12 @@ func Mkdirs(userId int64, path string) (int64, error) {
  */
 func TrashRecover(userId int64, ids []int64, isOverWrite bool) error {
 	for _, it := range ids {
-		fileDto := DfsFileDao.SelectOne(it)
-		if *fileDto.UserId != userId {
+		fileDto, _ := DfsFileDao.SelectOne(it)
+		if fileDto.UserId != userId {
 			return exception.NOT_ALLOW()
 		}
-		existsDto := DfsFileDao.SelectByParentIdAndName(userId, *fileDto.ParentId, *fileDto.Name)
-		if existsDto == nil { //目标文件不存在,直接将文件的删除日期即可
+		_, isExists := DfsFileDao.SelectByParentIdAndName(userId, fileDto.ParentId, fileDto.Name)
+		if !isExists { //目标文件不存在,直接将文件的删除日期即可
 			DfsFileDao.SetNotDelete(it)
 		} else { //目标路径已经存在
 			path, _ := GetPathById(it)
@@ -436,15 +430,15 @@ func GetPathById(id int64) (string, error) {
 	pathSB := ""
 	var tempId = id
 	for {
-		fileDto := DfsFileDao.SelectOne(tempId)
-		if fileDto == nil {
+		fileDto, isExists := DfsFileDao.SelectOne(tempId)
+		if !isExists {
 			return "", exception.NO_EXISTS()
 		}
-		if *fileDto.ParentId == 0 {
+		if fileDto.ParentId == 0 {
 			break
 		}
-		pathSB = "/" + *fileDto.Name + pathSB
-		tempId = *fileDto.ParentId
+		pathSB = "/" + fileDto.Name + pathSB
+		tempId = fileDto.ParentId
 	}
 	return pathSB, nil
 }
@@ -475,7 +469,7 @@ func ShareSaveTo(shareUserId int64, userId int64, sourcePaths []string, targetFo
 
 		//获取分享文件的ID
 		fileId := DfsFileDao.SelectIdByPath(shareUserId, nameList)
-		fileDto := DfsFileDao.SelectOne(*fileId)
+		fileDto, _ := DfsFileDao.SelectOne(fileId)
 		if fileDto.IsFolder() { //源目录是一个文件夹
 			_, mkdirErr := Mkdirs(userId, targetPath)
 			if mkdirErr != nil {
@@ -488,8 +482,8 @@ func ShareSaveTo(shareUserId int64, userId int64, sourcePaths []string, targetFo
 			}
 			fileName := String.FileName(targetPath)
 			createFileDto := dto.DfsFileDto{
-				ParentId:    &folderId,
-				Name:        &fileName,
+				ParentId:    folderId,
+				Name:        fileName,
 				LocalId:     fileDto.LocalId,
 				Size:        fileDto.Size,
 				ContentType: fileDto.ContentType,
@@ -510,33 +504,35 @@ func ShareSaveTo(shareUserId int64, userId int64, sourcePaths []string, targetFo
  * @param md5 文件md5
  * @param iStream 文件流
  */
-func SaveToLocalFile(md5 string, iStream io.Reader) (*dto.LocalFileDto, error) {
-	exitsLocalFileDto := LocalFileDao.SelectByFileMd5(md5)
-	if exitsLocalFileDto != nil { //该文件已经存在,删除本次上传的文件并返回
+func SaveToLocalFile(md5 string, reader io.Reader) (dto.LocalFileDto, error) {
+	exitsLocalFileDto, isExists := LocalFileDao.SelectByFileMd5(md5)
+	if isExists { //该文件已经存在,删除本次上传的文件并返回
 		return exitsLocalFileDto, nil
 	}
 
-	//@TODO:待实现
-	////获取本地文件存储路径
-	//localPath,err := DfsFileUtil.LocalPath()
-	//if err != nil{
-	//   return nil,err
-	//}
-	//localFile := File(localPath)
-	//
-	////将文件保存到指定目录
-	//localFile.outputStream().use { oStream ->
-	//    iStream.use {
-	//        it.transferTo(oStream)
-	//    }
-	//}
-	//
-	//val addLocalFileDto = LocalFileDto()
-	//addLocalFileDto.path = localPath
-	//addLocalFileDto.md5 = md5
-	//addLocalFileDto.id = DBID.id
-	//this.localFileDao.add(addLocalFileDto)
-	//return addLocalFileDto
+	//获取本地文件存储路径
+	localPath, err := DfsFileUtil.LocalPath()
+	if err != nil {
+		return dto.LocalFileDto{}, err
+	}
 
-	return &dto.LocalFileDto{}, nil
+	// 打开文件（如果不存在则创建）
+	file, err := os.Create(localPath) // 如果文件已存在，它将被覆盖
+	if err != nil {
+		return dto.LocalFileDto{}, err
+	}
+	defer file.Close()
+
+	//将文件保存到指定目录
+	_, err = io.Copy(file, reader)
+	if err != nil {
+		return dto.LocalFileDto{}, err
+	}
+	addLocalFileDto := dto.LocalFileDto{
+		Path: localPath,
+		Md5:  md5,
+		Id:   DBUtil.ID(),
+	}
+	LocalFileDao.Add(addLocalFileDto)
+	return addLocalFileDto, nil
 }

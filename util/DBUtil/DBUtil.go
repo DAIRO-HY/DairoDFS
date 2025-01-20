@@ -221,7 +221,20 @@ func SelectList[T any](query string, args ...any) []T {
 			case *float32:
 				*fieldPoint = float32(value.(float64))
 			case *bool:
-				*fieldPoint = value.(bool)
+				switch typeValue := value.(type) {
+				case int:
+					*fieldPoint = typeValue != 0
+				case int8:
+					*fieldPoint = typeValue != 0
+				case int16:
+					*fieldPoint = typeValue != 0
+				case int32:
+					*fieldPoint = typeValue != 0
+				case int64:
+					*fieldPoint = typeValue != 0
+				default:
+					*fieldPoint = value.(bool)
+				}
 			case *string:
 				*fieldPoint = value.(string)
 			case *time.Time:

@@ -7,6 +7,7 @@ import (
 	controllerapp "DairoDFS/controller/app"
 	controllerappabout "DairoDFS/controller/app/about"
 	controllerappfiles "DairoDFS/controller/app/files"
+	controllerappfileupload "DairoDFS/controller/app/file_upload"
 	controllerappinstallcreateadmin "DairoDFS/controller/app/install/create_admin"
 	controllerappinstallcreateadminform "DairoDFS/controller/app/install/create_admin/form"
 	controllerapplogin "DairoDFS/controller/app/login"
@@ -53,7 +54,7 @@ func startWebServer(port int) {
 	// 使用 http.FileServer 提供文件服务
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.FS(staticFS))))
 
-	http.HandleFunc("/", func(writer http.ResponseWriter, request *http.Request) {
+	http.HandleFunc("/index.html", func(writer http.ResponseWriter, request *http.Request) {
 		if request.Method != "GET" {
 			writer.WriteHeader(http.StatusMethodNotAllowed) // 设置状态码
 			writer.Write([]byte("Method Not Allowed"))
@@ -63,23 +64,9 @@ func startWebServer(port int) {
 			return
 		}
 		var body any = nil
-		controllerapp.Home()
+		controllerapp.Index()
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-		writeToResponse(writer, body)
-	})
-	http.HandleFunc("/app", func(writer http.ResponseWriter, request *http.Request) {
-		if request.Method != "GET" {
-			writer.WriteHeader(http.StatusMethodNotAllowed) // 设置状态码
-			writer.Write([]byte("Method Not Allowed"))
-			return
-		}
-		if !inerceptor.LoginValidate(writer, request) {
-			return
-		}
-		var body any = nil
-		controllerapp.Init()
-		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-		writeToResponse(writer, body)
+		writeToTemplate(writer, body, "resources/templates/index.html")
 	})
 	http.HandleFunc("/app/about.html", func(writer http.ResponseWriter, request *http.Request) {
 		if request.Method != "GET" {
@@ -95,6 +82,34 @@ func startWebServer(port int) {
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 		writeToTemplate(writer, body, "resources/templates/app/about.html", "resources/templates/app/include/head.html", "resources/templates/app/include/top-bar.html")
 	})
+	http.HandleFunc("/app/file_upload", func(writer http.ResponseWriter, request *http.Request) {
+		if request.Method != "POST" {
+			writer.WriteHeader(http.StatusMethodNotAllowed) // 设置状态码
+			writer.Write([]byte("Method Not Allowed"))
+			return
+		}
+		if !inerceptor.LoginValidate(writer, request) {
+			return
+		}
+		query := request.URL.Query()
+		//解析post表单
+		request.ParseForm()
+		postForm := request.PostForm
+		var folder string // 初始化变量
+		folderArr := getStringArray(query, postForm, "folder")
+		if folderArr != nil { // 如果参数存在
+			folder = folderArr[0]
+		}
+		var contentType string // 初始化变量
+		contentTypeArr := getStringArray(query, postForm, "contentType")
+		if contentTypeArr != nil { // 如果参数存在
+			contentType = contentTypeArr[0]
+		}
+		var body any = nil
+		body = controllerappfileupload.Upload(writer, request, folder, contentType)
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+		writeToResponse(writer, body)
+	})
 	http.HandleFunc("/app/files.html", func(writer http.ResponseWriter, request *http.Request) {
 		if request.Method != "GET" {
 			writer.WriteHeader(http.StatusMethodNotAllowed) // 设置状态码
@@ -107,7 +122,53 @@ func startWebServer(port int) {
 		var body any = nil
 		controllerappfiles.Html()
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-		writeToTemplate(writer, body, "resources/templates/app/files.html", "resources/templates/app/include/files_list.html", "resources/templates/app/include/files/files_right_option.html", "resources/templates/app/include/files/files_share.html", "resources/templates/app/include/head.html", "resources/templates/app/include/top-bar.html", "resources/templates/app/include/files/files_toolbar.html", "resources/templates/app/include/files/files_upload.html")
+		writeToTemplate(writer, body, "resources/templates/app/files.html", "resources/templates/app/include/head.html", "resources/templates/app/include/top-bar.html", "resources/templates/app/include/files/files_toolbar.html", "resources/templates/app/include/files/files_upload.html", "resources/templates/app/include/files_list.html", "resources/templates/app/include/files/files_right_option.html", "resources/templates/app/include/files/files_share.html")
+	})
+	http.HandleFunc("/app/files/get_list", func(writer http.ResponseWriter, request *http.Request) {
+		if request.Method != "POST" {
+			writer.WriteHeader(http.StatusMethodNotAllowed) // 设置状态码
+			writer.Write([]byte("Method Not Allowed"))
+			return
+		}
+		if !inerceptor.LoginValidate(writer, request) {
+			return
+		}
+		query := request.URL.Query()
+		//解析post表单
+		request.ParseForm()
+		postForm := request.PostForm
+		var folder string // 初始化变量
+		folderArr := getStringArray(query, postForm, "folder")
+		if folderArr != nil { // 如果参数存在
+			folder = folderArr[0]
+		}
+		var body any = nil
+		body = controllerappfiles.GetList(folder)
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+		writeToResponse(writer, body)
+	})
+	http.HandleFunc("/app/files/create_folder", func(writer http.ResponseWriter, request *http.Request) {
+		if request.Method != "POST" {
+			writer.WriteHeader(http.StatusMethodNotAllowed) // 设置状态码
+			writer.Write([]byte("Method Not Allowed"))
+			return
+		}
+		if !inerceptor.LoginValidate(writer, request) {
+			return
+		}
+		query := request.URL.Query()
+		//解析post表单
+		request.ParseForm()
+		postForm := request.PostForm
+		var folder string // 初始化变量
+		folderArr := getStringArray(query, postForm, "folder")
+		if folderArr != nil { // 如果参数存在
+			folder = folderArr[0]
+		}
+		var body any = nil
+		body = controllerappfiles.CreateFolder(folder)
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+		writeToResponse(writer, body)
 	})
 	http.HandleFunc("/app/install/create_admin", func(writer http.ResponseWriter, request *http.Request) {
 		if request.Method != "GET" {
@@ -413,7 +474,7 @@ func startWebServer(port int) {
 		var body any = nil
 		controllerappselfset.Html()
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-		writeToTemplate(writer, body, "resources/templates/app/self_set.html", "resources/templates/app/include/head.html", "resources/templates/app/include/top-bar.html")
+		writeToTemplate(writer, body, "resources/templates/app/self_set.html", "resources/templates/app/include/top-bar.html", "resources/templates/app/include/head.html")
 	})
 	http.HandleFunc("/app/self_set/init", func(writer http.ResponseWriter, request *http.Request) {
 		if request.Method != "POST" {

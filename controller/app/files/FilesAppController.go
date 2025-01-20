@@ -1,37 +1,47 @@
 package files
 
+import (
+	"DairoDFS/controller/app/files/form"
+	"DairoDFS/dao/DfsFileDao"
+	"DairoDFS/exception"
+	"DairoDFS/extension/Bool"
+	"DairoDFS/extension/Date"
+	"DairoDFS/extension/String"
+	"DairoDFS/service/DfsFileService"
+	"DairoDFS/util/LoginState"
+)
+
 // 文件列表页面
 //@Group:/app/files
 
 // @Html:.html
 func Html() {}
 
-//@Operation(summary = "获取文件列表")
-//    @PostMapping("/get_list")
-//    @ResponseBody
-//    fun getList(
-//        @Parameter(name = "目标文件夹") @RequestParam("folder", required = true, defaultValue = "") folder: String
-//    ): List<FileForm> {
-//        val userId = super.loginId
-//        val folderId = this.dfsFileService.getIdByFolder(userId, folder)
-//        if (folderId == null) {
-//            if (folder == "") {//新用户在为上传任何文件时,根目录不存在
-//                return ArrayList()
-//            }
-//            throw ErrorCode.NO_FOLDER
-//        }
-//        val list = this.dfsFileDao.selectSubFile(userId, folderId).map {
-//            FileForm().apply {
-//                this.id = it.id!!
-//                this.name = it.name!!
-//                this.size = it.size!!
-//                this.date = it.date!!.format()
-//                this.fileFlag = it.isFile
-//                this.thumb = if (it.hasThumb) "/app/files/thumb/${it.id}" else null
-//            }
-//        }
-//        return list
-//    }
+// 获取文件列表
+// @Post:/get_list
+func GetList(folder string) []form.FileForm {
+	loginId := LoginState.LoginId()
+	folderId, err := DfsFileService.GetIdByFolder(loginId, folder, false)
+	if err != nil {
+		return []form.FileForm{}
+	}
+	list := DfsFileDao.SelectSubFile(loginId, folderId)
+
+	var forms []form.FileForm
+	for _, it := range list {
+		outForm := form.FileForm{
+			Id:       it.Id,
+			Name:     it.Name,
+			Size:     it.Size,
+			Date:     Date.Format(it.Date),
+			FileFlag: it.LocalId != 0,
+			Thumb:    Bool.Is(it.HasThumb, "/app/files/thumb/${it.id}", ""),
+		}
+		forms = append(forms, outForm)
+	}
+	return forms
+}
+
 //
 //    @Operation(summary = "获取扩展文件的所有key值")
 //    @PostMapping("/get_extra_keys")
@@ -41,25 +51,23 @@ func Html() {}
 //    ): List<String> {
 //        return this.dfsFileDao.selectExtraNames(id)
 //    }
-//
-//    @Operation(summary = "创建文件夹")
-//    @PostMapping("/create_folder")
-//    @ResponseBody
-//    fun createFolder(
-//        @Parameter(description = "文件夹名") @RequestParam(
-//            "folder",
-//            required = true,
-//            defaultValue = ""
-//        ) folder: String
-//    ) {
-//        val userId = super.loginId
-//        val existsFileId = this.dfsFileDao.selectIdByPath(userId, folder.toDfsFileNameList)
-//        if (existsFileId != null) {
-//            throw ErrorCode.EXISTS
-//        }
-//        this.dfsFileService.mkdirs(userId, folder)
-//    }
-//
+
+// 创建文件夹
+// @Post:/create_folder
+func CreateFolder(folder string) error {
+	loginId := LoginState.LoginId()
+	nameList, err := String.ToDfsFileNameList(folder)
+	if err != nil {
+		return err
+	}
+	existsFileId := DfsFileDao.SelectIdByPath(loginId, nameList)
+	if existsFileId != 0 {
+		return exception.EXISTS(folder)
+	}
+	DfsFileService.Mkdirs(loginId, folder)
+	return nil
+}
+
 //    @Operation(summary = "删除文件")
 //    @PostMapping("/delete")
 //    @ResponseBody

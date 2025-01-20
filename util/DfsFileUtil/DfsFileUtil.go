@@ -86,7 +86,7 @@ func SelectDriverFolder() (string, error) {
 		if usageErr != nil {
 			return "", usageErr
 		}
-		if usage.Free > maxSize { //空间足够
+		if usage.Free > uint64(maxSize) { //空间足够
 			return folder, nil
 		}
 	}
@@ -155,7 +155,7 @@ func CheckPath(path string) error {
  * @param response 往客户端返回内容
  */
 func DownloadDfsId(id int64, writer http.ResponseWriter, request *http.Request) {
-	dfsFile := DfsFileDao.SelectOne(id)
+	dfsFile, _ := DfsFileDao.SelectOne(id)
 	DownloadDfs(dfsFile, writer, request)
 }
 
@@ -165,7 +165,7 @@ func DownloadDfsId(id int64, writer http.ResponseWriter, request *http.Request) 
  * @param request 客户端请求
  * @param response 往客户端返回内容
  */
-func DownloadDfs(dfsFile *dto.DfsFileDto, writer http.ResponseWriter, request *http.Request) {
+func DownloadDfs(dfsFile dto.DfsFileDto, writer http.ResponseWriter, request *http.Request) {
 
 	// 此处配置的是允许任意域名跨域请求，可根据需求指定
 	//writer.Header().Set("Access-Control-Allow-Origin", request.getHeader("origin"))
@@ -180,7 +180,7 @@ func DownloadDfs(dfsFile *dto.DfsFileDto, writer http.ResponseWriter, request *h
 		writer.WriteHeader(http.StatusNoContent)
 		return
 	}
-	if dfsFile == nil { //文件不存在
+	if dfsFile.Id == 0 { //文件不存在
 		writer.WriteHeader(http.StatusNotFound)
 		return
 	}
@@ -193,10 +193,14 @@ func DownloadDfs(dfsFile *dto.DfsFileDto, writer http.ResponseWriter, request *h
 	//    }
 	//    response.setHeader("Content-Disposition", "attachment;filename=$fileName")
 	//}
-	writer.Header().Set("Content-Type", *dfsFile.ContentType)
+	writer.Header().Set("Content-Type", dfsFile.ContentType)
 
 	//本地文件存储信息
-	localFile := LocalFileDao.SelectOne(*dfsFile.LocalId)
+	localFile, isExists := LocalFileDao.SelectOne(dfsFile.LocalId)
+	if !isExists {
+		writer.WriteHeader(http.StatusNotFound)
+		return
+	}
 	DownloadLocal(localFile, writer, request)
 }
 
@@ -206,15 +210,11 @@ func DownloadDfs(dfsFile *dto.DfsFileDto, writer http.ResponseWriter, request *h
  * @param request 客户端请求
  * @param response 往客户端返回内容
  */
-func DownloadLocal(localFile *dto.LocalFileDto, writer http.ResponseWriter, request *http.Request) {
-	if localFile == nil {
-		writer.WriteHeader(http.StatusNotFound)
-		return
-	}
+func DownloadLocal(localFile dto.LocalFileDto, writer http.ResponseWriter, request *http.Request) {
 
 	//在头部信息中加入文件MD5
-	writer.Header().Set("Content-MD5", *localFile.Md5)
-	download(*localFile.Path, writer, request)
+	writer.Header().Set("Content-MD5", localFile.Md5)
+	download(localFile.Path, writer, request)
 }
 
 //    /**
