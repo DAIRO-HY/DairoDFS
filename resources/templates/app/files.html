@@ -23,10 +23,10 @@
 {{template "files_share" .}}
 
 <!--分享明细dialog-->
-<th:block th:include="app/icd/share_detail_dialog :: share_detail_dialog"/>
+{{template "share_detail_dialog" .}}
 
 <!--文件属性dialog-->
-<th:block th:include="app/icd/file_property_dialog :: file_property_dialog"/>
+{{template "file_property_dialog" .}}
 <script>
     $(function(){
         initFileList("/app/files/get_list")

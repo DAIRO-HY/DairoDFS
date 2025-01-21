@@ -155,7 +155,11 @@ func CheckPath(path string) error {
  * @param response 往客户端返回内容
  */
 func DownloadDfsId(id int64, writer http.ResponseWriter, request *http.Request) {
-	dfsFile, _ := DfsFileDao.SelectOne(id)
+	dfsFile, isExists := DfsFileDao.SelectOne(id)
+	if !isExists { //文件不存在
+		writer.WriteHeader(http.StatusNotFound)
+		return
+	}
 	DownloadDfs(dfsFile, writer, request)
 }
 

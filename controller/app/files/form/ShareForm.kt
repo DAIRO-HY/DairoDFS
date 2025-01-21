@@ -1,10 +1,4 @@
 package form
-
-import io.swagger.v3.oas.annotations.Parameter
-import jakarta.validation.constraints.AssertTrue
-import jakarta.validation.constraints.NotNull
-import jakarta.validation.constraints.Size
-
 type ShareForm struct{
 
     @Parameter(description = "分享结束时间戳,0代表永久有效")

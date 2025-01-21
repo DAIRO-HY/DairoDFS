@@ -29,3 +29,17 @@ func TestRemoveGoroutine(t *testing.T) {
 	})
 	fmt.Println("------------------------------------------")
 }
+
+func TestGetGoroutineID(t *testing.T) {
+	count := 1000000
+	now := time.Now().UnixMilli()
+	for i := 0; i < count; i++ {
+		sdf := GetGoroutineID()
+		if sdf == "sdf" {
+			fmt.Printf("OK")
+		}
+	}
+	times := time.Now().UnixMilli() - now
+	fmt.Printf("timr-point-总 = %d毫秒\n", times)
+	fmt.Printf("timr-point-均 = %.10f毫秒\n\n", float64(times)/float64(count))
+}

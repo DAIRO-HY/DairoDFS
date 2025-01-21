@@ -112,6 +112,7 @@ func Copy(userId int64, sourcePaths []string, targetFolder string, isOverWrite b
 			}
 			targetPath = targetFolder + "/" + newName
 		}
+
 		err := recursionMakeSourceToTargetMap(userId, sourcePath, targetPath, sourceToTargetMap)
 		if err != nil {
 			return err
@@ -302,7 +303,7 @@ func Rename(userId int64, sourcePath string, name string) error {
 }
 
 /**
- * 递归整理所有要复制或移动的源路径对应的目标路径
+ * 递归整理所有要复制或移动的源路径对应的目标路径(源路径 => 目标路径)
  * @param userId 用户ID
  * @param sourcePath 复制的源目录
  * @param targetPath 复制到的目标目录

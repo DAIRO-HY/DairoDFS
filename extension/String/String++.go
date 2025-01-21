@@ -26,7 +26,7 @@ func ToBase64(data []byte) string {
  * 获取文件名
  */
 func FileName(path string) string {
-	splitIndex := strings.Index(path, "/")
+	splitIndex := strings.LastIndex(path, "/")
 	if splitIndex == -1 {
 		return path
 	}

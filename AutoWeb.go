@@ -80,7 +80,7 @@ func startWebServer(port int) {
 		var body any = nil
 		controllerappabout.Html()
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-		writeToTemplate(writer, body, "resources/templates/app/about.html", "resources/templates/app/include/head.html", "resources/templates/app/include/top-bar.html")
+		writeToTemplate(writer, body, "resources/templates/app/about.html", "resources/templates/app/include/top-bar.html", "resources/templates/app/include/head.html")
 	})
 	http.HandleFunc("/app/file_upload", func(writer http.ResponseWriter, request *http.Request) {
 		if request.Method != "POST" {
@@ -122,7 +122,7 @@ func startWebServer(port int) {
 		var body any = nil
 		controllerappfiles.Html()
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-		writeToTemplate(writer, body, "resources/templates/app/files.html", "resources/templates/app/include/head.html", "resources/templates/app/include/top-bar.html", "resources/templates/app/include/files/files_toolbar.html", "resources/templates/app/include/files/files_upload.html", "resources/templates/app/include/files_list.html", "resources/templates/app/include/files/files_right_option.html", "resources/templates/app/include/files/files_share.html")
+		writeToTemplate(writer, body, "resources/templates/app/files.html", "resources/templates/app/include/top-bar.html", "resources/templates/app/include/files/files_toolbar.html", "resources/templates/app/include/files_list.html", "resources/templates/app/include/files/files_right_option.html", "resources/templates/app/include/files/files_share.html", "resources/templates/app/include/share_detail_dialog.html", "resources/templates/app/include/head.html", "resources/templates/app/include/files/files_upload.html", "resources/templates/app/include/file_property_dialog.html")
 	})
 	http.HandleFunc("/app/files/get_list", func(writer http.ResponseWriter, request *http.Request) {
 		if request.Method != "POST" {
@@ -167,6 +167,197 @@ func startWebServer(port int) {
 		}
 		var body any = nil
 		body = controllerappfiles.CreateFolder(folder)
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+		writeToResponse(writer, body)
+	})
+	http.HandleFunc("/app/files/delete", func(writer http.ResponseWriter, request *http.Request) {
+		if request.Method != "POST" {
+			writer.WriteHeader(http.StatusMethodNotAllowed) // 设置状态码
+			writer.Write([]byte("Method Not Allowed"))
+			return
+		}
+		if !inerceptor.LoginValidate(writer, request) {
+			return
+		}
+		query := request.URL.Query()
+		//解析post表单
+		request.ParseForm()
+		postForm := request.PostForm
+		var paths []string // 初始化变量
+		pathsArr := getStringArray(query, postForm, "paths")
+		if pathsArr != nil { // 如果参数存在
+			paths = pathsArr
+		}
+		var body any = nil
+		body = controllerappfiles.Delete(paths)
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+		writeToResponse(writer, body)
+	})
+	http.HandleFunc("/app/files/rename", func(writer http.ResponseWriter, request *http.Request) {
+		if request.Method != "POST" {
+			writer.WriteHeader(http.StatusMethodNotAllowed) // 设置状态码
+			writer.Write([]byte("Method Not Allowed"))
+			return
+		}
+		if !inerceptor.LoginValidate(writer, request) {
+			return
+		}
+		query := request.URL.Query()
+		//解析post表单
+		request.ParseForm()
+		postForm := request.PostForm
+		var sourcePath string // 初始化变量
+		sourcePathArr := getStringArray(query, postForm, "sourcePath")
+		if sourcePathArr != nil { // 如果参数存在
+			sourcePath = sourcePathArr[0]
+		}
+		var name string // 初始化变量
+		nameArr := getStringArray(query, postForm, "name")
+		if nameArr != nil { // 如果参数存在
+			name = nameArr[0]
+		}
+		var body any = nil
+		body = controllerappfiles.Rename(sourcePath, name)
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+		writeToResponse(writer, body)
+	})
+	http.HandleFunc("/app/files/copy", func(writer http.ResponseWriter, request *http.Request) {
+		if request.Method != "POST" {
+			writer.WriteHeader(http.StatusMethodNotAllowed) // 设置状态码
+			writer.Write([]byte("Method Not Allowed"))
+			return
+		}
+		if !inerceptor.LoginValidate(writer, request) {
+			return
+		}
+		query := request.URL.Query()
+		//解析post表单
+		request.ParseForm()
+		postForm := request.PostForm
+		var sourcePaths []string // 初始化变量
+		sourcePathsArr := getStringArray(query, postForm, "sourcePaths")
+		if sourcePathsArr != nil { // 如果参数存在
+			sourcePaths = sourcePathsArr
+		}
+		var targetFolder string // 初始化变量
+		targetFolderArr := getStringArray(query, postForm, "targetFolder")
+		if targetFolderArr != nil { // 如果参数存在
+			targetFolder = targetFolderArr[0]
+		}
+		var isOverWrite bool // 初始化变量
+		isOverWriteArr := getBoolArray(query, postForm, "isOverWrite")
+		if isOverWriteArr != nil { // 如果参数存在
+			isOverWrite = isOverWriteArr[0]
+		}
+		var body any = nil
+		body = controllerappfiles.Copy(sourcePaths, targetFolder, isOverWrite)
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+		writeToResponse(writer, body)
+	})
+	http.HandleFunc("/app/files/move", func(writer http.ResponseWriter, request *http.Request) {
+		if request.Method != "POST" {
+			writer.WriteHeader(http.StatusMethodNotAllowed) // 设置状态码
+			writer.Write([]byte("Method Not Allowed"))
+			return
+		}
+		if !inerceptor.LoginValidate(writer, request) {
+			return
+		}
+		query := request.URL.Query()
+		//解析post表单
+		request.ParseForm()
+		postForm := request.PostForm
+		var sourcePaths []string // 初始化变量
+		sourcePathsArr := getStringArray(query, postForm, "sourcePaths")
+		if sourcePathsArr != nil { // 如果参数存在
+			sourcePaths = sourcePathsArr
+		}
+		var targetFolder string // 初始化变量
+		targetFolderArr := getStringArray(query, postForm, "targetFolder")
+		if targetFolderArr != nil { // 如果参数存在
+			targetFolder = targetFolderArr[0]
+		}
+		var isOverWrite bool // 初始化变量
+		isOverWriteArr := getBoolArray(query, postForm, "isOverWrite")
+		if isOverWriteArr != nil { // 如果参数存在
+			isOverWrite = isOverWriteArr[0]
+		}
+		var body any = nil
+		body = controllerappfiles.Move(sourcePaths, targetFolder, isOverWrite)
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+		writeToResponse(writer, body)
+	})
+	http.HandleFunc("/app/files/get_property", func(writer http.ResponseWriter, request *http.Request) {
+		if request.Method != "POST" {
+			writer.WriteHeader(http.StatusMethodNotAllowed) // 设置状态码
+			writer.Write([]byte("Method Not Allowed"))
+			return
+		}
+		if !inerceptor.LoginValidate(writer, request) {
+			return
+		}
+		query := request.URL.Query()
+		//解析post表单
+		request.ParseForm()
+		postForm := request.PostForm
+		var paths []string // 初始化变量
+		pathsArr := getStringArray(query, postForm, "paths")
+		if pathsArr != nil { // 如果参数存在
+			paths = pathsArr
+		}
+		var body any = nil
+		body = controllerappfiles.GetProperty(paths)
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+		writeToResponse(writer, body)
+	})
+	http.HandleFunc("/app/files/set_content_type", func(writer http.ResponseWriter, request *http.Request) {
+		if request.Method != "POST" {
+			writer.WriteHeader(http.StatusMethodNotAllowed) // 设置状态码
+			writer.Write([]byte("Method Not Allowed"))
+			return
+		}
+		if !inerceptor.LoginValidate(writer, request) {
+			return
+		}
+		query := request.URL.Query()
+		//解析post表单
+		request.ParseForm()
+		postForm := request.PostForm
+		var path string // 初始化变量
+		pathArr := getStringArray(query, postForm, "path")
+		if pathArr != nil { // 如果参数存在
+			path = pathArr[0]
+		}
+		var contentType string // 初始化变量
+		contentTypeArr := getStringArray(query, postForm, "contentType")
+		if contentTypeArr != nil { // 如果参数存在
+			contentType = contentTypeArr[0]
+		}
+		var body any = nil
+		body = controllerappfiles.SetContentType(path, contentType)
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+		writeToResponse(writer, body)
+	})
+	http.HandleFunc("/app/files/download", func(writer http.ResponseWriter, request *http.Request) {
+		if request.Method != "GET" {
+			writer.WriteHeader(http.StatusMethodNotAllowed) // 设置状态码
+			writer.Write([]byte("Method Not Allowed"))
+			return
+		}
+		if !inerceptor.LoginValidate(writer, request) {
+			return
+		}
+		query := request.URL.Query()
+		//解析post表单
+		request.ParseForm()
+		postForm := request.PostForm
+		var path string // 初始化变量
+		pathArr := getStringArray(query, postForm, "path")
+		if pathArr != nil { // 如果参数存在
+			path = pathArr[0]
+		}
+		var body any = nil
+		controllerappfiles.Download(writer, request, path)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 		writeToResponse(writer, body)
 	})
@@ -474,7 +665,7 @@ func startWebServer(port int) {
 		var body any = nil
 		controllerappselfset.Html()
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-		writeToTemplate(writer, body, "resources/templates/app/self_set.html", "resources/templates/app/include/top-bar.html", "resources/templates/app/include/head.html")
+		writeToTemplate(writer, body, "resources/templates/app/self_set.html", "resources/templates/app/include/head.html", "resources/templates/app/include/top-bar.html")
 	})
 	http.HandleFunc("/app/self_set/init", func(writer http.ResponseWriter, request *http.Request) {
 		if request.Method != "POST" {
