@@ -312,10 +312,12 @@ func SetContentType(path string, contentType string) error {
 // name 文件名
 // folder 所在文件夹
 // @TODO:这里应该改成文件id访问，防止客户端缓存冲突
-// @Get:/download
-func Download(writer http.ResponseWriter, request *http.Request, path string) {
+// @Get:/download/
+func Download(writer http.ResponseWriter, request *http.Request) {
 	loginId := LoginState.LoginId()
-	nameList, _ := String.ToDfsFileNameList(path)
+	filePath := request.URL.Path
+	filePath = filePath[strings.Index(filePath, "/download")+9:]
+	nameList, _ := String.ToDfsFileNameList(filePath)
 	fileId := DfsFileDao.SelectIdByPath(loginId, nameList)
 	if fileId == 0 { //文件不存在
 		writer.WriteHeader(http.StatusNotFound)

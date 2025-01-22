@@ -70,7 +70,10 @@ func Upload(
 	if saveErr != nil {
 		return pathErr
 	}
-	addDfsFile(LoginState.LoginId(), localFileDto, path, contentType)
+	addErr := addDfsFile(LoginState.LoginId(), localFileDto, path, contentType)
+	if addErr != nil {
+		return err
+	}
 
 	//@TODO:待实现
 	////开启生成缩略图线程
