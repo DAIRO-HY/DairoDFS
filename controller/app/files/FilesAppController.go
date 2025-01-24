@@ -120,17 +120,13 @@ func Move(sourcePaths []string, targetFolder string, isOverWrite bool) error {
 	return DfsFileService.Move(loginId, sourcePaths, targetFolder, isOverWrite)
 }
 
-//
-//    /**
-//     * 分享文件
-//     * @param form 分享表单
-//     */
-//    @Operation(summary = "分享文件")
-//    @PostMapping("/share")
-//    @ResponseBody
-//    fun share(@Validated form: ShareForm): Long {
-//        return this.fileShareService.share(super.loginId, form)
-//    }
+/**
+ * 分享文件
+ */
+//@Post:/share
+func Share(inForm form.ShareForm) int64 {
+	return FileShareService.share(super.loginId, form)
+}
 
 // 文件或文件夹属性
 // paths 选择的路径列表
@@ -223,33 +219,33 @@ func SetContentType(path string, contentType string) error {
 	return nil
 }
 
-//	/**
-//	 * 文件下载
-//	 * @param request 客户端请求
-//	 * @param response 往客户端返回内容
-//	 * @param id 文件ID
-//	 */
-//	@GetMapping("/download_history/{id}/{name}")
-//	fun downloadByHistory(
-//	    request: HttpServletRequest, response: HttpServletResponse, @PathVariable id: Long, @PathVariable name: String
-//	) {
-//	    val userId = super.loginId
-//	    val dfsFile = this.dfsFileDao.selectOne(id)
-//	    if (dfsFile == null) {
-//	        response.status = HttpStatus.NOT_FOUND.value()
-//	        return
-//	    }
-//	    if (dfsFile.userId != userId) {
-//	        response.status = HttpStatus.NOT_FOUND.value()
-//	        return
-//	    }
-//	    if (dfsFile.name != name) {
-//	        response.status = HttpStatus.NOT_FOUND.value()
-//	        return
-//	    }
-//	    DfsFileUtil.download(id, request, response)
-//	}
-//
+/**
+ * 文件下载
+ * @param request 客户端请求
+ * @param response 往客户端返回内容
+ * @param id 文件ID
+ */
+//@Get:/download_history/
+func DownloadByHistory(writer http.ResponseWriter, request *http.Request, id int64) {
+	loginId := LoginState.LoginId()
+	fileName := request.URL.Path
+	fileName = fileName[strings.Index(fileName, "/download_history")+18:]
+	dfsFile, isExists := DfsFileDao.SelectOne(id)
+	if !isExists { //文件不存在
+		writer.WriteHeader(http.StatusNotFound)
+		return
+	}
+	if dfsFile.UserId != loginId { // 没有操作权限
+		writer.WriteHeader(http.StatusNotFound)
+		return
+	}
+	if dfsFile.Name != fileName {
+		writer.WriteHeader(http.StatusNotFound)
+		return
+	}
+	DfsFileUtil.DownloadDfs(dfsFile, writer, request)
+}
+
 //	/**
 //	 * 文件预览
 //	 * @param request 客户端请求

@@ -97,7 +97,7 @@
                 data: filePropertyData.historyList,
                 iconBtns: {
                     "bi-download": function (item) {
-                        window.open("/app/files/download_history/" + item.id + "/" + filePropertyData.name)
+                        window.open("/app/files/download_history/" + filePropertyData.name + "?id=" + item.id)
                     }
                 },
                 columns: [

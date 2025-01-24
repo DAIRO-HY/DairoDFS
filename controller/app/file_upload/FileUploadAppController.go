@@ -2,7 +2,6 @@ package file_upload
 
 import (
 	"DairoDFS/dao/dto"
-	"DairoDFS/exception"
 	"DairoDFS/extension/File"
 	"DairoDFS/extension/String"
 	"DairoDFS/service/DfsFileService"
@@ -15,9 +14,6 @@ import (
 // 文件上传Controller
 //@Group:/app/file_upload
 
-//@Value("\${data.path}")
-//private lateinit var dataPath: String
-
 /**
  * 记录当前正在上传的文件
  * 避免同一个文件同时上传导致文件数据混乱
@@ -28,17 +24,10 @@ var uploadingFileMap = map[string]int64{}
 // 浏览器文件上传
 // @Post:
 func Upload(
-	writer http.ResponseWriter,
 	request *http.Request,
 	folder string,
 	contentType string,
 ) error {
-
-	// Parse the multipart form with a maximum upload size of 10 MB
-	err := request.ParseMultipartForm(10 << 20) // 10 MB
-	if err != nil {
-		return exception.Biz("超出了文件大小限制")
-	}
 
 	// 获取上传的文件
 	header := request.MultipartForm.File["file"][0]
@@ -203,5 +192,3 @@ func addDfsFile(userId int64, localFileDto dto.LocalFileDto, path string, fileCo
 	}
 	return DfsFileService.AddFile(fileDto, true)
 }
-
-//}
