@@ -1,19 +1,17 @@
 ﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
+    {{template "head" .}}
     <title>我的分享</title>
 </head>
 <body>
 {{template "top-bar" .}}
-<th:block th:insert="app/icd/uc::content">
-    <common-content>
-        <div id="listDiv">
-        </div>
-    </common-content>
-</th:block>
+<div class="m-3 p-2 rounded shadow bg-content">
+    <div id="listDiv"></div>
+</div>
 
 <!--分享明细dialog-->
-<th:block th:include="app/icd/share_detail_dialog :: share_detail_dialog"/>
+{{template "share_detail_dialog"}}
 <script>
 
     /**

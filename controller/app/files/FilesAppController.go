@@ -9,6 +9,7 @@ import (
 	"DairoDFS/extension/Number"
 	"DairoDFS/extension/String"
 	"DairoDFS/service/DfsFileService"
+	"DairoDFS/service/FileShareService"
 	"DairoDFS/util/DfsFileUtil"
 	"DairoDFS/util/LoginState"
 	"net/http"
@@ -120,12 +121,15 @@ func Move(sourcePaths []string, targetFolder string, isOverWrite bool) error {
 	return DfsFileService.Move(loginId, sourcePaths, targetFolder, isOverWrite)
 }
 
-/**
- * 分享文件
- */
-//@Post:/share
-func Share(inForm form.ShareForm) int64 {
-	return FileShareService.share(super.loginId, form)
+// 分享文件
+// @Post:/share
+func Share(inForm form.ShareForm) any {
+	loginId := LoginState.LoginId()
+	shareId, err := FileShareService.Share(loginId, inForm)
+	if err != nil {
+		return err
+	}
+	return shareId
 }
 
 // 文件或文件夹属性

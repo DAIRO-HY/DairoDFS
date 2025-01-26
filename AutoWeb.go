@@ -7,6 +7,7 @@ import (
 	controllerapp "DairoDFS/controller/app"
 	controllerappabout "DairoDFS/controller/app/about"
 	controllerappfiles "DairoDFS/controller/app/files"
+	controllerappfilesform "DairoDFS/controller/app/files/form"
 	controllerappfileupload "DairoDFS/controller/app/file_upload"
 	controllerappinstallcreateadmin "DairoDFS/controller/app/install/create_admin"
 	controllerappinstallcreateadminform "DairoDFS/controller/app/install/create_admin/form"
@@ -14,6 +15,7 @@ import (
 	controllerapploginform "DairoDFS/controller/app/login/form"
 	controllerappmodifypwd "DairoDFS/controller/app/modify_pwd"
 	controllerappmodifypwdform "DairoDFS/controller/app/modify_pwd/form"
+	controllerappmyshare "DairoDFS/controller/app/my_share"
 	controllerappprofile "DairoDFS/controller/app/profile"
 	controllerappprofileform "DairoDFS/controller/app/profile/form"
 	controllerappselfset "DairoDFS/controller/app/self_set"
@@ -119,7 +121,7 @@ func startWebServer(port int) {
 		var body any = nil
 		controllerappfiles.Html()
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-		writeToTemplate(writer, body, "resources/templates/app/files.html", "resources/templates/app/include/file_property_dialog.html", "resources/templates/app/include/files/files_toolbar.html", "resources/templates/app/include/files/files_upload.html", "resources/templates/app/include/share_detail_dialog.html", "resources/templates/app/include/files/files_right_option.html", "resources/templates/app/include/files/files_share.html", "resources/templates/app/include/head.html", "resources/templates/app/include/top-bar.html", "resources/templates/app/include/files_list.html")
+		writeToTemplate(writer, body, "resources/templates/app/files.html", "resources/templates/app/include/files/files_toolbar.html", "resources/templates/app/include/share_detail_dialog.html", "resources/templates/app/include/head.html", "resources/templates/app/include/top-bar.html", "resources/templates/app/include/files/files_right_option.html", "resources/templates/app/include/files/files_share.html", "resources/templates/app/include/file_property_dialog.html", "resources/templates/app/include/files/files_upload.html", "resources/templates/app/include/files_list.html")
 	})
 	http.HandleFunc("/app/files/get_list", func(writer http.ResponseWriter, request *http.Request) {
 		if request.Method != "POST" {
@@ -263,6 +265,61 @@ func startWebServer(port int) {
 		}
 		var body any = nil
 		body = controllerappfiles.Move(sourcePaths, targetFolder, isOverWrite)
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+		writeToResponse(writer, body)
+	})
+	http.HandleFunc("/app/files/share", func(writer http.ResponseWriter, request *http.Request) {
+		if request.Method != "POST" {
+			writer.WriteHeader(http.StatusMethodNotAllowed) // 设置状态码
+			writer.Write([]byte("Method Not Allowed"))
+			return
+		}
+		if !inerceptor.LoginValidate(writer, request) {
+			return
+		}
+		requestFormData := getRequestFormData(request) //获取表单数据
+
+		// 记录表单验证错误信息
+		filedError := map[string][]string{}
+		validEndDateTime := getStringArray(requestFormData, "endDateTime")
+		isNotEmpty(filedError, "endDateTime", validEndDateTime) // 非空验证
+		validPwd := getStringArray(requestFormData, "pwd")
+		isLength(filedError, "pwd", validPwd, -1, 32)// 输入长度验证
+		validNames := getStringArray(requestFormData, "names")
+		isNotEmpty(filedError, "names", validNames) // 非空验证
+		if len(filedError) > 0{ // 有表单验证错误信息
+			writeFieldError(writer, filedError)
+			return
+		}
+
+		inForm:=controllerappfilesform.ShareForm{}
+		inFormEndDateTime := getInt64Array(requestFormData, "endDateTime")
+		if inFormEndDateTime != nil {// 如果参数存在
+			inForm.EndDateTime = inFormEndDateTime[0]
+		}
+
+		inFormPwd := getStringArray(requestFormData, "pwd")
+		if inFormPwd != nil {// 如果参数存在
+			inForm.Pwd = inFormPwd[0]
+		}
+
+		inFormFolder := getStringArray(requestFormData, "folder")
+		if inFormFolder != nil {// 如果参数存在
+			inForm.Folder = inFormFolder[0]
+		}
+
+		inFormNames := getStringArray(requestFormData, "names")
+		if inFormNames != nil {// 如果参数存在
+			inForm.Names = inFormNames
+		}
+
+		inFormIsEndDateTimeMsg := inForm.IsEndDateTime()
+		if inFormIsEndDateTimeMsg != "" { // 表单相关验证失败
+			writeFieldFormError(writer, inFormIsEndDateTimeMsg, "endDateTime")
+			return
+		}
+		var body any = nil
+		body = controllerappfiles.Share(inForm)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 		writeToResponse(writer, body)
 	})
@@ -516,6 +573,74 @@ func startWebServer(port int) {
 		}
 		var body any = nil
 		body = controllerappmodifypwd.Modify(inForm)
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+		writeToResponse(writer, body)
+	})
+	http.HandleFunc("/app/my_share.html", func(writer http.ResponseWriter, request *http.Request) {
+		if request.Method != "GET" {
+			writer.WriteHeader(http.StatusMethodNotAllowed) // 设置状态码
+			writer.Write([]byte("Method Not Allowed"))
+			return
+		}
+		if !inerceptor.LoginValidate(writer, request) {
+			return
+		}
+		var body any = nil
+		controllerappmyshare.Html()
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+		writeToTemplate(writer, body, "resources/templates/app/my_share.html", "resources/templates/app/include/head.html", "resources/templates/app/include/top-bar.html", "resources/templates/app/include/share_detail_dialog.html")
+	})
+	http.HandleFunc("/app/my_share/get_list", func(writer http.ResponseWriter, request *http.Request) {
+		if request.Method != "POST" {
+			writer.WriteHeader(http.StatusMethodNotAllowed) // 设置状态码
+			writer.Write([]byte("Method Not Allowed"))
+			return
+		}
+		if !inerceptor.LoginValidate(writer, request) {
+			return
+		}
+		var body any = nil
+		body = controllerappmyshare.GetList()
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+		writeToResponse(writer, body)
+	})
+	http.HandleFunc("/app/my_share/get_detail", func(writer http.ResponseWriter, request *http.Request) {
+		if request.Method != "POST" {
+			writer.WriteHeader(http.StatusMethodNotAllowed) // 设置状态码
+			writer.Write([]byte("Method Not Allowed"))
+			return
+		}
+		if !inerceptor.LoginValidate(writer, request) {
+			return
+		}
+		requestFormData := getRequestFormData(request) //获取表单数据
+		var id int64 // 初始化变量
+		idArr := getInt64Array(requestFormData, "id")
+		if idArr != nil { // 如果参数存在
+			id = idArr[0]
+		}
+		var body any = nil
+		body = controllerappmyshare.GetDetail(id)
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+		writeToResponse(writer, body)
+	})
+	http.HandleFunc("/app/my_share/delete", func(writer http.ResponseWriter, request *http.Request) {
+		if request.Method != "POST" {
+			writer.WriteHeader(http.StatusMethodNotAllowed) // 设置状态码
+			writer.Write([]byte("Method Not Allowed"))
+			return
+		}
+		if !inerceptor.LoginValidate(writer, request) {
+			return
+		}
+		requestFormData := getRequestFormData(request) //获取表单数据
+		var ids []int64 // 初始化变量
+		idsArr := getInt64Array(requestFormData, "ids")
+		if idsArr != nil { // 如果参数存在
+			ids = idsArr
+		}
+		var body any = nil
+		controllerappmyshare.Delete(ids)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 		writeToResponse(writer, body)
 	})

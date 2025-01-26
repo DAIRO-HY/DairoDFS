@@ -6,7 +6,9 @@ import (
 	"crypto/md5"
 	"encoding/base64"
 	"encoding/hex"
+	"fmt"
 	"math/rand"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -114,4 +116,22 @@ func MakeRandStrBySourceStr(sourceStr string, count int) string {
 		target += sourceStr[index : index+1]
 	}
 	return target
+}
+
+// 将某个值转换成字符串
+func ToString(v any) string {
+	switch value := v.(type) {
+	case int:
+		return strconv.Itoa(value)
+	case int8:
+		return strconv.Itoa(int(value))
+	case int16:
+		return strconv.Itoa(int(value))
+	case int32:
+		return strconv.Itoa(int(value))
+	case int64:
+		return strconv.FormatInt(value, 10)
+	default:
+		return fmt.Sprintf("%q", v)
+	}
 }

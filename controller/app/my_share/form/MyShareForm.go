@@ -4,23 +4,23 @@ package form
 type MyShareForm struct{
 
     /** id **/
-    id int64
+    Id int64
 
     /** 分享的标题（文件名） **/
-    title string
+    Title string
 
     /** 文件数量 **/
-    fileCount int
+    FileCount int
 
     /** 是否分享的仅仅是一个文件夹 **/
-    folderFlag bool
+    FolderFlag bool
 
     /** 结束时间 **/
-    endDate string
+    EndDate string
 
     /** 创建日期 **/
-    date string
+    Date string
 
     /** 缩略图 **/
-    thumb string
+    Thumb string
 }
