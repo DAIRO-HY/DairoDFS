@@ -1,6 +1,7 @@
 ﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
+    {{template "head" .}}
     <title>安装FFMPEG</title>
 </head>
 <body class="bg-login">
@@ -76,7 +77,7 @@
 
             $("#speed").text(data.speed)
             $("#downloaded").text(`${data.downloadedSize}/${data.total}`)
-            setTimeout(progress, 2000)
+            setTimeout(progress, 100)
         }).post()
     }
 </script>

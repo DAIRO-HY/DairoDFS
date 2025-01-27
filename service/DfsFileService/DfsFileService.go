@@ -405,7 +405,7 @@ func Mkdirs(userId int64, path string) (int64, error) {
  * @param userId 用户ID
  * @param ids 要删除的文件ID
  */
-func TrashRecover(userId int64, ids []int64, isOverWrite bool) error {
+func TrashRecover(userId int64, ids []int64) error {
 	for _, it := range ids {
 		fileDto, _ := DfsFileDao.SelectOne(it)
 		if fileDto.UserId != userId {

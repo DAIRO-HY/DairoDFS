@@ -1,45 +1,43 @@
-﻿<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
-<!--文件列表页面上面的工具栏-->
-<th:block th:fragment="trash_toolbar">
-    <div class="mx-3 mt-3 px-2 row g-0 rounded shadow bg-content-bar" style="line-height: 44px;">
-        <div class="col-10 col-sm-11 d-flex">
-            <div>
-                <button class="btn btn-sm btn-outline-primary" onclick="checkAll();onLogicDeleteClick();"
-                        role="button"
-                        style="margin-top: -3px;">
-                    <i class="bi bi-trash"></i>&nbsp;&nbsp;清空垃圾桶
-                </button>
-            </div>
-        </div>
-        <div class="col-2 col-sm-1 d-flex justify-content-end">
-            <button id="optionBtn" type="button"
-                    class="btn btn-outline-primary rounded-circle p-0"
-                    style="width: 32px;height: 32px;margin-top: 6px;">
-                <i class="bi bi-three-dots-vertical"></i>
+﻿<!--文件列表页面上面的工具栏-->
+{{define "trash_toolbar"}}
+<div class="mx-3 mt-3 px-2 row g-0 rounded shadow bg-content-bar" style="line-height: 44px;">
+    <div class="col-10 col-sm-11 d-flex">
+        <div>
+            <button class="btn btn-sm btn-outline-primary" onclick="checkAll();onLogicDeleteClick();"
+                    role="button"
+                    style="margin-top: -3px;">
+                <i class="bi bi-trash"></i>&nbsp;&nbsp;清空垃圾桶
             </button>
         </div>
     </div>
-    <script>
-        $(function () {
-            updatePathNavbar()
-            $("#optionBtn").on("click", e => {
-                showFileOption(e)
-            })
+    <div class="col-2 col-sm-1 d-flex justify-content-end">
+        <button id="optionBtn" type="button"
+                class="btn btn-outline-primary rounded-circle p-0"
+                style="width: 32px;height: 32px;margin-top: 6px;">
+            <i class="bi bi-three-dots-vertical"></i>
+        </button>
+    </div>
+</div>
+<script>
+    $(function () {
+        updatePathNavbar()
+        $("#optionBtn").on("click", e => {
+            showFileOption(e)
         })
+    })
 
-        /**
-         * 由于要给外部调用,避免报错,这个函数必须有,可以什么都不做
-         * 更新功能按钮的显示状态
-         */
-        function updateOptionBtn() {
-        }
+    /**
+     * 由于要给外部调用,避免报错,这个函数必须有,可以什么都不做
+     * 更新功能按钮的显示状态
+     */
+    function updateOptionBtn() {
+    }
 
-        /**
-         * 由于要给外部调用,避免报错,这个函数必须有,可以什么都不做
-         * 更新路径导航条
-         */
-        function updatePathNavbar() {
-        }
-    </script>
-</th:block>
-</html>
+    /**
+     * 由于要给外部调用,避免报错,这个函数必须有,可以什么都不做
+     * 更新路径导航条
+     */
+    function updatePathNavbar() {
+    }
+</script>
+{{end}}

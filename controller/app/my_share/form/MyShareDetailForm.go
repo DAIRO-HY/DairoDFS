@@ -3,23 +3,23 @@ package form
 type MyShareDetailForm struct {
 
 	/** id **/
-	Id int64 `json:"id,omitempty"`
+	Id int64 `json:"id"`
 
 	/** 链接 **/
-	Url string `json:"url,omitempty"`
+	Url string `json:"url"`
 
 	/** 加密分享 **/
-	Pwd string `json:"pwd,omitempty"`
+	Pwd string `json:"pwd"`
 
 	/** 分享的文件夹 **/
-	Folder string `json:"folder,omitempty"`
+	Folder string `json:"folder"`
 
 	/** 分享的文件夹或文件名,用|分割 **/
-	Names string `json:"names,omitempty"`
+	Names string `json:"names"`
 
 	/** 结束日期 **/
-	EndDate string `json:"end_date,omitempty"`
+	EndDate string `json:"end_date"`
 
 	/** 创建日期 **/
-	Date string `json:"date,omitempty"`
+	Date string `json:"date"`
 }

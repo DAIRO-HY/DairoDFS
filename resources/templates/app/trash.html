@@ -1,19 +1,20 @@
 ﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
+    {{template "head" .}}
     <title>垃圾箱</title>
 </head>
 <body>
 {{template "top-bar" .}}
 
 <!--文件操作导航视图-->
-<th:block th:include="app/icd/trash/trash_toolbar :: trash_toolbar"/>
+{{template "trash_toolbar" .}}
 
 <!--文件列表视图-->
-<th:block th:include="app/icd/trash/trash_list :: trash_list"/>
+{{template "trash_list" .}}
 
 <!--右键菜单视图-->
-<th:block th:include="app/icd/trash/trash_right_option :: trash_right_option"/>
+{{template "trash_right_option" .}}
 <script>
 </script>
 </body>

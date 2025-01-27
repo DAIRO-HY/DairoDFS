@@ -11,6 +11,7 @@ import (
 	controllerappfileupload "DairoDFS/controller/app/file_upload"
 	controllerappinstallcreateadmin "DairoDFS/controller/app/install/create_admin"
 	controllerappinstallcreateadminform "DairoDFS/controller/app/install/create_admin/form"
+	controllerappinstallffmpeg "DairoDFS/controller/app/install/ffmpeg"
 	controllerapplogin "DairoDFS/controller/app/login"
 	controllerapploginform "DairoDFS/controller/app/login/form"
 	controllerappmodifypwd "DairoDFS/controller/app/modify_pwd"
@@ -19,6 +20,7 @@ import (
 	controllerappprofile "DairoDFS/controller/app/profile"
 	controllerappprofileform "DairoDFS/controller/app/profile/form"
 	controllerappselfset "DairoDFS/controller/app/self_set"
+	controllerapptrash "DairoDFS/controller/app/trash"
 	controllerappuser "DairoDFS/controller/app/user"
 	controllerappuserform "DairoDFS/controller/app/user/form"
 	inerceptor "DairoDFS/inerceptor"
@@ -121,7 +123,7 @@ func startWebServer(port int) {
 		var body any = nil
 		controllerappfiles.Html()
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-		writeToTemplate(writer, body, "resources/templates/app/files.html", "resources/templates/app/include/files/files_toolbar.html", "resources/templates/app/include/share_detail_dialog.html", "resources/templates/app/include/head.html", "resources/templates/app/include/top-bar.html", "resources/templates/app/include/files/files_right_option.html", "resources/templates/app/include/files/files_share.html", "resources/templates/app/include/file_property_dialog.html", "resources/templates/app/include/files/files_upload.html", "resources/templates/app/include/files_list.html")
+		writeToTemplate(writer, body, "resources/templates/app/files.html", "resources/templates/app/include/files/files_share.html", "resources/templates/app/include/share_detail_dialog.html", "resources/templates/app/include/file_property_dialog.html", "resources/templates/app/include/head.html", "resources/templates/app/include/top-bar.html", "resources/templates/app/include/files/files_upload.html", "resources/templates/app/include/files/files_right_option.html", "resources/templates/app/include/files/files_toolbar.html", "resources/templates/app/include/files_list.html")
 	})
 	http.HandleFunc("/app/files/get_list", func(writer http.ResponseWriter, request *http.Request) {
 		if request.Method != "POST" {
@@ -433,6 +435,39 @@ func startWebServer(port int) {
 
 		var body any = nil
 		body = controllerappinstallcreateadmin.AddAdmin(inForm)
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+		writeToResponse(writer, body)
+	})
+	http.HandleFunc("/app/install/ffmpeg/install_ffmpeg.html", func(writer http.ResponseWriter, request *http.Request) {
+		if request.Method != "GET" {
+			writer.WriteHeader(http.StatusMethodNotAllowed) // 设置状态码
+			writer.Write([]byte("Method Not Allowed"))
+			return
+		}
+		var body any = nil
+		controllerappinstallffmpeg.Html()
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+		writeToTemplate(writer, body, "resources/templates/app/install/install_ffmpeg.html", "resources/templates/app/include/head.html")
+	})
+	http.HandleFunc("/app/install/ffmpeg/install", func(writer http.ResponseWriter, request *http.Request) {
+		if request.Method != "POST" {
+			writer.WriteHeader(http.StatusMethodNotAllowed) // 设置状态码
+			writer.Write([]byte("Method Not Allowed"))
+			return
+		}
+		var body any = nil
+		controllerappinstallffmpeg.Install()
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+		writeToResponse(writer, body)
+	})
+	http.HandleFunc("/app/install/ffmpeg/progress", func(writer http.ResponseWriter, request *http.Request) {
+		if request.Method != "POST" {
+			writer.WriteHeader(http.StatusMethodNotAllowed) // 设置状态码
+			writer.Write([]byte("Method Not Allowed"))
+			return
+		}
+		var body any = nil
+		body = controllerappinstallffmpeg.Progress()
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 		writeToResponse(writer, body)
 	})
@@ -838,6 +873,88 @@ func startWebServer(port int) {
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 		writeToResponse(writer, body)
 	})
+	http.HandleFunc("/app/trash.html", func(writer http.ResponseWriter, request *http.Request) {
+		if request.Method != "GET" {
+			writer.WriteHeader(http.StatusMethodNotAllowed) // 设置状态码
+			writer.Write([]byte("Method Not Allowed"))
+			return
+		}
+		if !inerceptor.LoginValidate(writer, request) {
+			return
+		}
+		var body any = nil
+		controllerapptrash.Html()
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+		writeToTemplate(writer, body, "resources/templates/app/trash.html", "resources/templates/app/include/trash/trash_right_option.html", "resources/templates/app/include/head.html", "resources/templates/app/include/top-bar.html", "resources/templates/app/include/trash/trash_toolbar.html", "resources/templates/app/include/trash/trash_list.html")
+	})
+	http.HandleFunc("/app/trash/get_list", func(writer http.ResponseWriter, request *http.Request) {
+		if request.Method != "POST" {
+			writer.WriteHeader(http.StatusMethodNotAllowed) // 设置状态码
+			writer.Write([]byte("Method Not Allowed"))
+			return
+		}
+		if !inerceptor.LoginValidate(writer, request) {
+			return
+		}
+		var body any = nil
+		body = controllerapptrash.GetList()
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+		writeToResponse(writer, body)
+	})
+	http.HandleFunc("/app/trash/logic_delete", func(writer http.ResponseWriter, request *http.Request) {
+		if request.Method != "POST" {
+			writer.WriteHeader(http.StatusMethodNotAllowed) // 设置状态码
+			writer.Write([]byte("Method Not Allowed"))
+			return
+		}
+		if !inerceptor.LoginValidate(writer, request) {
+			return
+		}
+		requestFormData := getRequestFormData(request) //获取表单数据
+		var ids []int64 // 初始化变量
+		idsArr := getInt64Array(requestFormData, "ids")
+		if idsArr != nil { // 如果参数存在
+			ids = idsArr
+		}
+		var body any = nil
+		body = controllerapptrash.LogicDelete(ids)
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+		writeToResponse(writer, body)
+	})
+	http.HandleFunc("/app/trash/trash_recover", func(writer http.ResponseWriter, request *http.Request) {
+		if request.Method != "POST" {
+			writer.WriteHeader(http.StatusMethodNotAllowed) // 设置状态码
+			writer.Write([]byte("Method Not Allowed"))
+			return
+		}
+		if !inerceptor.LoginValidate(writer, request) {
+			return
+		}
+		requestFormData := getRequestFormData(request) //获取表单数据
+		var ids []int64 // 初始化变量
+		idsArr := getInt64Array(requestFormData, "ids")
+		if idsArr != nil { // 如果参数存在
+			ids = idsArr
+		}
+		var body any = nil
+		body = controllerapptrash.TrashRecover(ids)
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+		writeToResponse(writer, body)
+	})
+	http.HandleFunc("/app/trash/recycle_storage", func(writer http.ResponseWriter, request *http.Request) {
+		if request.Method != "POST" {
+			writer.WriteHeader(http.StatusMethodNotAllowed) // 设置状态码
+			writer.Write([]byte("Method Not Allowed"))
+			return
+		}
+		if !inerceptor.LoginValidate(writer, request) {
+			return
+		}
+		var body any = nil
+		controllerapptrash.RecycleStorage()
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+		writeToResponse(writer, body)
+	})
 	http.HandleFunc("/app/user_edit.html", func(writer http.ResponseWriter, request *http.Request) {
 		if request.Method != "GET" {
 			writer.WriteHeader(http.StatusMethodNotAllowed) // 设置状态码
@@ -958,7 +1075,7 @@ func startWebServer(port int) {
 		var body any = nil
 		controllerappuser.ListHtml()
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-		writeToTemplate(writer, body, "resources/templates/app/user_list.html", "resources/templates/app/include/head.html", "resources/templates/app/include/top-bar.html")
+		writeToTemplate(writer, body, "resources/templates/app/user_list.html", "resources/templates/app/include/top-bar.html", "resources/templates/app/include/head.html")
 	})
 	http.HandleFunc("/app/user_list/init", func(writer http.ResponseWriter, request *http.Request) {
 		if request.Method != "POST" {

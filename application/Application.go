@@ -14,6 +14,9 @@ import (
  */
 const BASE_TIME = 1699177026571
 
+// 回收站保留天数
+const TRASH_TIMEOUT = 30
+
 /** 用户登录token的cookie键 **/
 const COOKIE_TOKEN = "token"
 
@@ -53,7 +56,7 @@ var DataPath = "./data"
 /**
  * ffmpeg安装目录
  */
-var FfmpegPath string
+var FfmpegPath = DataPath + "/ffmpeg"
 
 /**
  * ffprobe安装目录

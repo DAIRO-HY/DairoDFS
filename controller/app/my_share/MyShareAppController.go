@@ -102,7 +102,6 @@ func GetDetail(id int64) any {
 // ids 分享id列表
 func Delete(ids []int64) {
 	loginId := LoginState.LoginId()
-
 	idsStr := ""
 	for _, it := range ids {
 		idsStr += String.ToString(it) + ","
