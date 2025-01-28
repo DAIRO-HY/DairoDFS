@@ -123,7 +123,7 @@ func startWebServer(port int) {
 		var body any = nil
 		controllerappfiles.Html()
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-		writeToTemplate(writer, body, "resources/templates/app/files.html", "resources/templates/app/include/files/files_share.html", "resources/templates/app/include/share_detail_dialog.html", "resources/templates/app/include/file_property_dialog.html", "resources/templates/app/include/head.html", "resources/templates/app/include/top-bar.html", "resources/templates/app/include/files/files_upload.html", "resources/templates/app/include/files/files_right_option.html", "resources/templates/app/include/files/files_toolbar.html", "resources/templates/app/include/files_list.html")
+		writeToTemplate(writer, body, "resources/templates/app/files.html", "resources/templates/app/include/head.html", "resources/templates/app/include/files/files_toolbar.html", "resources/templates/app/include/files_list.html", "resources/templates/app/include/files/files_right_option.html", "resources/templates/app/include/files/files_share.html", "resources/templates/app/include/share_detail_dialog.html", "resources/templates/app/include/top-bar.html", "resources/templates/app/include/files/files_upload.html", "resources/templates/app/include/file_property_dialog.html")
 	})
 	http.HandleFunc("/app/files/get_list", func(writer http.ResponseWriter, request *http.Request) {
 		if request.Method != "POST" {
@@ -461,13 +461,8 @@ func startWebServer(port int) {
 		writeToResponse(writer, body)
 	})
 	http.HandleFunc("/app/install/ffmpeg/progress", func(writer http.ResponseWriter, request *http.Request) {
-		if request.Method != "POST" {
-			writer.WriteHeader(http.StatusMethodNotAllowed) // 设置状态码
-			writer.Write([]byte("Method Not Allowed"))
-			return
-		}
 		var body any = nil
-		body = controllerappinstallffmpeg.Progress()
+		controllerappinstallffmpeg.Progress(writer, request)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 		writeToResponse(writer, body)
 	})
@@ -885,7 +880,7 @@ func startWebServer(port int) {
 		var body any = nil
 		controllerapptrash.Html()
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-		writeToTemplate(writer, body, "resources/templates/app/trash.html", "resources/templates/app/include/trash/trash_right_option.html", "resources/templates/app/include/head.html", "resources/templates/app/include/top-bar.html", "resources/templates/app/include/trash/trash_toolbar.html", "resources/templates/app/include/trash/trash_list.html")
+		writeToTemplate(writer, body, "resources/templates/app/trash.html", "resources/templates/app/include/top-bar.html", "resources/templates/app/include/trash/trash_toolbar.html", "resources/templates/app/include/trash/trash_list.html", "resources/templates/app/include/trash/trash_right_option.html", "resources/templates/app/include/head.html")
 	})
 	http.HandleFunc("/app/trash/get_list", func(writer http.ResponseWriter, request *http.Request) {
 		if request.Method != "POST" {

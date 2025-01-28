@@ -29,8 +29,6 @@
             <div id="info" class="text-start p-2"
                  style="background-color: black;color: white;width: 100%;height: 260px;border-radius: 6px;overflow-y: auto;">
             </div>
-            <div id="error" class="text-start mt-3 text-danger">
-            </div>
             <div class="d-flex justify-content-between mt-3">
                 <div>
                     1/6
@@ -46,39 +44,68 @@
     </div>
 </div>
 <script>
+
+    /**
+     * 定义全局Websocket变量，避免重复创建
+     * @type {null}
+     */
+    let progressWebsocket = null
+
     $(() => {
-        progress()
+        showProgress()
     })
 
     /**
      * 初始化按钮点击事件
      */
     function onInstallClick() {
-        $.ajaxByData("/app/install/ffmpeg/install").success(progress).post()
+        $.ajaxByData("/app/install/ffmpeg/install").success(showProgress).post()
     }
 
-    function progress() {
-        $.ajaxByData("/app/install/ffmpeg/progress").hide().success(data => {
-            $("#info").text(data.info)
-            $("#error").text(data.error)
-            if (data.hasFinish) {//已经安装完成
-                $("#downloadInfo").hide()
-                $("#btnNext").removeAttr("disabled")
-                $("#btnInstall").hide()
-                return
-            }
-            if (!data.hasRuning) {//还没有开始安装
-                $("#downloadInfo").hide()
-                return
-            }
-            $("#downloadInfo").show()
-            $("#progressBar").text(data.progress + "%")
-                .css("width", data.progress + "%")
+    /**
+     * 显示安装进度
+     */
+    function showProgress() {
+        if(progressWebsocket != null){
 
-            $("#speed").text(data.speed)
-            $("#downloaded").text(`${data.downloadedSize}/${data.total}`)
-            setTimeout(progress, 100)
-        }).post()
+            //关闭上次的连接，避免重复创建
+            progressWebsocket.close()
+        }
+        progressWebsocket = new WebSocket(`ws://${location.host}/app/install/ffmpeg/progress`)
+        progressWebsocket.onopen = function () {
+            console.log("websocket连接成功")
+        }
+        progressWebsocket.onmessage = function (event) {
+            const data = JSON.parse(event.data)
+            updateProgress(data)
+        }
+    }
+
+    // function progress() {
+    //     $.ajaxByData("/app/install/ffmpeg/progress").hide().success(data => {
+    //         updateProgress(data)
+    //         setTimeout(progress, 100)
+    //     }).post()
+    // }
+
+    function updateProgress(data){
+        $("#info").text(data.info)
+        if (data.isInstalled) {//已经安装完成
+            $("#downloadInfo").hide()
+            $("#btnNext").removeAttr("disabled")
+            $("#btnInstall").hide()
+            return
+        }
+        if (!data.isRuning) {//还没有开始安装
+            $("#downloadInfo").hide()
+            return
+        }
+        $("#downloadInfo").show()
+        $("#progressBar").text(data.progress + "%")
+            .css("width", data.progress + "%")
+
+        $("#speed").text(data.speed)
+        $("#downloaded").text(`${data.downloadedSize}/${data.total}`)
     }
 </script>
 </body>

@@ -10,6 +10,7 @@ require (
 )
 
 require (
+	github.com/gorilla/websocket v1.5.3 // indirect
 	github.com/go-ole/go-ole v1.3.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	golang.org/x/sys v0.28.0 // indirect
