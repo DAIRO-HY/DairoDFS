@@ -1,4 +1,4 @@
-package ffmpeg
+package libraw
 
 import (
 	"DairoDFS/application"
@@ -12,9 +12,9 @@ import (
 )
 
 /**
- * 安装ffmpeg
+ * 安装libraw
  */
-//@Group:/app/install/ffmpeg
+//@Group:/app/install/libraw
 
 // 下载信息
 var downloadInfo *install.LibDownloadInfo
@@ -25,11 +25,11 @@ var downloadInfo *install.LibDownloadInfo
 func url() string {
 	switch runtime.GOOS {
 	case "linux":
-		return "https://github.com/DAIRO-HY/DairoDfsLib/raw/main/ffmpeg-7.0.2-linux-amd64.zip"
+		return "https://github.com/LibRaw/LibRaw/archive/refs/tags/0.21.2.zip"
 	case "windows":
-		return "https://github.com/DAIRO-HY/DairoDfsLib/raw/main/ffmpeg-7.0.2-win.zip"
+		return "https://github.com/DAIRO-HY/DairoDfsLib/raw/main/LibRaw-0.21.2-Win64.zip"
 	case "darwin":
-		return "https://github.com/DAIRO-HY/DairoDfsLib/raw/main/ffmpeg-7.0.2-macOS.zip"
+		return "https://github.com/DAIRO-HY/DairoDfsLib/raw/main/LibRaw-0.21.2-macOS.zip"
 	default:
 		return ""
 	}
@@ -38,12 +38,12 @@ func url() string {
 /**
  * 页面初始化
  */
-//@Get:/install_ffmpeg.html
-//@Html:app/install/install_ffmpeg.html
+//@Get:/install_ffprobe.html
+//@Html:app/install/install_ffprobe.html
 func Html() {
 	downloadInfo = &install.LibDownloadInfo{
 		Url:      url(),
-		SavePath: application.FfmpegPath,
+		SavePath: application.FfprobePath,
 	}
 	runtime.GC()
 }
@@ -59,7 +59,7 @@ func Recycle() {
  */
 //@Post:/install
 func Install() {
-	_, err := os.Stat(application.FfmpegPath)
+	_, err := os.Stat(application.FfprobePath)
 	if !os.IsNotExist(err) { //文件存在
 		return
 	}
@@ -78,7 +78,7 @@ func Progress(writer http.ResponseWriter, request *http.Request) {
 // 文件已经下载完成，获取安装信息
 func getInstallInfo() install.LibInstallProgressForm {
 	outForm := install.LibInstallProgressForm{}
-	versionResult, cmdErr := ShellUtil.ExecToOkResult(application.FfmpegPath + "/ffmpeg -version")
+	versionResult, cmdErr := ShellUtil.ExecToOkResult(application.FfprobePath + "/ffprobe -version")
 	if cmdErr == nil {
 		outForm.Info = "安装完成：" + versionResult
 		outForm.IsInstalled = true
@@ -91,14 +91,14 @@ func getInstallInfo() install.LibInstallProgressForm {
 		if strings.Contains(cmdErr.Error(), "error=13") { //没有赋予可执行权限
 
 			//开启可执行权限
-			_, versionCmdErr := ShellUtil.ExecToOkResult("chmod -R +x " + application.FfmpegPath)
+			_, versionCmdErr := ShellUtil.ExecToOkResult("chmod -R +x " + application.FfprobePath)
 			if versionCmdErr != nil {
 				outForm.Info = fmt.Sprintf("安装失败：%q", versionCmdErr)
 				return outForm
 			}
 
 			//再次获取版本号
-			versionResult, cmdErr = ShellUtil.ExecToOkResult(application.FfmpegPath + "/ffmpeg -version")
+			versionResult, cmdErr = ShellUtil.ExecToOkResult(application.FfprobePath + "/ffprobe -version")
 			if cmdErr == nil {
 				outForm.Info = "安装完成：" + versionResult
 				outForm.IsInstalled = true
@@ -118,13 +118,13 @@ func getInstallInfo() install.LibInstallProgressForm {
 	//                //开启可执行权限
 	//                ShellUtil.exec(
 	//                    """chmod -R +x "${
-	//                        File(Constant.FFMPEG_PATH).absolutePath.replace(
+	//                        File(Constant.FFPROBE_PATH).absolutePath.replace(
 	//                            "/./",
 	//                            "/"
 	//                        )
 	//                    }""""
 	//                )
-	//                val version = ShellUtil.exec("${Constant.FFMPEG_PATH}/ffmpeg -version")
+	//                val version = ShellUtil.exec("${Constant.FFPROBE_PATH}/ffprobe -version")
 	//                form.info = "安装完成:$version"
 	//                form.hasFinish = true
 	//                return form
@@ -139,7 +139,7 @@ func getInstallInfo() install.LibInstallProgressForm {
 	//                    "osascript",
 	//                    "-e",
 	//                    "tell application \"Terminal\" to do script \"sudo chmod -R +x ${
-	//                        File(Constant.FFMPEG_PATH).absolutePath.replace(
+	//                        File(Constant.FFPROBE_PATH).absolutePath.replace(
 	//                            "/./",
 	//                            "/"
 	//                        )

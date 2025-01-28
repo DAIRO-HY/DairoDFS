@@ -61,12 +61,12 @@ var FfmpegPath = DataPath + "/ffmpeg"
 /**
  * ffprobe安装目录
  */
-var FfprobePath string
+var FfprobePath = DataPath + "/ffprobe"
 
 /**
  * libraw安装目录
  */
-var LibrawPath string
+var LibrawPath = DataPath + "/libraw"
 
 // 是否开发模式
 var IsDev bool

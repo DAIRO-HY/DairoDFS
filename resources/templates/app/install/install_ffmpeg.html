@@ -35,7 +35,7 @@
                 </div>
                 <div>
                     <button id="btnInstall" class="btn btn-primary" onclick="onInstallClick()">安装</button>
-                    <button id="btnNext" class="btn btn-primary" onclick="window.location.href='ffprobe'" disabled>
+                    <button id="btnNext" class="btn btn-primary" onclick="window.location.href='../ffprobe/install_ffprobe.html'" disabled>
                         下一步
                     </button>
                 </div>
@@ -80,14 +80,6 @@
             updateProgress(data)
         }
     }
-
-    // function progress() {
-    //     $.ajaxByData("/app/install/ffmpeg/progress").hide().success(data => {
-    //         updateProgress(data)
-    //         setTimeout(progress, 100)
-    //     }).post()
-    // }
-
     function updateProgress(data){
         $("#info").text(data.info)
         if (data.isInstalled) {//已经安装完成

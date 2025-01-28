@@ -1,6 +1,6 @@
 package form
 
-type FfmpegInstallProgressForm struct {
+type FfprobeInstallProgressForm struct {
 
 	/** 是否正在下载 **/
 	IsRuning bool `json:"isRuning"`
