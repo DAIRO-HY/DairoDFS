@@ -105,7 +105,7 @@ func getInstallInfo() install.LibInstallProgressForm {
 
 		// 读取嵌入的文件内容
 		data, _ := librawInstallSH.ReadFile("libraw-install.sh")
-		targetFile := application.LibrawPath + "./libraw-install.sh"
+		targetFile := application.LibrawPath + "/libraw-install.sh"
 
 		//0755：文件所有者可读、写、执行，同组用户和其他用户可读、执行。
 		writeShFileErr := os.WriteFile(targetFile, data, 0755)
