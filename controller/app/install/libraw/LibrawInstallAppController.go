@@ -114,11 +114,12 @@ func getInstallInfo() install.LibInstallProgressForm {
 			return outForm
 		}
 
-		cache := make([]byte, 1024)
+		cache := make([]byte, 8*1024)
 
 		installResultSize := 0
 		_, installCmdErr := ShellUtil.ExecToOkReader(application.LibrawPath+"/libraw-install.sh", func(rc io.ReadCloser) {
 			n, _ := rc.Read(cache)
+			fmt.Println(string(cache[0:n]))
 			installResultSize += n
 			outForm.Info = String.ToString(installResultSize)
 		})
