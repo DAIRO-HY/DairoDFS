@@ -223,15 +223,20 @@ func (mine *LibDownloadInfo) getDownloadInfo() LibInstallProgressForm {
 	mine.LastProgressTime = now
 	mine.LastDownloadedSize = currentDownloadedSize
 
+	total := mine.Total
+	if total <= 0 {
+		total = currentDownloadedSize
+	}
+
 	//        form.url = FFMPEGInstallAppController.DOWNLOAD_URL
-	outForm.Total = Number.ToDataSize(mine.Total)
+	outForm.Total = Number.ToDataSize(total)
 	outForm.DownloadedSize = Number.ToDataSize(currentDownloadedSize)
 	outForm.Speed = Number.ToDataSize(speed*1000) + "/S"
 
 	//下载百分比
 	prog := 0.0
-	if mine.Total > 0 {
-		prog = float64(currentDownloadedSize) / float64(mine.Total)
+	if total > 0 {
+		prog = float64(currentDownloadedSize) / float64(total)
 	}
 	outForm.Progress = int(prog * 100)
 	return outForm
