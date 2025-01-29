@@ -2,12 +2,16 @@ package create_admin
 
 import (
 	"DairoDFS/controller/app/install/create_admin/form"
+	"DairoDFS/controller/app/install/ffmpeg"
+	"DairoDFS/controller/app/install/ffprobe"
+	"DairoDFS/controller/app/install/libraw"
 	"DairoDFS/dao/UserDao"
 	"DairoDFS/dao/dto"
 	"DairoDFS/exception"
 	"DairoDFS/extension/String"
 	"DairoDFS/service/UserService"
 	"net/http"
+	"runtime"
 )
 
 /**
@@ -16,6 +20,11 @@ import (
 //@Get:/app/install/create_admin
 //@Html:app/install/create_admin.html
 func Init(writer http.ResponseWriter, request *http.Request) {
+	libraw.Recycle()
+	ffmpeg.Recycle()
+	ffprobe.Recycle()
+	runtime.GC()
+
 	if UserDao.IsInit() { //管理员账号已经存在
 		http.Redirect(writer, request, "/app/login.html", http.StatusFound)
 	}

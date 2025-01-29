@@ -8,7 +8,7 @@ import (
 )
 
 func init() {
-	application.LibrawPath = "C:/develop/project/idea/DairoDFS-JAVA/data/lib/libraw/LibRaw-0.21.2/bin"
+	application.LibrawPath = "C:/develop/project/idea/DairoDFS-JAVA/data/lib/libraw/LibRaw-0.21.3/bin"
 }
 
 func TestThumb(t *testing.T) {

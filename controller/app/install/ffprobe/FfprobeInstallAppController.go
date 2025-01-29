@@ -4,11 +4,8 @@ import (
 	"DairoDFS/application"
 	"DairoDFS/controller/app/install"
 	"DairoDFS/util/ShellUtil"
-	"fmt"
 	"net/http"
-	"os"
 	"runtime"
-	"strings"
 )
 
 /**
@@ -41,11 +38,15 @@ func url() string {
 //@Get:/install_ffprobe.html
 //@Html:app/install/install_ffprobe.html
 func Html() {
-	downloadInfo = &install.LibDownloadInfo{
-		Url:      url(),
-		SavePath: application.FfprobePath,
+	if downloadInfo == nil {
+		downloadInfo = &install.LibDownloadInfo{
+			Url:      url(),
+			SavePath: application.FfprobePath,
+		}
 	}
-	runtime.GC()
+	if validate() != nil {
+		downloadInfo.IsInstalled = false
+	}
 }
 
 // 资源回收
@@ -59,53 +60,18 @@ func Recycle() {
  */
 //@Post:/install
 func Install() {
-	_, err := os.Stat(application.FfprobePath)
-	if !os.IsNotExist(err) { //文件存在
-		return
-	}
-	if downloadInfo.IsRuning { //正在下载中
-		return
-	}
-	go downloadInfo.DownloadAndUnzip()
+	go downloadInfo.DownloadAndUnzip(validate, doInstall)
 }
 
 // 当前安装进度
 // @Request:/progress
 func Progress(writer http.ResponseWriter, request *http.Request) {
-	downloadInfo.SendProgress(writer, request, getInstallInfo)
+	downloadInfo.SendProgress(writer, request)
 }
 
 // 文件已经下载完成，获取安装信息
-func getInstallInfo() install.LibInstallProgressForm {
-	outForm := install.LibInstallProgressForm{}
-	versionResult, cmdErr := ShellUtil.ExecToOkResult(application.FfprobePath + "/ffprobe -version")
-	if cmdErr == nil {
-		outForm.Info = "安装完成：" + versionResult
-		outForm.IsInstalled = true
-		return outForm
-	}
+func doInstall() {
 	switch runtime.GOOS {
-	case "windows":
-		outForm.Info = fmt.Sprintf("安装失败：%q", cmdErr)
-	case "linux":
-		if strings.Contains(cmdErr.Error(), "error=13") { //没有赋予可执行权限
-
-			//开启可执行权限
-			_, versionCmdErr := ShellUtil.ExecToOkResult("chmod -R +x " + application.FfprobePath)
-			if versionCmdErr != nil {
-				outForm.Info = fmt.Sprintf("安装失败：%q", versionCmdErr)
-				return outForm
-			}
-
-			//再次获取版本号
-			versionResult, cmdErr = ShellUtil.ExecToOkResult(application.FfprobePath + "/ffprobe -version")
-			if cmdErr == nil {
-				outForm.Info = "安装完成：" + versionResult
-				outForm.IsInstalled = true
-				return outForm
-			}
-			outForm.Info = fmt.Sprintf("安装失败：%q", cmdErr)
-		}
 	case "darwin":
 	}
 
@@ -152,5 +118,15 @@ func getInstallInfo() install.LibInstallProgressForm {
 	//        }
 	//        form.error = "安装失败:$e"
 	//    }
-	return outForm
+}
+
+// 验证安装结果
+func validate() error {
+	versionResult, cmdErr := ShellUtil.ExecToOkResult(application.FfprobePath + "/ffprobe -version")
+	if cmdErr == nil {
+		downloadInfo.Info = "安装完成：" + versionResult
+		downloadInfo.IsInstalled = true
+		return nil
+	}
+	return cmdErr
 }

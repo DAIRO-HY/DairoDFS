@@ -2,6 +2,7 @@ package install
 
 import (
 	"DairoDFS/extension/Number"
+	"DairoDFS/extension/String"
 	"archive/zip"
 	"bytes"
 	"encoding/json"
@@ -13,6 +14,7 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -27,6 +29,12 @@ type LibDownloadInfo struct {
 
 	// 标记是否正在安装中
 	IsRuning bool
+
+	// 是否已经安装完成
+	IsInstalled bool
+
+	// 标记下载完成
+	isDownloaded bool
 
 	/**
 	 * 下载信息
@@ -52,18 +60,36 @@ type LibDownloadInfo struct {
 	Data bytes.Buffer
 }
 
+var lock sync.Mutex
+
 // 下载并解压
-func (mine *LibDownloadInfo) DownloadAndUnzip() {
-	defer func() {
-		mine.IsRuning = false
-	}()
+func (mine *LibDownloadInfo) DownloadAndUnzip(validate func() error, doInstall func()) {
+	lock.Lock()
+	if validate() == nil { //安装已经完成
+		lock.Unlock()
+		return
+	}
+	if mine.IsRuning { //正在下载中
+		lock.Unlock()
+		return
+	}
 	mine.IsRuning = true
+	lock.Unlock()
+	defer func() {
+		lock.Lock()
+		mine.IsRuning = false
+		lock.Unlock()
+	}()
+
+	//删除之前的安装目录
+	os.RemoveAll(mine.SavePath)
+	mine.isDownloaded = false
 	mine.Info = "准备下载"
 
 	// 创建HTTP GET请求
 	resp, err := http.Get(mine.Url)
 	if err != nil {
-		mine.Info = fmt.Sprintf("安装失败：%q", err)
+		mine.Info = fmt.Sprintf("下载失败：%q", err)
 		return
 	}
 	defer resp.Body.Close()
@@ -95,7 +121,13 @@ func (mine *LibDownloadInfo) DownloadAndUnzip() {
 		mine.Info = fmt.Sprintf("安装失败：%q", unzipErr)
 		return
 	}
-	mine.Info = "安装完成"
+	mine.isDownloaded = true
+
+	//去执行安装
+	doInstall()
+
+	//去验证安装结果
+	validate()
 }
 
 // unzip 解压 zip 文件到目标目录
@@ -109,7 +141,8 @@ func (mine *LibDownloadInfo) unzip() error {
 	unzipToTempFolder := mine.SavePath + ".temp"
 
 	// 遍历 zip 文件中的每个文件
-	for _, f := range r.File {
+	for index, f := range r.File {
+		mine.Info = "正在解压第" + String.ToString(index+1) + "个文件"
 
 		// 检查路径安全，防止 Zip Slip 漏洞
 		if strings.Contains(f.Name, "..") {
@@ -127,7 +160,8 @@ func (mine *LibDownloadInfo) unzip() error {
 				return err
 			}
 
-			outFile, openErr := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
+			//0755:将解压后的文件直接赋予可执行权限，这样就省去了解压之后再去赋予权限的步骤 @TODO:Mac系统是否可用，待验证
+			outFile, openErr := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0755)
 			if openErr != nil {
 				return openErr
 			}
@@ -157,7 +191,7 @@ func (mine *LibDownloadInfo) unzip() error {
 }
 
 // 当前安装进度
-func (mine *LibDownloadInfo) SendProgress(writer http.ResponseWriter, request *http.Request, getInstallInfo func() LibInstallProgressForm) {
+func (mine *LibDownloadInfo) SendProgress(writer http.ResponseWriter, request *http.Request) {
 	// 创建WebSocket升级器
 	var upgrader = websocket.Upgrader{
 		// 允许跨域请求
@@ -179,12 +213,7 @@ func (mine *LibDownloadInfo) SendProgress(writer http.ResponseWriter, request *h
 	for {
 		time.Sleep(250 * time.Millisecond)
 		var progressInfo LibInstallProgressForm
-		_, existsErr := os.Stat(mine.SavePath)
-		if os.IsNotExist(existsErr) { //文件未下载
-			progressInfo = mine.getDownloadInfo() //获取下载信息
-		} else {
-			progressInfo = getInstallInfo() //获取安装信息
-		}
+		progressInfo = mine.getDownloadInfo() //获取下载信息
 		jsonData, _ := json.Marshal(progressInfo)
 		if slices.Equal(preJsonData, jsonData) { //比较两次发送的数据，完全一样则无需发送
 			if !mine.IsRuning { //安装没有在进行或者安装已经结束
@@ -207,19 +236,33 @@ func (mine *LibDownloadInfo) SendProgress(writer http.ResponseWriter, request *h
  */
 func (mine *LibDownloadInfo) getDownloadInfo() LibInstallProgressForm {
 	outForm := LibInstallProgressForm{
-		IsRuning: mine.IsRuning,
+		IsRuning:    mine.IsRuning,
+		Info:        mine.Info,
+		IsInstalled: mine.IsInstalled,
 	}
-	if !mine.IsRuning { //还没有开始安装
-		outForm.Info = "点击“安装”按钮开始安装。"
+	if mine.IsInstalled { //安装完成
 		return outForm
 	}
-	outForm.Info = mine.Info
-	currentDownloadedSize := int64(mine.Data.Len())
+	if !mine.IsRuning { //还没有开始安装
+		if mine.Info == "" {
+			outForm.Info = "点击“安装”按钮开始安装。"
+		}
+		return outForm
+	}
+
+	var currentDownloadedSize int64
+	if mine.isDownloaded { //如果下载解压已经完成
+		currentDownloadedSize = mine.Total
+	} else {
+		currentDownloadedSize = int64(mine.Data.Len())
+	}
 	now := time.Now().UnixMilli()
+	if now == mine.LastProgressTime { //避免发生除0错误
+		return outForm
+	}
 
 	//计算下载速度
 	speed := (currentDownloadedSize - mine.LastDownloadedSize) / (now - mine.LastProgressTime)
-
 	mine.LastProgressTime = now
 	mine.LastDownloadedSize = currentDownloadedSize
 

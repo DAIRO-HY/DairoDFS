@@ -125,7 +125,7 @@ func startWebServer(port int) {
 		var body any = nil
 		controllerappfiles.Html()
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-		writeToTemplate(writer, body, "resources/templates/app/files.html", "resources/templates/app/include/head.html", "resources/templates/app/include/files/files_toolbar.html", "resources/templates/app/include/share_detail_dialog.html", "resources/templates/app/include/file_property_dialog.html", "resources/templates/app/include/top-bar.html", "resources/templates/app/include/files/files_upload.html", "resources/templates/app/include/files_list.html", "resources/templates/app/include/files/files_right_option.html", "resources/templates/app/include/files/files_share.html")
+		writeToTemplate(writer, body, "resources/templates/app/files.html", "resources/templates/app/include/head.html", "resources/templates/app/include/top-bar.html", "resources/templates/app/include/files/files_toolbar.html", "resources/templates/app/include/files/files_upload.html", "resources/templates/app/include/files_list.html", "resources/templates/app/include/files/files_share.html", "resources/templates/app/include/file_property_dialog.html", "resources/templates/app/include/files/files_right_option.html", "resources/templates/app/include/share_detail_dialog.html")
 	})
 	http.HandleFunc("/app/files/get_list", func(writer http.ResponseWriter, request *http.Request) {
 		if request.Method != "POST" {
@@ -709,7 +709,7 @@ func startWebServer(port int) {
 		var body any = nil
 		controllerappmyshare.Html()
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-		writeToTemplate(writer, body, "resources/templates/app/my_share.html", "resources/templates/app/include/head.html", "resources/templates/app/include/top-bar.html", "resources/templates/app/include/share_detail_dialog.html")
+		writeToTemplate(writer, body, "resources/templates/app/my_share.html", "resources/templates/app/include/share_detail_dialog.html", "resources/templates/app/include/head.html", "resources/templates/app/include/top-bar.html")
 	})
 	http.HandleFunc("/app/my_share/get_list", func(writer http.ResponseWriter, request *http.Request) {
 		if request.Method != "POST" {

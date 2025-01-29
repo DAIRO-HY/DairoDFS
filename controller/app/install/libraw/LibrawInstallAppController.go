@@ -10,6 +10,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"path/filepath"
 	"runtime"
 	"strings"
 )
@@ -31,12 +32,11 @@ var librawInstallSH embed.FS
 func url() string {
 	switch runtime.GOOS {
 	case "linux":
-		return "https://github.com/LibRaw/LibRaw/archive/refs/tags/0.21.2.zip"
+		return "https://www.libraw.org/data/LibRaw-0.21.2.zip"
 	case "windows":
-		//return "https://github.com/DAIRO-HY/DairoDfsLib/raw/main/LibRaw-0.21.2-Win64.zip"
-		return "https://github.com/LibRaw/LibRaw/archive/refs/tags/0.21.2.zip"
+		return "https://www.libraw.org/data/LibRaw-0.21.2-Win64.zip"
 	case "darwin":
-		return "https://github.com/DAIRO-HY/DairoDfsLib/raw/main/LibRaw-0.21.2-macOS.zip"
+		return "https://www.libraw.org/data/LibRaw-0.21.2-Win64.zip"
 	default:
 		return ""
 	}
@@ -48,11 +48,15 @@ func url() string {
 //@Get:/install_libraw.html
 //@Html:app/install/install_libraw.html
 func Html() {
-	downloadInfo = &install.LibDownloadInfo{
-		Url:      url(),
-		SavePath: application.LibrawPath,
+	if downloadInfo == nil {
+		downloadInfo = &install.LibDownloadInfo{
+			Url:      url(),
+			SavePath: application.LibrawPath,
+		}
 	}
-	runtime.GC()
+	if validate() != nil {
+		downloadInfo.IsInstalled = false
+	}
 }
 
 // 资源回收
@@ -66,41 +70,18 @@ func Recycle() {
  */
 //@Post:/install
 func Install() {
-	_, err := os.Stat(application.LibrawPath)
-	if !os.IsNotExist(err) { //文件存在
-		return
-	}
-	if downloadInfo.IsRuning { //正在下载中
-		return
-	}
-	go downloadInfo.DownloadAndUnzip()
+	go downloadInfo.DownloadAndUnzip(validate, doInstall)
 }
 
 // 当前安装进度
 // @Request:/progress
 func Progress(writer http.ResponseWriter, request *http.Request) {
-	downloadInfo.SendProgress(writer, request, getInstallInfo)
+	downloadInfo.SendProgress(writer, request)
 }
 
 // 文件已经下载完成，获取安装信息
-func getInstallInfo() install.LibInstallProgressForm {
-	outForm := install.LibInstallProgressForm{}
-	//versionResult, cmdErr := ShellUtil.ExecToOkResult(application.LibrawPath + "/libraw -version")
-	//if cmdErr == nil {
-	//	outForm.Info = "安装完成：" + versionResult
-	//	outForm.IsInstalled = true
-	//	return outForm
-	//}
+func doInstall() {
 	switch runtime.GOOS {
-	case "windows":
-		_, cmdErr := ShellUtil.ExecToOkResult(application.DcrawEmuPath + "/dcraw_emu" + " -version")
-		if cmdErr != nil && strings.Contains(cmdErr.Error(), "Unknown option \"-version\".") {
-			outForm.Info = "安装完成"
-			outForm.IsInstalled = true
-			return outForm
-		}
-		outForm.Info = fmt.Sprintf("安装失败：%q", cmdErr)
-		return outForm
 	case "linux":
 
 		// 读取嵌入的文件内容
@@ -110,42 +91,32 @@ func getInstallInfo() install.LibInstallProgressForm {
 		//0755：文件所有者可读、写、执行，同组用户和其他用户可读、执行。
 		writeShFileErr := os.WriteFile(targetFile, data, 0755)
 		if writeShFileErr != nil {
-			outForm.Info = fmt.Sprintf("安装失败：%q", writeShFileErr)
-			return outForm
+			downloadInfo.Info = fmt.Sprintf("安装失败：%q", writeShFileErr)
+			return
 		}
 
-		cache := make([]byte, 8*1024)
+		cache := make([]byte, 128)
 
+		abs, _ := filepath.Abs(application.LibrawPath + "/libraw-install.sh")
 		installResultSize := 0
-		_, installCmdErr := ShellUtil.ExecToOkReader(application.LibrawPath+"/libraw-install.sh", func(rc io.ReadCloser) {
-			n, _ := rc.Read(cache)
-			fmt.Println(string(cache[0:n]))
-			installResultSize += n
-			outForm.Info = String.ToString(installResultSize)
+		const installTotalSize = 202568
+		_, installCmdErr := ShellUtil.ExecToOkReader(abs, func(rc io.ReadCloser) {
+			for {
+				n, err := rc.Read(cache)
+				if err != nil {
+					if err == io.EOF || n == 0 {
+						break
+					}
+				}
+				installResultSize += n
+				downloadInfo.Info = "正在安装：" + String.ToString(installResultSize) + "/" + String.ToString(installTotalSize)
+			}
 		})
 		if installCmdErr != nil {
-			outForm.Info = fmt.Sprintf("安装失败：%q", installCmdErr)
-			return outForm
+			downloadInfo.Info = fmt.Sprintf("安装失败：%q", installCmdErr)
+			return
 		}
 
-		//	if strings.Contains(cmdErr.Error(), "error=13") { //没有赋予可执行权限
-		//
-		//		//开启可执行权限
-		//		_, versionCmdErr := ShellUtil.ExecToOkResult("chmod -R +x " + application.LibrawPath)
-		//		if versionCmdErr != nil {
-		//			outForm.Info = fmt.Sprintf("安装失败：%q", versionCmdErr)
-		//			return outForm
-		//		}
-		//
-		//		//再次获取版本号
-		//		versionResult, cmdErr = ShellUtil.ExecToOkResult(application.LibrawPath + "/libraw -version")
-		//		if cmdErr == nil {
-		//			outForm.Info = "安装完成：" + versionResult
-		//			outForm.IsInstalled = true
-		//			return outForm
-		//		}
-		//		outForm.Info = fmt.Sprintf("安装失败：%q", cmdErr)
-		//	}
 		//case "darwin":
 		//}
 
@@ -192,5 +163,16 @@ func getInstallInfo() install.LibInstallProgressForm {
 		//        }
 		//        form.error = "安装失败:$e"
 	}
-	return outForm
+}
+
+// 验证安装结果
+func validate() error {
+	dcrawPath, _ := filepath.Abs(application.DcrawEmuPath + "/dcraw_emu")
+	_, cmdErr := ShellUtil.ExecToOkResult(dcrawPath + " -version")
+	if cmdErr != nil && strings.Contains(cmdErr.Error(), "Unknown option \"-version\".") {
+		downloadInfo.Info = "安装完成"
+		downloadInfo.IsInstalled = true
+		return nil
+	}
+	return cmdErr
 }

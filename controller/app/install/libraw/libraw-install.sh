@@ -12,11 +12,13 @@ cd $SCRIPT_DIR
 apt update
 
 #构建工具和依赖项
-yes|apt install build-essential cmake
+yes|apt install zlib1g-dev
+yes|apt install pkg-config
+yes|apt install build-essential cmake autoconf
 
-curl -L -o LibRaw-0.21.2-source.tar.gz https://github.com/DAIRO-HY/DairoDfsLib/raw/main/LibRaw-0.21.2-source.tar.gz
-
-tar -xzf LibRaw-0.21.2-source.tar.gz
+#curl -L -o LibRaw-0.21.2-source.tar.gz https://github.com/DAIRO-HY/DairoDfsLib/raw/main/LibRaw-0.21.2-source.tar.gz
+#
+#tar -xzf LibRaw-0.21.2-source.tar.gz
 
 cd LibRaw-0.21.2
 
@@ -31,4 +33,4 @@ make install
 ldconfig
 
 #删除安装包
-rm ../LibRaw-0.21.2-source.tar.gz
+#rm ../LibRaw-0.21.2-source.tar.gz

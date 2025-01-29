@@ -1,0 +1,37 @@
+pipeline {
+    agent any
+
+    environment {
+        REPO = "DAIRO-HY/DairoNPS"
+        BRANCH = "release"
+    }
+    stages {
+        stage("拉取代码") {
+            steps {
+                script{
+                    if(!fileExists("DairoNPS")){
+                        def cloneUrl = "https://${env.GITHUB_TOKEN}@github.com/${env.REPO}.git"
+                        echo "克隆地址:${cloneUrl}"
+                        sh "git clone --branch ${env.BRANCH} ${cloneUrl}"
+                    }
+                }
+                dir("DairoNPS"){
+                    sh "git pull"
+                }
+            }
+        }
+        stage("构建镜像") {
+            steps {
+                dir("DairoNPS/document/docker-build"){
+                    sh "docker build -t dairo-nps-build ."
+                    sh "yes|docker image prune"
+                }
+            }
+        }
+        stage("编译") {
+            steps {
+                sh "docker run -e GITHUB_TOKEN=$GITHUB_TOKEN -e DOCKER_USER=$DOCKER_USER -e DOCKER_PWD=$DOCKER_PASSWORD -v /var/run/docker.sock:/var/run/docker.sock --rm dairo-nps-build"
+            }
+        }
+    }
+}
