@@ -142,7 +142,7 @@ func (mine *LibDownloadInfo) unzip() error {
 
 	// 遍历 zip 文件中的每个文件
 	for index, f := range r.File {
-		mine.Info = "正在解压第" + String.ToString(index+1) + "个文件"
+		mine.Info = "正在解压第" + String.ValueOf(index+1) + "个文件"
 
 		// 检查路径安全，防止 Zip Slip 漏洞
 		if strings.Contains(f.Name, "..") {

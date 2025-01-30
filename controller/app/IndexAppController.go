@@ -1,6 +1,9 @@
 package app
 
-import "net/http"
+import (
+	"DairoDFS/test"
+	"net/http"
+)
 
 // 页面初始化
 func Home() {
@@ -22,5 +25,5 @@ func Home() {
 // 页面初始化
 // @Html:index.html
 func Index() {
-
+	test.NotifyWorker()
 }

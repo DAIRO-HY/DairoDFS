@@ -38,11 +38,11 @@ func GetList() []form.MyShareForm {
 				endDate = "已过期"
 			} else {
 				if endTime > 24*60*60*1000 { //超过1天
-					endDate = String.ToString(endTime/(24*60*60*1000)) + "天后过期"
+					endDate = String.ValueOf(endTime/(24*60*60*1000)) + "天后过期"
 				} else if endTime > 60*60*1000 { //超过1小时
-					endDate = String.ToString(endTime/(60*60*1000)) + "小时后过期"
+					endDate = String.ValueOf(endTime/(60*60*1000)) + "小时后过期"
 				} else if endTime > 60*1000 { //超过1分钟
-					endDate = String.ToString(endTime/(60*1000)) + "分钟后过期"
+					endDate = String.ValueOf(endTime/(60*1000)) + "分钟后过期"
 				} else {
 					endDate = "即将过期"
 				}
@@ -54,7 +54,7 @@ func GetList() []form.MyShareForm {
 			FileCount:  it.FileCount,
 			FolderFlag: it.FolderFlag,
 			EndDate:    endDate,
-			Thumb:      Bool.Is(it.Thumb != 0, "/app/files/thumb/"+String.ToString(it.Thumb), ""),
+			Thumb:      Bool.Is(it.Thumb != 0, "/app/files/thumb/"+String.ValueOf(it.Thumb), ""),
 			Date:       Date.Format(it.Date),
 		}
 		list = append(list, shareForm)
@@ -83,7 +83,7 @@ func GetDetail(id int64) any {
 	}
 
 	//分享链接
-	url := "/app/share/" + String.ToString(shareDto.Id)
+	url := "/app/share/" + String.ValueOf(shareDto.Id)
 
 	outForm := form.MyShareDetailForm{
 		Id:      shareDto.Id,
@@ -104,7 +104,7 @@ func Delete(ids []int64) {
 	loginId := LoginState.LoginId()
 	idsStr := ""
 	for _, it := range ids {
-		idsStr += String.ToString(it) + ","
+		idsStr += String.ValueOf(it) + ","
 	}
 	idsStr = idsStr[:len(idsStr)-1]
 	ShareDao.Delete(loginId, idsStr)

@@ -119,7 +119,7 @@ func MakeRandStrBySourceStr(sourceStr string, count int) string {
 }
 
 // 将某个值转换成字符串
-func ToString(v any) string {
+func ValueOf(v any) string {
 	switch value := v.(type) {
 	case int:
 		return strconv.Itoa(value)

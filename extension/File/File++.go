@@ -19,6 +19,12 @@ func ToMd5(path string) string {
 	return ToMd5ByReader(file)
 }
 
+// 将字节数组转换成md5
+func ToMd5ByBytes(data []byte) string {
+	hash := md5.Sum(data)
+	return hex.EncodeToString(hash[:])
+}
+
 // 获取文件md5
 func ToMd5ByReader(reader io.Reader) string {
 

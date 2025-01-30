@@ -42,11 +42,11 @@ func GetList() []form.TrashForm {
 			deleteLastTime = "即将删除"
 		} else {
 			if timeLeft > 24*60*60*1000 { //超过1天
-				deleteLastTime = String.ToString(timeLeft/(24*60*60*1000)) + "天后删除"
+				deleteLastTime = String.ValueOf(timeLeft/(24*60*60*1000)) + "天后删除"
 			} else if timeLeft > 60*60*1000 { //超过1小时
-				deleteLastTime = String.ToString(timeLeft/(60*60*1000)) + "小时后删除"
+				deleteLastTime = String.ValueOf(timeLeft/(60*60*1000)) + "小时后删除"
 			} else if timeLeft > 60*1000 { //超过1分钟
-				deleteLastTime = String.ToString(timeLeft/(60*1000)) + "分钟后删除"
+				deleteLastTime = String.ValueOf(timeLeft/(60*1000)) + "分钟后删除"
 			} else {
 				deleteLastTime = "即将删除"
 			}
@@ -57,7 +57,7 @@ func GetList() []form.TrashForm {
 			Size:     it.Size,
 			Date:     deleteLastTime,
 			FileFlag: it.LocalId > 0,
-			Thumb:    Bool.Is(it.HasThumb, "/app/files/thumb/"+String.ToString(it.Id), ""),
+			Thumb:    Bool.Is(it.HasThumb, "/app/files/thumb/"+String.ValueOf(it.Id), ""),
 		}
 		list = append(list, outForm)
 	}

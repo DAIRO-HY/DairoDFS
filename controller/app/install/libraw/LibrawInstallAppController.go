@@ -109,7 +109,7 @@ func doInstall() {
 					}
 				}
 				installResultSize += n
-				downloadInfo.Info = "正在安装：" + String.ToString(installResultSize) + "/" + String.ToString(installTotalSize)
+				downloadInfo.Info = "正在安装：" + String.ValueOf(installResultSize) + "/" + String.ValueOf(installTotalSize)
 			}
 		})
 		if installCmdErr != nil {
