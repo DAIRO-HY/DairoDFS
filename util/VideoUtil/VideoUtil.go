@@ -22,7 +22,7 @@ import (
 func Thumb(path string, maxWidth int, maxHeight int) ([]byte, error) {
 
 	//获取视频第一帧作为缩略图
-	jpgData, cmdErr := ShellUtil.ExecToOkData("\"" + application.FfmpegPath + "\" -i \"" + path + "\" -vf select=eq(n\\,0) -q:v 1 -f image2pipe -vcodec mjpeg -")
+	jpgData, cmdErr := ShellUtil.ExecToOkData("\"" + application.FfmpegPath + "/ffmpeg\" -i \"" + path + "\" -vf select=eq(n\\,0) -q:v 1 -f image2pipe -vcodec mjpeg -")
 	if cmdErr != nil {
 		return nil, cmdErr
 	}
@@ -35,7 +35,7 @@ func Thumb(path string, maxWidth int, maxHeight int) ([]byte, error) {
  * @return 图片字节数组
  */
 func GetInfo(path string) (VedioInfo, error) {
-	_, videoInfoStr, cmdErr := ShellUtil.ExecToOkAndErrorResult("\"" + application.FfprobePath + "\" -i \"" + path + "\"")
+	_, videoInfoStr, cmdErr := ShellUtil.ExecToOkAndErrorResult("\"" + application.FfprobePath + "/ffprobe\" -i \"" + path + "\"")
 	if cmdErr != nil {
 		return VedioInfo{}, cmdErr
 	}
@@ -140,7 +140,7 @@ func GetInfo(path string) (VedioInfo, error) {
  * 视频转码
  */
 func Transfer(path string, targetW int, targetH int, targetFps float32, targetPath string) error {
-	_, errResult, cmdErr := ShellUtil.ExecToOkAndErrorResult(fmt.Sprintf("\"%s\" -i \"%s\" -vf scale=%d:%d -r %f -f mp4 \"%s\"", application.FfmpegPath, path, targetW, targetH, targetFps, targetPath))
+	_, errResult, cmdErr := ShellUtil.ExecToOkAndErrorResult(fmt.Sprintf("\"%s/ffmpeg\" -i \"%s\" -vf scale=%d:%d -r %f -f mp4 \"%s\"", application.FfmpegPath, path, targetW, targetH, targetFps, targetPath))
 	if cmdErr != nil {
 		return exception.Biz(errResult)
 	}

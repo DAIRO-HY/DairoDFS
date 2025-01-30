@@ -54,6 +54,11 @@ var DbPath = "./data/dairo-dfs.sqlite"
 var DataPath = "./data"
 
 /**
+ * 数据存放文件夹
+ */
+var TEMP_PATH = DataPath + "/temp"
+
+/**
  * ffmpeg安装目录
  */
 var FfmpegPath = DataPath + "/ffmpeg"
@@ -83,6 +88,14 @@ var WebPort = 8031
 var UserTokenLimit = 10
 
 func Init() {
+	parseArgs()
+
+	//创建临时目录
+	os.MkdirAll(TEMP_PATH, 0755)
+}
+
+// 解析参数
+func parseArgs() {
 	fmt.Println("------------------------------------------------------------------------")
 	for _, it := range os.Args {
 		fmt.Println(it)
@@ -111,28 +124,6 @@ func Init() {
 			IsDev = paramArr[1] == "true"
 		}
 	}
-	//for index, it := range os.Args {
-	//	switch it {
-	//	case "-web-port":
-	//		WebPort, _ = strconv.Atoi(paramArr[1])
-	//	case "-log-type": //日志输出方式
-	//		switch paramArr[1] {
-	//		case "0":
-	//			LogUtil.LogOutType = LogUtil.LOG_OUT_TYPE_NO
-	//		case "1":
-	//			LogUtil.LogOutType = LogUtil.LOG_OUT_TYPE_CONSOLE
-	//		case "2":
-	//			LogUtil.LogOutType = LogUtil.LOG_OUT_TYPE_FILE
-	//		}
-	//	case "-log-level": //日志输出级别
-	//		levels := strings.Split(paramArr[1], ",")
-	//		for _, level := range levels {
-	//			LogUtil.LogLevel[level] = true
-	//		}
-	//	case "-is-dev":
-	//		IsDev = paramArr[1] == "true"
-	//	}
-	//}
 }
 
 // 防止程序终止

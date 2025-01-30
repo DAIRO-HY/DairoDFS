@@ -295,7 +295,9 @@ func makeExtra(dfsFileDto dto.DfsFileDto) error {
 			//转换之后的文件
 			targetPathRelative := application.DataPath + "/temp/" + String.ValueOf(time.Now().UnixMicro())
 			targetPath, _ := filepath.Abs(targetPathRelative)
-			VideoUtil.Transfer(path, targetW, targetH, targetFps, targetPath)
+			if err := VideoUtil.Transfer(path, targetW, targetH, targetFps, targetPath); err != nil {
+				return err
+			}
 			md5 := File.ToMd5(targetPath)
 
 			targetFileInfo, _ := os.Stat(targetPath)
