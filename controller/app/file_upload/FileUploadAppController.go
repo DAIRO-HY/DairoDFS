@@ -5,6 +5,7 @@ import (
 	"DairoDFS/extension/File"
 	"DairoDFS/extension/String"
 	"DairoDFS/service/DfsFileService"
+	"DairoDFS/util/DfsFileHandleUtil"
 	"DairoDFS/util/DfsFileUtil"
 	"DairoDFS/util/LoginState"
 	"net/http"
@@ -23,11 +24,7 @@ var uploadingFileMap = map[string]int64{}
 
 // 浏览器文件上传
 // @Post:
-func Upload(
-	request *http.Request,
-	folder string,
-	contentType string,
-) error {
+func Upload(request *http.Request, folder string, contentType string) error {
 
 	// 获取上传的文件
 	header := request.MultipartForm.File["file"][0]
@@ -37,15 +34,14 @@ func Upload(
 	path := folder + "/" + name
 
 	//检查文件路径是否合法
-	pathErr := DfsFileUtil.CheckPath(path)
-	if pathErr != nil {
-		return pathErr
+	if err := DfsFileUtil.CheckPath(path); err != nil {
+		return err
 	}
 
 	//文件MD5
-	md5File, err := header.Open()
-	if err != nil {
-		return err
+	md5File, openErr := header.Open()
+	if openErr != nil {
+		return openErr
 	}
 	defer md5File.Close()
 	md5 := File.ToMd5ByReader(md5File)
@@ -57,16 +53,16 @@ func Upload(
 	//将文件存放到指定目录
 	localFileDto, saveErr := DfsFileService.SaveToLocalFile(md5, file)
 	if saveErr != nil {
-		return pathErr
+		return saveErr
 	}
-	addErr := addDfsFile(LoginState.LoginId(), localFileDto, path, contentType)
-	if addErr != nil {
-		return err
+	if addErr := addDfsFile(LoginState.LoginId(), localFileDto, path, contentType); addErr != nil {
+		return addErr
 	}
 
 	//@TODO:待实现
 	////开启生成缩略图线程
 	//DfsFileHandleUtil.start()
+	DfsFileHandleUtil.NotifyWorker()
 	return nil
 }
 

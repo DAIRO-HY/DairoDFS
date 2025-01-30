@@ -34,10 +34,10 @@ func Thumb(path string, maxWidth int, maxHeight int) ([]byte, error) {
  * @param path 视频文件路径
  * @return 图片字节数组
  */
-func GetInfo(path string) (*VedioInfo, error) {
+func GetInfo(path string) (VedioInfo, error) {
 	_, videoInfoStr, cmdErr := ShellUtil.ExecToOkAndErrorResult("\"" + application.FfprobePath + "\" -i \"" + path + "\"")
 	if cmdErr != nil {
-		return nil, cmdErr
+		return VedioInfo{}, cmdErr
 	}
 
 	//时长
@@ -123,7 +123,7 @@ func GetInfo(path string) (*VedioInfo, error) {
 		audioBitrate, _ := strconv.Atoi(audioBitrateStr)
 		return audioBitrate
 	}()
-	return &VedioInfo{
+	return VedioInfo{
 		Width:           width,           //宽
 		Height:          height,          //高
 		Fps:             fps,             //帧数

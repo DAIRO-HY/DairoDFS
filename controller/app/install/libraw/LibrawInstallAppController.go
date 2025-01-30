@@ -167,8 +167,7 @@ func doInstall() {
 
 // 验证安装结果
 func validate() error {
-	dcrawPath, _ := filepath.Abs(application.DcrawEmuPath + "/dcraw_emu")
-	_, cmdErr := ShellUtil.ExecToOkResult(dcrawPath + " -version")
+	_, cmdErr := ShellUtil.ExecToOkResult("\"" + application.LIBRAW_BIN + "/dcraw_emu\" -version")
 	if cmdErr != nil && strings.Contains(cmdErr.Error(), "Unknown option \"-version\".") {
 		downloadInfo.Info = "安装完成"
 		downloadInfo.IsInstalled = true

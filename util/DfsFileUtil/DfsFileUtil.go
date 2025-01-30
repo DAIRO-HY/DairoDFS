@@ -10,7 +10,6 @@ import (
 	"embed"
 	_ "embed"
 	"fmt"
-	"github.com/shirou/gopsutil/disk"
 	"io"
 	"log"
 	"net/http"
@@ -72,7 +71,7 @@ func DfsContentType(ext string) string {
  * 判断储存路径的磁盘剩余容量,选择合适的目录
  */
 func SelectDriverFolder() (string, error) {
-	maxSize := SystemConfig.Instance().UploadMaxSize
+	//maxSize := SystemConfig.Instance().UploadMaxSize
 	saveFolderList := SystemConfig.Instance().SaveFolderList
 	if len(saveFolderList) == 0 {
 		return "", exception.Biz("没有配置存储目录")
@@ -82,13 +81,14 @@ func SelectDriverFolder() (string, error) {
 		if os.IsNotExist(err) { //如果文件夹不存在
 			continue
 		}
-		usage, usageErr := disk.Usage(folder)
-		if usageErr != nil {
-			return "", usageErr
-		}
-		if usage.Free > uint64(maxSize) { //空间足够
-			return folder, nil
-		}
+		//usage, usageErr := disk.Usage(folder)
+		//if usageErr != nil {
+		//	return "", usageErr
+		//}
+		//if usage.Free > uint64(maxSize) { //空间足够
+		//	return folder, nil
+		//}
+		return folder, nil
 	}
 	return "", exception.Biz("文件夹不存在或没有足够存储空间")
 }

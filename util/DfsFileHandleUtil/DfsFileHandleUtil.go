@@ -66,11 +66,13 @@ func start() {
 				startTime := time.Now().UnixMilli()
 
 				//设置文件属性
-				makeProperty(it)
+				if err := makeProperty(it); err != nil {
+					DfsFileDao.SetState(it.Id, 2, err.Error())
+					continue
+				}
 
 				//生成附属文件，如标清视频，高清视频，raw预览图片
-				err := makeExtra(it)
-				if err != nil {
+				if err := makeExtra(it); err != nil {
 					DfsFileDao.SetState(it.Id, 2, err.Error())
 					continue
 				}
@@ -89,19 +91,20 @@ func start() {
 /**
  * 生成文件属性
  */
-func makeProperty(dfsFileDto dto.DfsFileDto) {
+func makeProperty(dfsFileDto dto.DfsFileDto) error {
 	exitsProperty := DfsFileDao.SelectPropertyByLocalId(dfsFileDto.LocalId)
 	if exitsProperty != "" { //属性已经存在
 		DfsFileDao.SetProperty(dfsFileDto.Id, exitsProperty)
-		return
+		return nil
 	}
 	localDto, isExists := LocalFileDao.SelectOne(dfsFileDto.LocalId)
 	if !isExists { //理论上没有不存在的文件
-		return
+		return nil
 	}
 	path := localDto.Path
 	lowerName := strings.ToLower(dfsFileDto.Name)
 	var property any
+	var makePropertyErr error
 	if strings.HasSuffix(lowerName, ".jpg") ||
 		strings.HasSuffix(lowerName, ".jpeg") ||
 		strings.HasSuffix(lowerName, ".png") ||
@@ -117,11 +120,11 @@ func makeProperty(dfsFileDto dto.DfsFileDto) {
 		strings.HasSuffix(lowerName, ".eps") ||
 		strings.HasSuffix(lowerName, ".tga") ||
 		strings.HasSuffix(lowerName, ".jfif") { //图片处理
-		property, _ = ImageUtil.GetInfo(path)
+		property, makePropertyErr = ImageUtil.GetInfo(path)
 	} else if strings.HasSuffix(lowerName, ".psd") ||
 		strings.HasSuffix(lowerName, ".psb") ||
 		strings.HasSuffix(lowerName, ".ai") {
-		property, _ = PSDUtil.GetInfo(path)
+		property, makePropertyErr = PSDUtil.GetInfo(path)
 	} else if strings.HasSuffix(lowerName, ".mp4") ||
 		strings.HasSuffix(lowerName, ".mov") ||
 		strings.HasSuffix(lowerName, ".avi") ||
@@ -130,16 +133,17 @@ func makeProperty(dfsFileDto dto.DfsFileDto) {
 		strings.HasSuffix(lowerName, ".rm") ||
 		strings.HasSuffix(lowerName, ".rmvb") ||
 		strings.HasSuffix(lowerName, ".3gp") {
-		property, _ = VideoUtil.GetInfo(path)
+		property, makePropertyErr = VideoUtil.GetInfo(path)
 	} else if strings.HasSuffix(lowerName, ".cr3") || strings.HasSuffix(lowerName, ".cr2") { //专业相机RAW图片
-		property, _ = RawUtil.GetInfo(path)
+		property, makePropertyErr = RawUtil.GetInfo(path)
 	} else {
 	}
-	if property == nil {
-		return
+	if makePropertyErr != nil {
+		return makePropertyErr
 	}
 	jsonData, _ := json.Marshal(property)
 	DfsFileDao.SetProperty(dfsFileDto.Id, string(jsonData))
+	return nil
 }
 
 /**
@@ -326,7 +330,7 @@ func makeExtra(dfsFileDto dto.DfsFileDto) error {
 		if isExists { //已经存在附属文件,则跳过  重新生成附属文件时用到
 			return nil
 		}
-		jpgData, err := RawUtil.ToJpg(path, String.FileExt(lowerName))
+		jpgData, err := RawUtil.ToJpg(path)
 		if err != nil {
 			return err
 		}
@@ -406,7 +410,7 @@ func makeThumb(dfsFileDto dto.DfsFileDto) error {
 		strings.HasSuffix(lowerName, ".cr2") {
 
 		//专业相机RAW图片
-		data, makeThumbErr = RawUtil.Thumb(path, String.FileExt(lowerName), width, height)
+		data, makeThumbErr = RawUtil.Thumb(path, width, height)
 	} else {
 	}
 	if makeThumbErr != nil {

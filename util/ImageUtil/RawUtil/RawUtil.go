@@ -10,7 +10,6 @@ import (
 	"image"
 	"image/jpeg"
 	"image/png"
-	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -29,8 +28,8 @@ import (
  * @param maxHeight 图片最大高度
  * @return 图片字节数组
  */
-func Thumb(path string, ext string, maxWidth int, maxHeight int) ([]byte, error) {
-	tiffData, err := ToTiff(path, ext)
+func Thumb(path string, maxWidth int, maxHeight int) ([]byte, error) {
+	tiffData, err := ToTiff(path)
 	if err != nil {
 		return nil, err
 	}
@@ -43,19 +42,11 @@ func Thumb(path string, ext string, maxWidth int, maxHeight int) ([]byte, error)
  * @param ext 文件后最，raw图片处理时，必须携带文件后缀名
  * @return 图片数据
  */
-func ToTiff(path string, ext string) ([]byte, error) {
-
-	//重命名文件名
-	renameTo := path + "." + ext
-	renameErr := os.Rename(path, renameTo)
-	if renameErr != nil {
-		return nil, renameErr
-	}
-	defer os.Rename(renameTo, path)
+func ToTiff(path string) ([]byte, error) {
 
 	//将图片转换成TIFF图片
 	okData, cmdErr :=
-		ShellUtil.ExecToOkData("\"" + application.LibrawPath + "/dcraw_emu\" -T -w -Z - -mem -mmap \"" + renameTo + "\"")
+		ShellUtil.ExecToOkData("\"" + application.LIBRAW_BIN + "/dcraw_emu\" -T -w -Z - -mem -mmap \"" + path + "\"")
 	if cmdErr != nil {
 		return nil, cmdErr
 	}
@@ -68,8 +59,8 @@ func ToTiff(path string, ext string) ([]byte, error) {
  * @param ext 文件后最，raw图片处理时，必须携带文件后缀名
  * @return 图片数据
  */
-func ToPng(path string, ext string) ([]byte, error) {
-	tiffData, tiffErr := ToTiff(path, ext)
+func ToPng(path string) ([]byte, error) {
+	tiffData, tiffErr := ToTiff(path)
 	if tiffErr != nil {
 		return nil, tiffErr
 	}
@@ -102,8 +93,8 @@ func ToPng(path string, ext string) ([]byte, error) {
  * @param ext 文件后最，raw图片处理时，必须携带文件后缀名
  * @return 图片数据
  */
-func ToJpg(path string, ext string) ([]byte, error) {
-	tiffData, tiffErr := ToTiff(path, ext)
+func ToJpg(path string) ([]byte, error) {
+	tiffData, tiffErr := ToTiff(path)
 	if tiffErr != nil {
 		return nil, tiffErr
 	}
@@ -133,11 +124,11 @@ func ToJpg(path string, ext string) ([]byte, error) {
 /**
  * 获取图片信息
  */
-func GetInfo(path string) (*ImageUtil.ImageInfo, error) {
+func GetInfo(path string) (ImageUtil.ImageInfo, error) {
 	okRs, cmdErr :=
-		ShellUtil.ExecToOkResult("\"" + application.LibrawPath + "/raw-identify\" -v \"" + path + "\"")
+		ShellUtil.ExecToOkResult("\"" + application.LIBRAW_BIN + "/raw-identify\" -v \"" + path + "\"")
 	if cmdErr != nil { //如果发生了异常，异常信息记录在了错误流数据中
-		return nil, cmdErr
+		return ImageUtil.ImageInfo{}, cmdErr
 	}
 
 	//拍摄时间
@@ -183,7 +174,7 @@ func GetInfo(path string) (*ImageUtil.ImageInfo, error) {
 		var cameraStr = regexp.MustCompile("Camera:.*").FindAllString(okRs, -1)[0]
 		return cameraStr[8 : len(cameraStr)-1]
 	}()
-	return &ImageUtil.ImageInfo{
+	return ImageUtil.ImageInfo{
 		Width:  width,
 		Height: height,
 		Camera: camera,

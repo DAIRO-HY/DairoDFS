@@ -71,7 +71,7 @@ var LibrawPath = DataPath + "/libraw"
 /**
  * libraw中的Dcraw模拟器存放路径
  */
-var DcrawEmuPath = DataPath + "/libraw/LibRaw-0.21.2/bin"
+var LIBRAW_BIN = LibrawPath + "/LibRaw-0.21.2/bin"
 
 // 是否开发模式
 var IsDev bool
