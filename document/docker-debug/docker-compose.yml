@@ -1,0 +1,18 @@
+version: '3.1'
+services:
+  dairo-dfs-debug:
+    build: .
+    restart: always
+    container_name: dairo-dfs-debug
+
+
+    #使用真root权限进入,某些linux系统需要改权限才能运行
+    privileged: true
+    ports:
+      - 8031:8031
+    environment:
+      #时区,解决时间不一致的bug
+      #TZ: Asia/Shanghai
+
+      #解决控制台输出中文乱码
+      LANG: C.UTF-8

@@ -40,7 +40,7 @@ func GetList(folder string) []form.FileForm {
 			Size:     it.Size,
 			Date:     Date.Format(it.Date),
 			FileFlag: it.LocalId != 0,
-			Thumb:    Bool.Is(it.HasThumb, "/app/files/thumb/${it.id}", ""),
+			Thumb:    Bool.Is(it.HasThumb, "/app/files/thumb?id="+String.ValueOf(it.Id), ""),
 		}
 		forms = append(forms, outForm)
 	}
@@ -326,30 +326,28 @@ func Download(writer http.ResponseWriter, request *http.Request) {
 	DfsFileUtil.DownloadDfsId(fileId, writer, request)
 }
 
-//
-//    /**
-//     * 缩略图下载
-//     * @param request 客户端请求
-//     * @param response 往客户端返回内容
-//     * @param id 文件ID
-//     */
-//    @GetMapping("/thumb/{id}")
-//    fun thumb(
-//        request: HttpServletRequest,
-//        response: HttpServletResponse,
-//        @PathVariable id: Long
-//    ) {
-//        val dfsDto = this.dfsFileDao.selectOne(id)
-//        if (dfsDto == null) {//文件不存在
-//            response.status = HttpStatus.NOT_FOUND.value()
-//            return
-//        }
-//        if (dfsDto.userId != super.loginId) {//没有权限
-//            throw ErrorCode.NOT_ALLOW
-//        }
-//
-//        //获取缩率图附属文件
-//        val thumb = this.dfsFileDao.selectExtra(dfsDto.id!!, "thumb")
-//        DfsFileUtil.download(thumb, request, response)
-//    }
+/**
+ * 缩略图下载
+ * @param request 客户端请求
+ * @param response 往客户端返回内容
+ * @param id 文件ID
+ */
+//@Request:/thumb/{id}/{i}/{i8}/{i16}/{i32}/{i64}/{f32}/{f64}/{str}/{other}
+func Thumb(writer http.ResponseWriter, request *http.Request, pp int64, id int64, i int, i8 int8, i16 int16, i32 int32, i64 int64, f32 int32, f64 int64, str string) {
+	dfsDto, isExists := DfsFileDao.SelectOne(id)
+	if !isExists { //文件不存在
+		writer.WriteHeader(http.StatusNotFound)
+		return
+	}
+	loginId := LoginState.LoginId()
+	if dfsDto.UserId != loginId { //没有权限
+		writer.WriteHeader(http.StatusForbidden)
+		return
+	}
+
+	//获取缩率图附属文件
+	thumb, isExists := DfsFileDao.SelectExtra(dfsDto.Id, "thumb")
+	DfsFileUtil.DownloadDfs(thumb, writer, request)
+}
+
 //}
