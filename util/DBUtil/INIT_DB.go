@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 )
 
 // VERSION 数据库版本号
@@ -39,7 +40,6 @@ func upgrade() {
 	version, _ := SelectSingleOne[int]("PRAGMA USER_VERSION")
 	if version == 0 {
 		create()
-
 	}
 	if version > 0 {
 	}
@@ -54,4 +54,10 @@ func create() {
 		createSql, _ := resources.SqlFolder.ReadFile("sql/create/" + fn)
 		ExecIgnoreError(string(createSql))
 	}
+
+	//将dfs_file表复制一份,用来保存彻底删除的数据
+	dfsFileDeleteData, _ := resources.SqlFolder.ReadFile("sql/create/dfs_file.sql")
+	dfsFileDeleteSql := string(dfsFileDeleteData)
+	dfsFileDeleteSql = strings.ReplaceAll(dfsFileDeleteSql, "dfs_file", "dfs_file_delete")
+	ExecIgnoreError(dfsFileDeleteSql)
 }
