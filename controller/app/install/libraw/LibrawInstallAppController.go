@@ -32,11 +32,11 @@ var librawInstallSH embed.FS
 func url() string {
 	switch runtime.GOOS {
 	case "linux":
-		return "https://www.libraw.org/data/LibRaw-0.21.2.zip"
+		return "https://github.com/LibRaw/LibRaw/archive/refs/tags/0.21.2.zip"
 	case "windows":
-		return "https://www.libraw.org/data/LibRaw-0.21.2-Win64.zip"
+		return "https://github.com/DAIRO-HY/DairoDfsLib/raw/refs/heads/main/LibRaw-0.21.2-Win64.zip"
 	case "darwin":
-		return "https://www.libraw.org/data/LibRaw-0.21.2-Win64.zip"
+		return "https://github.com/DAIRO-HY/DairoDfsLib/raw/refs/heads/main/LibRaw-0.21.2-macOS.zip"
 	default:
 		return ""
 	}
@@ -55,6 +55,7 @@ func Html() {
 		}
 	}
 	if validate() != nil {
+		downloadInfo.Info = ""
 		downloadInfo.IsInstalled = false
 	}
 }
@@ -116,52 +117,6 @@ func doInstall() {
 			downloadInfo.Info = fmt.Sprintf("安装失败：%q", installCmdErr)
 			return
 		}
-
-		//case "darwin":
-		//}
-
-		//    } catch (e: Exception) {
-		//        form.hasFinish = false
-		//        val osName = System.getProperty("os.name").lowercase(Locale.getDefault())
-		//        if (osName == "linux") {
-		//            if (e.message!!.contains("error=13")) {
-		//
-		//                //开启可执行权限
-		//                ShellUtil.exec(
-		//                    """chmod -R +x "${
-		//                        File(Constant.LIBRAW_PATH).absolutePath.replace(
-		//                            "/./",
-		//                            "/"
-		//                        )
-		//                    }""""
-		//                )
-		//                val version = ShellUtil.exec("${Constant.LIBRAW_PATH}/libraw -version")
-		//                form.info = "安装完成:$version"
-		//                form.hasFinish = true
-		//                return form
-		//            }
-		//        } else if (osName.contains("mac")) {//mac系统是
-		//            if (e.message!!.contains("error=13")) {
-		//                form.error =
-		//                    "安装失败:$e\n解决方案:请在弹出的Terminal窗口中验证密码,然后回到当前页面,再次点击安装按钮即可."
-		//
-		//                // 使用 ProcessBuilder 打开终端并执行指定的命令
-		//                val pb = ProcessBuilder(
-		//                    "osascript",
-		//                    "-e",
-		//                    "tell application \"Terminal\" to do script \"sudo chmod -R +x ${
-		//                        File(Constant.LIBRAW_PATH).absolutePath.replace(
-		//                            "/./",
-		//                            "/"
-		//                        )
-		//                    }\"",
-		//                    "-e", "tell application \"Terminal\" to activate"
-		//                )
-		//                pb.start()
-		//            }
-		//            return form
-		//        }
-		//        form.error = "安装失败:$e"
 	}
 }
 

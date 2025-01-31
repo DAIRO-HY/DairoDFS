@@ -124,10 +124,14 @@ func (mine *LibDownloadInfo) DownloadAndUnzip(validate func() error, doInstall f
 	mine.isDownloaded = true
 
 	//去执行安装
-	doInstall()
+	if doInstall != nil {
+		doInstall()
+	}
 
 	//去验证安装结果
-	validate()
+	if err = validate(); err != nil {
+		mine.Info = fmt.Sprintf("安装失败：%q", err)
+	}
 }
 
 // unzip 解压 zip 文件到目标目录
@@ -160,7 +164,7 @@ func (mine *LibDownloadInfo) unzip() error {
 				return err
 			}
 
-			//0755:将解压后的文件直接赋予可执行权限，这样就省去了解压之后再去赋予权限的步骤 @TODO:Mac系统是否可用，待验证
+			//0755:将解压后的文件直接赋予可执行权限，这样就省去了解压之后再去赋予权限的步骤(兼容Linux,Mac)
 			outFile, openErr := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0755)
 			if openErr != nil {
 				return openErr
