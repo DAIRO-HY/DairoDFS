@@ -1,5 +1,5 @@
 ﻿// 仿java
-String.prototype.startWith = function (str) {
+String.prototype.startsWith = function (str) {
     if (str == null || str == "" || this.length == 0
         || str.length > this.length)
         return false;
@@ -11,7 +11,7 @@ String.prototype.startWith = function (str) {
 };
 
 // 仿java
-String.prototype.endWith = function (str) {
+String.prototype.endsWith = function (str) {
     if (str == null || str == "" || this.length == 0
         || str.length > this.length)
         return false;

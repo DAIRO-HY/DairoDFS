@@ -82,7 +82,7 @@
         const navLinkList = $(".nav-link")
         for (let i = 0; i < navLinkList.length; i++) {
             const href = navLinkList[i].getAttribute("href")
-            if (pathname.startWith(href)) {
+            if (pathname.startsWith(href)) {
                 $(navLinkList[i]).addClass("active")
                 break;
             }

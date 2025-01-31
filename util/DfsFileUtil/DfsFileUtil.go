@@ -178,6 +178,13 @@ func DownloadDfs(dfsFile dto.DfsFileDto, writer http.ResponseWriter, request *ht
 	writer.Header().Set("Access-Control-Allow-Methods", "GET, HEAD, POST, PUT, PATCH, DELETE, OPTIONS")
 	writer.Header().Set("Access-Control-Allow-Headers", "*")
 
+	// 设置Cache-Control头，配置缓存（1年）
+	writer.Header().Set("Cache-Control", "public, max-age=31536000, s-maxage=31536000, immutable")
+
+	// 设置Expires头，配置为1年后的时间
+	expiresTime := time.Now().AddDate(1, 0, 0).Format(time.RFC1123)
+	writer.Header().Set("Expires", expiresTime)
+
 	// 如果是OPTIONS则结束请求
 	// 跨域请求时用到
 	if request.Method == http.MethodOptions {
@@ -205,126 +212,8 @@ func DownloadDfs(dfsFile dto.DfsFileDto, writer http.ResponseWriter, request *ht
 		writer.WriteHeader(http.StatusNotFound)
 		return
 	}
-	DownloadLocal(localFile, writer, request)
-}
-
-/**
- * 文件下载
- * @param localFile 本地文件存储信息
- * @param request 客户端请求
- * @param response 往客户端返回内容
- */
-func DownloadLocal(localFile dto.LocalFileDto, writer http.ResponseWriter, request *http.Request) {
-
-	//在头部信息中加入文件MD5
-	writer.Header().Set("Content-MD5", localFile.Md5)
 	download(localFile.Path, writer, request)
 }
-
-//    /**
-//     * 文件下载
-//     * @param iStream 输入流
-//     * @param size 数据大小
-//     * @param request 客户端请求
-//     * @param response 往客户端返回内容
-//     */
-//    fun download(iStream: InputStream, size: Long, request: HttpServletRequest, response: HttpServletResponse) {
-//
-//        //指定读取部分数据头部标识
-//        val range = request.getHeader("range")
-//        val start: Long
-//        var end: Long
-//        if (range == null) {
-//            start = 0
-//            end = size - 1
-//            response.status = HttpStatus.OK.value()
-//        } else {
-//            val ranges = range.lowercase().replace("bytes=", "").split("-")
-//            start = ranges[0].toLong()
-//            if (ranges[1].isBlank()) {
-//                end = size - 1
-//            } else {
-//                end = ranges[1].toLong()
-//                if (end > size - 1) {
-//                    end = size - 1
-//                }
-//            }
-//            if (start > end) {//开始位置大于结束位置
-//                response.status = HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE.value()
-//                return
-//            }
-//            if (start >= size) {//开始位置大于文件大小
-//                response.status = HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE.value()
-//                return
-//            }
-//            response.setHeader("Content-Range", "bytes $start-$end/${size}")
-//
-//            //部分数据的状态值
-//            response.status = HttpStatus.PARTIAL_CONTENT.value()
-//        }
-//        response.setContentLengthLong(end - start + 1)
-//
-//        //告诉客户端,服务器支持请求部分数据
-//        response.setHeader("Accept-Ranges", "bytes")
-//
-//        // 允许客户端缓存
-//        response.setHeader("Cache-Control", "public, max-age=31536000, s-maxage=31536000, immutable")
-//        if (request.method == HttpMethod.HEAD.name()) {//只返回头部信息,不返回具体数据
-//            return
-//        }
-//
-//        //每次读取数据间隔时间(测试用)
-//        val wait = request.getParameter("wait")?.toLong()
-//        val oStream = response.outputStream
-//        if (wait != null) {//测试用
-//            iStream.use {
-//                iStream.skip(start)
-//                val data = ByteArray(1024) // 缓冲字节数组
-//                var total = start
-//                println("-->wait:$wait")
-//                while (true) {
-//                    Thread.sleep(wait)
-//                    val len = iStream.read(data)
-//                    if (len == -1) {//原则上读取的数据不可能为-1
-//                        break
-//                    }
-//                    total += len
-//                    println("-->total:${DownloadInterceptor.count}  range:$range  ${total.toDataSize}")
-//                    oStream.write(data, 0, len)
-//                }
-//            }
-//            return
-//        }
-//        iStream.use {
-//            it.skip(start)
-//            it.transferTo(oStream)
-////            val data = ByteArray(32 * 1024) // 缓冲字节数组
-////            var total = start
-////            var readLen = data.size.toLong()
-////
-////            var isEnd = false
-////            while (true) {
-////
-////                //还需要的数据长度
-////                val needReadLen = (end - total + 1).toLong()
-////                if (needReadLen <= data.size) {//还需要的数据长度小于或者等于设置的缓存数
-////                    readLen = needReadLen
-////                    isEnd = true
-////                }
-////                val len = iStream.read(data, 0, readLen.toInt())
-////                if (len == -1) {//原则上读取的数据不可能为-1
-////                    break
-////                }
-////                total += len
-////                oStream.write(data, 0, len)
-////                if (isEnd) {
-////                    break
-////                }
-////            }
-//        }
-//        return
-//    }
-//}
 
 /**
 * 文件下载

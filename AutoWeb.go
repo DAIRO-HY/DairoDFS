@@ -26,6 +26,7 @@ import (
 	controllerappuser "DairoDFS/controller/app/user"
 	controllerappuserform "DairoDFS/controller/app/user/form"
 	inerceptor "DairoDFS/inerceptor"
+	"time"
 
 	"embed"
 	"encoding/json"
@@ -57,8 +58,24 @@ func startWebServer(port int) {
 		panic(staticErr)
 	}
 
+	// 自定义的 HandlerFunc，用于添加缓存头部
+	cacheHeaders := func(h http.Handler) http.HandlerFunc {
+		return func(writer http.ResponseWriter, request *http.Request) {
+
+			// 设置Cache-Control头，配置缓存（1年）
+			writer.Header().Set("Cache-Control", "public, max-age=31536000, s-maxage=31536000, immutable")
+
+			// 设置Expires头，配置为1年后的时间
+			expiresTime := time.Now().AddDate(1, 0, 0).Format(time.RFC1123)
+			writer.Header().Set("Expires", expiresTime)
+
+			// 调用原始的 Handler
+			h.ServeHTTP(writer, request)
+		}
+	}
+
 	// 使用 http.FileServer 提供文件服务
-	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.FS(staticFS))))
+	http.Handle("/static/", cacheHeaders(http.StripPrefix("/static/", http.FileServer(http.FS(staticFS)))))
 
 	http.HandleFunc("/index.html", func(writer http.ResponseWriter, request *http.Request) {
 		if request.Method != "GET" {
@@ -71,6 +88,7 @@ func startWebServer(port int) {
 		}
 		var body any = nil
 		controllerapp.Index()
+		body = inerceptor.HtmlInterceptor(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 		writeToTemplate(writer, body, "resources/templates/index.html")
 	})
@@ -85,6 +103,7 @@ func startWebServer(port int) {
 		}
 		var body any = nil
 		controllerappabout.Html()
+		body = inerceptor.HtmlInterceptor(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 		writeToTemplate(writer, body, "resources/templates/app/about.html", "resources/templates/app/include/head.html", "resources/templates/app/include/top-bar.html")
 	})
@@ -124,8 +143,9 @@ func startWebServer(port int) {
 		}
 		var body any = nil
 		controllerappfiles.Html()
+		body = inerceptor.HtmlInterceptor(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-		writeToTemplate(writer, body, "resources/templates/app/files.html", "resources/templates/app/include/top-bar.html", "resources/templates/app/include/files_list.html", "resources/templates/app/include/files/files_right_option.html", "resources/templates/app/include/share_detail_dialog.html", "resources/templates/app/include/head.html", "resources/templates/app/include/files/files_toolbar.html", "resources/templates/app/include/files/files_upload.html", "resources/templates/app/include/files/files_share.html", "resources/templates/app/include/file_property_dialog.html")
+		writeToTemplate(writer, body, "resources/templates/app/files.html", "resources/templates/app/include/share_detail_dialog.html", "resources/templates/app/include/files/files_toolbar.html", "resources/templates/app/include/files/files_upload.html", "resources/templates/app/include/files/files_right_option.html", "resources/templates/app/include/files/files_share.html", "resources/templates/app/include/file_property_dialog.html", "resources/templates/app/include/head.html", "resources/templates/app/include/top-bar.html", "resources/templates/app/include/files_list.html")
 	})
 	http.HandleFunc("/app/files/get_list", func(writer http.ResponseWriter, request *http.Request) {
 		if request.Method != "POST" {
@@ -392,6 +412,52 @@ func startWebServer(port int) {
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 		writeToResponse(writer, body)
 	})
+	http.HandleFunc("/app/files/preview/", func(writer http.ResponseWriter, request *http.Request) {
+		if request.Method != "GET" {
+			writer.WriteHeader(http.StatusMethodNotAllowed) // 设置状态码
+			writer.Write([]byte("Method Not Allowed"))
+			return
+		}
+		if !inerceptor.LoginValidate(writer, request) {
+			return
+		}
+		requestFormData := getRequestFormData(request) //获取表单数据
+		var extra string                               // 初始化变量
+		extraArr := getStringArray(requestFormData, "extra")
+		if extraArr != nil { // 如果参数存在
+			extra = extraArr[0]
+		}
+
+		pathVariables := make([]string, 0)
+		varPath := request.URL.Path[19:]
+		pathVariableSplitArr := []string{"", "/", ""}
+
+		for i := 0; i < len(pathVariableSplitArr)-1; i++ {
+			varPath = varPath[len(pathVariableSplitArr[i]):]
+			if pathVariableSplitArr[i+1] == "" { //这已经是最后一个参数了
+				pathVariables = append(pathVariables, varPath)
+			} else {
+				nextIndex := strings.Index(varPath, pathVariableSplitArr[i+1])
+				if nextIndex == -1 {
+					writer.WriteHeader(http.StatusNotFound)
+					return
+				}
+				pathVariables = append(pathVariables, varPath[:nextIndex])
+				varPath = varPath[nextIndex:]
+			}
+		}
+		dfsId, dfsIdErr := strconv.ParseInt(pathVariables[0], 10, 64)
+		if dfsIdErr != nil { //参数类型不匹配
+			writer.WriteHeader(http.StatusUnprocessableEntity)
+			writer.Write([]byte("参数类型不匹配：“" + pathVariables[0] + "”无法转换为int64类型。"))
+			return
+		}
+		name := pathVariables[1]
+		var body any = nil
+		controllerappfiles.Preview(writer, request, dfsId, name, extra)
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+		writeToResponse(writer, body)
+	})
 	http.HandleFunc("/app/files/download/", func(writer http.ResponseWriter, request *http.Request) {
 		if request.Method != "GET" {
 			writer.WriteHeader(http.StatusMethodNotAllowed) // 设置状态码
@@ -406,47 +472,37 @@ func startWebServer(port int) {
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 		writeToResponse(writer, body)
 	})
-	http.HandleFunc("/app/files/thumb/{id}/{i}/{i8}/{i16}/{i32}/{i64}/{f32}/{f64}/{str}/{other}", func(writer http.ResponseWriter, request *http.Request) {
+	http.HandleFunc("/app/files/thumb/", func(writer http.ResponseWriter, request *http.Request) {
 		if !inerceptor.LoginValidate(writer, request) {
 			return
 		}
-		requestFormData := getRequestFormData(request) //获取表单数据
 
 		pathVariables := make([]string, 0)
-		varPath := request.URL.Path[10:]
-		for index, it := range []string{"/", "-", "/", "+", "/", "_", "/", "|", "/", "/", "/"} {
-			varPathSplitIndex := strings.Index(varPath, it)
-			pathVariables[index] = varPath[:varPathSplitIndex]
-			varPath = varPath[varPathSplitIndex:]
+		varPath := request.URL.Path[17:]
+		pathVariableSplitArr := []string{"", ""}
+
+		for i := 0; i < len(pathVariableSplitArr)-1; i++ {
+			varPath = varPath[len(pathVariableSplitArr[i]):]
+			if pathVariableSplitArr[i+1] == "" { //这已经是最后一个参数了
+				pathVariables = append(pathVariables, varPath)
+			} else {
+				nextIndex := strings.Index(varPath, pathVariableSplitArr[i+1])
+				if nextIndex == -1 {
+					writer.WriteHeader(http.StatusNotFound)
+					return
+				}
+				pathVariables = append(pathVariables, varPath[:nextIndex])
+				varPath = varPath[nextIndex:]
+			}
 		}
-		var pp int64 // 初始化变量
-		ppArr := getInt64Array(requestFormData, "pp")
-		if ppArr != nil { // 如果参数存在
-			pp = ppArr[0]
+		id, idErr := strconv.ParseInt(pathVariables[0], 10, 64)
+		if idErr != nil { //参数类型不匹配
+			writer.WriteHeader(http.StatusUnprocessableEntity)
+			writer.Write([]byte("参数类型不匹配：“" + pathVariables[0] + "”无法转换为int64类型。"))
+			return
 		}
-		idStr := pathVariables[0]
-		id, _ := strconv.ParseInt(idStr, 10, 64)
-		iStr := pathVariables[1]
-		i, _ := strconv.Atoi(iStr)
-		i8Str := pathVariables[2]
-		i8Int8, _ := strconv.Atoi(i8Str)
-		i8 := int8(i8Int8)
-		i16Str := pathVariables[3]
-		i16Int16, _ := strconv.Atoi(i16Str)
-		i16 := int16(i16Int16)
-		i32Str := pathVariables[4]
-		i32Int32, _ := strconv.Atoi(i32Str)
-		i32 := int32(i32Int32)
-		i64Str := pathVariables[5]
-		i64, _ := strconv.ParseInt(i64Str, 10, 64)
-		f32Str := pathVariables[6]
-		f32Int32, _ := strconv.Atoi(f32Str)
-		f32 := int32(f32Int32)
-		f64Str := pathVariables[7]
-		f64, _ := strconv.ParseInt(f64Str, 10, 64)
-		str := pathVariables[8]
 		var body any = nil
-		controllerappfiles.Thumb(writer, request, pp, id, i, i8, i16, i32, i64, f32, f64, str)
+		controllerappfiles.Thumb(writer, request, id)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 		writeToResponse(writer, body)
 	})
@@ -492,6 +548,7 @@ func startWebServer(port int) {
 		}
 		var body any = nil
 		controllerappinstallffmpeg.Html()
+		body = inerceptor.HtmlInterceptor(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 		writeToTemplate(writer, body, "resources/templates/app/install/install_ffmpeg.html", "resources/templates/app/include/head.html")
 	})
@@ -531,6 +588,7 @@ func startWebServer(port int) {
 		}
 		var body any = nil
 		controllerappinstallffprobe.Html()
+		body = inerceptor.HtmlInterceptor(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 		writeToTemplate(writer, body, "resources/templates/app/install/install_ffprobe.html", "resources/templates/app/include/head.html")
 	})
@@ -570,6 +628,7 @@ func startWebServer(port int) {
 		}
 		var body any = nil
 		controllerappinstalllibraw.Html()
+		body = inerceptor.HtmlInterceptor(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 		writeToTemplate(writer, body, "resources/templates/app/install/install_libraw.html", "resources/templates/app/include/head.html")
 	})
@@ -609,6 +668,7 @@ func startWebServer(port int) {
 		}
 		var body any = nil
 		controllerapplogin.Init(writer, request)
+		body = inerceptor.HtmlInterceptor(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 		writeToTemplate(writer, body, "resources/templates/app/login.html", "resources/templates/app/include/head.html")
 	})
@@ -693,6 +753,7 @@ func startWebServer(port int) {
 		}
 		var body any = nil
 		controllerappmodifypwd.Html()
+		body = inerceptor.HtmlInterceptor(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 		writeToTemplate(writer, body, "resources/templates/app/modify_pwd.html", "resources/templates/app/include/head.html")
 	})
@@ -752,6 +813,7 @@ func startWebServer(port int) {
 		}
 		var body any = nil
 		controllerappmyshare.Html()
+		body = inerceptor.HtmlInterceptor(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 		writeToTemplate(writer, body, "resources/templates/app/my_share.html", "resources/templates/app/include/head.html", "resources/templates/app/include/top-bar.html", "resources/templates/app/include/share_detail_dialog.html")
 	})
@@ -820,6 +882,7 @@ func startWebServer(port int) {
 		}
 		var body any = nil
 		controllerappprofile.Html()
+		body = inerceptor.HtmlInterceptor(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 		writeToTemplate(writer, body, "resources/templates/app/profile.html", "resources/templates/app/include/head.html", "resources/templates/app/include/top-bar.html")
 	})
@@ -926,6 +989,7 @@ func startWebServer(port int) {
 		}
 		var body any = nil
 		controllerappselfset.Html()
+		body = inerceptor.HtmlInterceptor(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 		writeToTemplate(writer, body, "resources/templates/app/self_set.html", "resources/templates/app/include/head.html", "resources/templates/app/include/top-bar.html")
 	})
@@ -1014,6 +1078,7 @@ func startWebServer(port int) {
 		}
 		var body any = nil
 		controllerapptrash.Html()
+		body = inerceptor.HtmlInterceptor(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 		writeToTemplate(writer, body, "resources/templates/app/trash.html", "resources/templates/app/include/head.html", "resources/templates/app/include/top-bar.html", "resources/templates/app/include/trash/trash_toolbar.html", "resources/templates/app/include/trash/trash_list.html", "resources/templates/app/include/trash/trash_right_option.html")
 	})
@@ -1096,8 +1161,9 @@ func startWebServer(port int) {
 		}
 		var body any = nil
 		controllerappuser.EditHtml()
+		body = inerceptor.HtmlInterceptor(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-		writeToTemplate(writer, body, "resources/templates/app/user_edit.html", "resources/templates/app/include/top-bar.html", "resources/templates/app/include/head.html")
+		writeToTemplate(writer, body, "resources/templates/app/user_edit.html", "resources/templates/app/include/head.html", "resources/templates/app/include/top-bar.html")
 	})
 	http.HandleFunc("/app/user_edit/init", func(writer http.ResponseWriter, request *http.Request) {
 		if request.Method != "POST" {
@@ -1204,6 +1270,7 @@ func startWebServer(port int) {
 		}
 		var body any = nil
 		controllerappuser.ListHtml()
+		body = inerceptor.HtmlInterceptor(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 		writeToTemplate(writer, body, "resources/templates/app/user_list.html", "resources/templates/app/include/head.html", "resources/templates/app/include/top-bar.html")
 	})

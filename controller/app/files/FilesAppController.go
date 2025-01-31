@@ -40,7 +40,7 @@ func GetList(folder string) []form.FileForm {
 			Size:     it.Size,
 			Date:     Date.Format(it.Date),
 			FileFlag: it.LocalId != 0,
-			Thumb:    Bool.Is(it.HasThumb, "/app/files/thumb?id="+String.ValueOf(it.Id), ""),
+			Thumb:    Bool.Is(it.HasThumb, "/app/files/thumb/"+String.ValueOf(it.Id), ""),
 		}
 		forms = append(forms, outForm)
 	}
@@ -250,65 +250,42 @@ func DownloadByHistory(writer http.ResponseWriter, request *http.Request, id int
 	DfsFileUtil.DownloadDfs(dfsFile, writer, request)
 }
 
-//	/**
-//	 * 文件预览
-//	 * @param request 客户端请求
-//	 * @param response 往客户端返回内容
-//	 * @param dfsId dfs文件ID
-//	 */
-//	@GetMapping("/preview/{dfsId}")
-//	fun preview(
-//	    request: HttpServletRequest,
-//	    response: HttpServletResponse,
-//	    @PathVariable dfsId: Long,
-//	    @Parameter(description = "要下载的附属文件名") @RequestParam("extra", required = false) extra: String?,
-//	) {
-//	    val userId = super.loginId
-//	    val dfsDto = this.dfsFileDao.selectOne(dfsId)
-//	    if (dfsDto == null) {//文件不存在
-//	        response.status = HttpStatus.NOT_FOUND.value()
-//	        return
-//	    }
-//	    if (dfsDto.userId != userId) {//没有权限
-//	        throw ErrorCode.NOT_ALLOW
-//	    }
-//	    if (extra == null) {//下载源文件
-//	        DfsFileUtil.download(dfsDto, request, response)
-//	        return
-//	    }
-//	    val lowerName = dfsDto.name!!.lowercase()
-//	    if (lowerName.endsWith("psd") || lowerName.endsWith("psb")) {
-//	        val previewDto = this.dfsFileDao.selectExtra(dfsId, extra)
-//	        DfsFileUtil.download(previewDto, request, response)
-//	    } else if (lowerName.endsWith("cr3") || lowerName.endsWith("cr2")) {
-//	        val previewDto = this.dfsFileDao.selectExtra(dfsId, extra)
-//	        DfsFileUtil.download(previewDto, request, response)
-//	    } else if (lowerName.endsWith("cr3") || lowerName.endsWith("cr2")) {
-//	        val previewDto = this.dfsFileDao.selectExtra(dfsId, extra)
-//	        DfsFileUtil.download(previewDto, request, response)
-//	    } else if (lowerName.endsWith(".mp4")
-//	        || lowerName.endsWith(".mov")
-//	        || lowerName.endsWith(".avi")
-//	        || lowerName.endsWith(".mkv")
-//	        || lowerName.endsWith(".flv")
-//	        || lowerName.endsWith(".rm")
-//	        || lowerName.endsWith(".rmvb")
-//	        || lowerName.endsWith(".3gp")
-//	    ) {
-//	        //视频文件预览
-//	        val previewDto = this.dfsFileDao.selectExtra(dfsId, extra)
-//	        if (previewDto == null) {
-//	            //没有对应的画质
-//	        }
-//	        DfsFileUtil.download(previewDto, request, response)
-//	    } else {
-//	        DfsFileUtil.download(dfsDto, request, response)
-//	    }
-//	}
-//
+// 文件预览
+// dfsId dfs文件ID
+// name 文件名
+// extra 要预览的附属文件名
+// @Get:/preview/{dfsId}/{name}
+func Preview(writer http.ResponseWriter, request *http.Request, dfsId int64, name string, extra string) {
+	loginId := LoginState.LoginId()
+	dfsDto, isExists := DfsFileDao.SelectOne(dfsId)
+	if !isExists { //文件不存在
+		writer.WriteHeader(http.StatusNotFound)
+		return
+	}
+	if dfsDto.UserId != loginId { // 没有操作权限
+		writer.WriteHeader(http.StatusNotFound)
+		return
+	}
+	if dfsDto.Name != name { // 文件名不一致，没有操作权限
+		writer.WriteHeader(http.StatusNotFound)
+		return
+	}
+	//在头部信息中加入文件名
+	//writer.Header().Set("File-Name", name)
+
+	if extra == "" { //下载源文件
+		DfsFileUtil.DownloadDfs(dfsDto, writer, request)
+		return
+	}
+	previewDto, isExists := DfsFileDao.SelectExtra(dfsId, extra)
+	if isExists { //存在预览文件
+		DfsFileUtil.DownloadDfs(previewDto, writer, request)
+		return
+	}
+	writer.WriteHeader(http.StatusNotFound)
+}
+
 // 文件下载
-// request 客户端请求
-// response 往客户端返回内容
 // name 文件名
 // folder 所在文件夹
 // @TODO:这里应该改成文件id访问，防止客户端缓存冲突
@@ -326,14 +303,10 @@ func Download(writer http.ResponseWriter, request *http.Request) {
 	DfsFileUtil.DownloadDfsId(fileId, writer, request)
 }
 
-/**
- * 缩略图下载
- * @param request 客户端请求
- * @param response 往客户端返回内容
- * @param id 文件ID
- */
-//@Request:/thumb/{id}/{i}/{i8}/{i16}/{i32}/{i64}/{f32}/{f64}/{str}/{other}
-func Thumb(writer http.ResponseWriter, request *http.Request, pp int64, id int64, i int, i8 int8, i16 int16, i32 int32, i64 int64, f32 int32, f64 int64, str string) {
+// 缩略图下载
+// id 文件ID
+// @Request:/thumb/{id}
+func Thumb(writer http.ResponseWriter, request *http.Request, id int64) {
 	dfsDto, isExists := DfsFileDao.SelectOne(id)
 	if !isExists { //文件不存在
 		writer.WriteHeader(http.StatusNotFound)
@@ -349,5 +322,3 @@ func Thumb(writer http.ResponseWriter, request *http.Request, pp int64, id int64
 	thumb, isExists := DfsFileDao.SelectExtra(dfsDto.Id, "thumb")
 	DfsFileUtil.DownloadDfs(thumb, writer, request)
 }
-
-//}

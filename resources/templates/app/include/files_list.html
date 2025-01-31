@@ -77,12 +77,24 @@
             const file = fileList[index]
             const currentFolder = getCurrentFolderByUrl()
             if (file.fileFlag) {//如果是一个文件
-                window.open("/app/files/download" + currentFolder + "/" + file.name)
+                window.open("/app/files/preview/" + file.id + "/" + file.name + "?extra=" + getPreviewByName(file.name))
             } else {
                 const folder = currentFolder + "/" + file.name
                 loadFileData(folder)
             }
         })
+    }
+
+    /**
+     * 通过文件名获取预览类型
+     */
+    function getPreviewByName(name){
+        name = name.toLowerCase()
+	    if (name.endsWith("psd") || name.endsWith("psb") || name.endsWith("cr3") || name.endsWith("cr2")) {
+            return "preview"
+	    } else {
+	        return ""
+	    }
     }
 
     /**
