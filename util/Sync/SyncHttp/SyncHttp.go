@@ -1,4 +1,4 @@
-package sync
+package SyncHttp
 
 import (
 	"io"
@@ -16,7 +16,7 @@ import (
  * @param url 请求url
  * @return 返回结果
  */
-func request(url string) string {
+func Request(url string) string {
 	transport := &http.Transport{
 		DialContext:           (&net.Dialer{Timeout: 3 * time.Second}).DialContext, //连接超时
 		ResponseHeaderTimeout: 30 * time.Second,                                    //读数据超时

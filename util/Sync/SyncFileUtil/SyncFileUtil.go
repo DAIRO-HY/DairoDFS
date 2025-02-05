@@ -2,9 +2,9 @@ package SyncFileUtil
 
 import (
 	"DairoDFS/application"
+	"DairoDFS/exception"
 	"DairoDFS/extension/String"
 	"DairoDFS/util/Sync/bean"
-	"fmt"
 	"io"
 	"net"
 	"net/http"
@@ -33,7 +33,7 @@ import (
  * @param retryTimes 记录出错重试次数
  * @return 存储目录
  */
-func Download(info bean.SyncServerInfo, md5 string, retryTimes int) string {
+func Download(info bean.SyncServerInfo, md5 string, retryTimes int) (string, error) {
 
 	//得到文件存储目录
 	savePath := application.TEMP_PATH + "/" + md5
@@ -48,50 +48,48 @@ func Download(info bean.SyncServerInfo, md5 string, retryTimes int) string {
 	url := info.Url + "/download/" + md5
 
 	// 创建一个新的HTTP请求
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		fmt.Println("Error creating request:", err)
-		return ""
-	}
+	request, _ := http.NewRequest("GET", url, nil)
 
 	// 设置请求头信息
-	req.Header.Set("Range", "bytes="+String.ValueOf(downloadStart)+"-")
-
+	request.Header.Set("Range", "bytes="+String.ValueOf(downloadStart)+"-")
 	transport := &http.Transport{
 		DialContext:           (&net.Dialer{Timeout: 10 * time.Second}).DialContext, //连接超时
 		ResponseHeaderTimeout: 10 * time.Second,                                     //读数据超时
 	}
 	client := &http.Client{Transport: transport}
-	resp, err := client.Do(req)
-	if err != nil {
-		fmt.Println(err)
-		return ""
+	res, err := client.Do(request)
+	if err != nil { //网络连接失败时可能会报错
+		if retryTimes < 5 { //重试次数达到上线之后，直接报错
+			time.Sleep(3 * time.Second) //先等待3秒再重试
+			return Download(info, md5, retryTimes+1)
+		} else {
+			return "", err
+		}
 	}
-	defer resp.Body.Close()
+	defer res.Body.Close()
 
 	//已经下载文件大小
 	var downloadedSize = downloadStart
-	//conn.setRequestProperty("Range", "bytes=${downloadStart}-")
 
 	//返回状态码
-	httpStatus := resp.StatusCode
+	httpStatus := res.StatusCode
 	if httpStatus == http.StatusRequestedRangeNotSatisfiable { //文件可能已经下载完成
-		return savePath
+		return savePath, nil
 	}
 	if httpStatus != http.StatusOK && httpStatus != http.StatusPartialContent { //请求数据发生错误
-		//TODO:应该返回具体错误信息
-		return ""
+		errData, _ := io.ReadAll(res.Body)
+		return "", exception.Biz("Status:" + String.ValueOf(httpStatus) + "  Body:" + string(errData))
 	}
 
 	//文件总大小
-	total := resp.ContentLength + downloadedSize
+	total := res.ContentLength + downloadedSize
 
 	//设置读物数据缓存
 	cache := make([]byte, 64*1024)
 	file, err := os.OpenFile(savePath, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
 	defer file.Close()
 	for {
-		n, readErr := resp.Body.Read(cache)
+		n, readErr := res.Body.Read(cache)
 		if readErr == io.EOF { //数据已经读取完毕
 			break
 		}
@@ -103,20 +101,8 @@ func Download(info bean.SyncServerInfo, md5 string, retryTimes int) string {
 	}
 	saveFileInfo, err = os.Stat(savePath)
 	if downloadedSize != total || total != saveFileInfo.Size() {
-		//throw RuntimeException("文件虽然下载完成,但文件并不完成,请排查问题;total=${total} downloadedSize=${downloadedSize} fileSize=${saveFile.length()}")
-		return ""
+		return "", exception.Biz("文件虽然下载完成,但文件似乎并不完整,请排查问题；Content-Length:" + String.ValueOf(total) + " downloadedSize:" + String.ValueOf(downloadedSize) + " 实际下载到的文件大小:" + String.ValueOf(saveFileInfo.Size()))
 	}
 	info.Msg = ""
-	return savePath
-	//} catch (e: Exception) {
-	//    if (retryTimes < 10) {//重试10次
-	//        info.msg = "文件下载失败,正常第${retryTimes + 1}次尝试重试"
-	//        Thread.sleep(15_00)
-	//        return this.download(info, md5, retryTimes + 1)
-	//    } else {
-	//        throw e
-	//    }
-	//} finally {
-	//    conn.disconnect()
-	//}
+	return savePath, nil
 }
