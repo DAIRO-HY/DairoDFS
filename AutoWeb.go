@@ -6,9 +6,9 @@ package main
 import (
 	controllerapp "DairoDFS/controller/app"
 	controllerappabout "DairoDFS/controller/app/about"
-	controllerappfileupload "DairoDFS/controller/app/file_upload"
 	controllerappfiles "DairoDFS/controller/app/files"
 	controllerappfilesform "DairoDFS/controller/app/files/form"
+	controllerappfileupload "DairoDFS/controller/app/file_upload"
 	controllerappinstallcreateadmin "DairoDFS/controller/app/install/create_admin"
 	controllerappinstallcreateadminform "DairoDFS/controller/app/install/create_admin/form"
 	controllerappinstallffmpeg "DairoDFS/controller/app/install/ffmpeg"
@@ -121,7 +121,7 @@ func startWebServer(port int) {
 			return
 		}
 		requestFormData := getRequestFormData(request) //获取表单数据
-		var folder string                              // 初始化变量
+		var folder string // 初始化变量
 		folderArr := getStringArray(requestFormData, "folder")
 		if folderArr != nil { // 如果参数存在
 			folder = folderArr[0]
@@ -151,7 +151,7 @@ func startWebServer(port int) {
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.HtmlInterceptor(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-		writeToTemplate(writer, body, "resources/templates/app/files.html", "resources/templates/app/include/files_list.html", "resources/templates/app/include/files/files_right_option.html", "resources/templates/app/include/files/files_share.html", "resources/templates/app/include/share_detail_dialog.html", "resources/templates/app/include/files/files_upload.html", "resources/templates/app/include/top-bar.html", "resources/templates/app/include/files/files_toolbar.html", "resources/templates/app/include/file_property_dialog.html", "resources/templates/app/include/head.html")
+		writeToTemplate(writer, body, "resources/templates/app/files.html", "resources/templates/app/include/top-bar.html", "resources/templates/app/include/files_list.html", "resources/templates/app/include/files/files_right_option.html", "resources/templates/app/include/files/files_share.html", "resources/templates/app/include/file_property_dialog.html", "resources/templates/app/include/head.html", "resources/templates/app/include/files/files_toolbar.html", "resources/templates/app/include/files/files_upload.html", "resources/templates/app/include/share_detail_dialog.html")
 	})
 	http.HandleFunc("/app/files/get_list", func(writer http.ResponseWriter, request *http.Request) {
 		if request.Method != "POST" {
@@ -163,19 +163,16 @@ func startWebServer(port int) {
 			return
 		}
 		requestFormData := getRequestFormData(request) //获取表单数据
-		var folder string                              // 初始化变量
+		var folder string // 初始化变量
 		folderArr := getStringArray(requestFormData, "folder")
 		if folderArr != nil { // 如果参数存在
 			folder = folderArr[0]
 		}
-		if folder != "" {
-
-		}
-		//var body any = nil
-		//body = controllerappfiles.GetList(folder)
-		//body = inerceptor.Commit(writer, request, body)
-		//body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-		//writeToResponse(writer, body)
+		var body any = nil
+		body = controllerappfiles.GetList(folder)
+		body = inerceptor.Commit(writer, request, body)
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+		writeToResponse(writer, body)
 	})
 	http.HandleFunc("/app/files/create_folder", func(writer http.ResponseWriter, request *http.Request) {
 		if request.Method != "POST" {
@@ -187,7 +184,7 @@ func startWebServer(port int) {
 			return
 		}
 		requestFormData := getRequestFormData(request) //获取表单数据
-		var folder string                              // 初始化变量
+		var folder string // 初始化变量
 		folderArr := getStringArray(requestFormData, "folder")
 		if folderArr != nil { // 如果参数存在
 			folder = folderArr[0]
@@ -208,7 +205,7 @@ func startWebServer(port int) {
 			return
 		}
 		requestFormData := getRequestFormData(request) //获取表单数据
-		var paths []string                             // 初始化变量
+		var paths []string // 初始化变量
 		pathsArr := getStringArray(requestFormData, "paths")
 		if pathsArr != nil { // 如果参数存在
 			paths = pathsArr
@@ -229,7 +226,7 @@ func startWebServer(port int) {
 			return
 		}
 		requestFormData := getRequestFormData(request) //获取表单数据
-		var sourcePath string                          // 初始化变量
+		var sourcePath string // 初始化变量
 		sourcePathArr := getStringArray(requestFormData, "sourcePath")
 		if sourcePathArr != nil { // 如果参数存在
 			sourcePath = sourcePathArr[0]
@@ -255,7 +252,7 @@ func startWebServer(port int) {
 			return
 		}
 		requestFormData := getRequestFormData(request) //获取表单数据
-		var sourcePaths []string                       // 初始化变量
+		var sourcePaths []string // 初始化变量
 		sourcePathsArr := getStringArray(requestFormData, "sourcePaths")
 		if sourcePathsArr != nil { // 如果参数存在
 			sourcePaths = sourcePathsArr
@@ -286,7 +283,7 @@ func startWebServer(port int) {
 			return
 		}
 		requestFormData := getRequestFormData(request) //获取表单数据
-		var sourcePaths []string                       // 初始化变量
+		var sourcePaths []string // 初始化变量
 		sourcePathsArr := getStringArray(requestFormData, "sourcePaths")
 		if sourcePathsArr != nil { // 如果参数存在
 			sourcePaths = sourcePathsArr
@@ -323,32 +320,32 @@ func startWebServer(port int) {
 		validEndDateTime := getStringArray(requestFormData, "endDateTime")
 		isNotEmpty(filedError, "endDateTime", validEndDateTime) // 非空验证
 		validPwd := getStringArray(requestFormData, "pwd")
-		isLength(filedError, "pwd", validPwd, -1, 32) // 输入长度验证
+		isLength(filedError, "pwd", validPwd, -1, 32)// 输入长度验证
 		validNames := getStringArray(requestFormData, "names")
 		isNotEmpty(filedError, "names", validNames) // 非空验证
-		if len(filedError) > 0 {                    // 有表单验证错误信息
+		if len(filedError) > 0{ // 有表单验证错误信息
 			writeFieldError(writer, filedError)
 			return
 		}
 
-		inForm := controllerappfilesform.ShareForm{}
+		inForm:=controllerappfilesform.ShareForm{}
 		inFormEndDateTime := getInt64Array(requestFormData, "endDateTime")
-		if inFormEndDateTime != nil { // 如果参数存在
+		if inFormEndDateTime != nil {// 如果参数存在
 			inForm.EndDateTime = inFormEndDateTime[0]
 		}
 
 		inFormPwd := getStringArray(requestFormData, "pwd")
-		if inFormPwd != nil { // 如果参数存在
+		if inFormPwd != nil {// 如果参数存在
 			inForm.Pwd = inFormPwd[0]
 		}
 
 		inFormFolder := getStringArray(requestFormData, "folder")
-		if inFormFolder != nil { // 如果参数存在
+		if inFormFolder != nil {// 如果参数存在
 			inForm.Folder = inFormFolder[0]
 		}
 
 		inFormNames := getStringArray(requestFormData, "names")
-		if inFormNames != nil { // 如果参数存在
+		if inFormNames != nil {// 如果参数存在
 			inForm.Names = inFormNames
 		}
 
@@ -373,7 +370,7 @@ func startWebServer(port int) {
 			return
 		}
 		requestFormData := getRequestFormData(request) //获取表单数据
-		var paths []string                             // 初始化变量
+		var paths []string // 初始化变量
 		pathsArr := getStringArray(requestFormData, "paths")
 		if pathsArr != nil { // 如果参数存在
 			paths = pathsArr
@@ -394,7 +391,7 @@ func startWebServer(port int) {
 			return
 		}
 		requestFormData := getRequestFormData(request) //获取表单数据
-		var path string                                // 初始化变量
+		var path string // 初始化变量
 		pathArr := getStringArray(requestFormData, "path")
 		if pathArr != nil { // 如果参数存在
 			path = pathArr[0]
@@ -420,7 +417,7 @@ func startWebServer(port int) {
 			return
 		}
 		requestFormData := getRequestFormData(request) //获取表单数据
-		var id int64                                   // 初始化变量
+		var id int64 // 初始化变量
 		idArr := getInt64Array(requestFormData, "id")
 		if idArr != nil { // 如果参数存在
 			id = idArr[0]
@@ -441,7 +438,7 @@ func startWebServer(port int) {
 			return
 		}
 		requestFormData := getRequestFormData(request) //获取表单数据
-		var extra string                               // 初始化变量
+		var extra string // 初始化变量
 		extraArr := getStringArray(requestFormData, "extra")
 		if extraArr != nil { // 如果参数存在
 			extra = extraArr[0]
@@ -450,7 +447,8 @@ func startWebServer(port int) {
 		pathVariables := make([]string, 0)
 		varPath := request.URL.Path[19:]
 		pathVariableSplitArr := []string{"", "/", ""}
-
+		
+		
 		for i := 0; i < len(pathVariableSplitArr)-1; i++ {
 			varPath = varPath[len(pathVariableSplitArr[i]):]
 			if pathVariableSplitArr[i+1] == "" { //这已经是最后一个参数了
@@ -465,7 +463,7 @@ func startWebServer(port int) {
 				varPath = varPath[nextIndex:]
 			}
 		}
-		dfsId, dfsIdErr := strconv.ParseInt(pathVariables[0], 10, 64)
+		dfsId,dfsIdErr := strconv.ParseInt(pathVariables[0],10,64)
 		if dfsIdErr != nil { //参数类型不匹配
 			writer.WriteHeader(http.StatusUnprocessableEntity)
 			writer.Write([]byte("参数类型不匹配：“" + pathVariables[0] + "”无法转换为int64类型。"))
@@ -501,7 +499,8 @@ func startWebServer(port int) {
 		pathVariables := make([]string, 0)
 		varPath := request.URL.Path[17:]
 		pathVariableSplitArr := []string{"", ""}
-
+		
+		
 		for i := 0; i < len(pathVariableSplitArr)-1; i++ {
 			varPath = varPath[len(pathVariableSplitArr[i]):]
 			if pathVariableSplitArr[i+1] == "" { //这已经是最后一个参数了
@@ -516,7 +515,7 @@ func startWebServer(port int) {
 				varPath = varPath[nextIndex:]
 			}
 		}
-		id, idErr := strconv.ParseInt(pathVariables[0], 10, 64)
+		id,idErr := strconv.ParseInt(pathVariables[0],10,64)
 		if idErr != nil { //参数类型不匹配
 			writer.WriteHeader(http.StatusUnprocessableEntity)
 			writer.Write([]byte("参数类型不匹配：“" + pathVariables[0] + "”无法转换为int64类型。"))
@@ -547,14 +546,14 @@ func startWebServer(port int) {
 			return
 		}
 		requestFormData := getRequestFormData(request) //获取表单数据
-		inForm := controllerappinstallcreateadminform.CreateAdminForm{}
+		inForm:=controllerappinstallcreateadminform.CreateAdminForm{}
 		inFormName := getStringArray(requestFormData, "name")
-		if inFormName != nil { // 如果参数存在
+		if inFormName != nil {// 如果参数存在
 			inForm.Name = inFormName[0]
 		}
 
 		inFormPwd := getStringArray(requestFormData, "pwd")
-		if inFormPwd != nil { // 如果参数存在
+		if inFormPwd != nil {// 如果参数存在
 			inForm.Pwd = inFormPwd[0]
 		}
 
@@ -720,31 +719,31 @@ func startWebServer(port int) {
 		// 记录表单验证错误信息
 		filedError := map[string][]string{}
 		validName := getStringArray(requestFormData, "name")
-		isNotEmpty(filedError, "name", validName)      // 非空验证
-		isLength(filedError, "name", validName, 2, 32) // 输入长度验证
+		isNotEmpty(filedError, "name", validName) // 非空验证
+		isLength(filedError, "name", validName, 2, 32)// 输入长度验证
 		validPwd := getStringArray(requestFormData, "pwd")
-		isNotEmpty(filedError, "pwd", validPwd)      // 非空验证
-		isLength(filedError, "pwd", validPwd, 2, 32) // 输入长度验证
+		isNotEmpty(filedError, "pwd", validPwd) // 非空验证
+		isLength(filedError, "pwd", validPwd, 2, 32)// 输入长度验证
 		validDeviceId := getStringArray(requestFormData, "deviceId")
 		isNotEmpty(filedError, "deviceId", validDeviceId) // 非空验证
-		if len(filedError) > 0 {                          // 有表单验证错误信息
+		if len(filedError) > 0{ // 有表单验证错误信息
 			writeFieldError(writer, filedError)
 			return
 		}
 
-		loginForm := controllerapploginform.LoginAppInForm{}
+		loginForm:=controllerapploginform.LoginAppInForm{}
 		loginFormName := getStringArray(requestFormData, "name")
-		if loginFormName != nil { // 如果参数存在
+		if loginFormName != nil {// 如果参数存在
 			loginForm.Name = loginFormName[0]
 		}
 
 		loginFormPwd := getStringArray(requestFormData, "pwd")
-		if loginFormPwd != nil { // 如果参数存在
+		if loginFormPwd != nil {// 如果参数存在
 			loginForm.Pwd = loginFormPwd[0]
 		}
 
 		loginFormDeviceId := getStringArray(requestFormData, "deviceId")
-		if loginFormDeviceId != nil { // 如果参数存在
+		if loginFormDeviceId != nil {// 如果参数存在
 			loginForm.DeviceId = loginFormDeviceId[0]
 		}
 
@@ -811,24 +810,24 @@ func startWebServer(port int) {
 		// 记录表单验证错误信息
 		filedError := map[string][]string{}
 		validOldPwd := getStringArray(requestFormData, "oldPwd")
-		isNotBlank(filedError, "oldPwd", validOldPwd)      // 非空白验证
-		isLength(filedError, "oldPwd", validOldPwd, 4, 32) // 输入长度验证
+		isNotBlank(filedError, "oldPwd", validOldPwd) // 非空白验证
+		isLength(filedError, "oldPwd", validOldPwd, 4, 32)// 输入长度验证
 		validPwd := getStringArray(requestFormData, "pwd")
-		isNotBlank(filedError, "pwd", validPwd)      // 非空白验证
-		isLength(filedError, "pwd", validPwd, 4, 32) // 输入长度验证
-		if len(filedError) > 0 {                     // 有表单验证错误信息
+		isNotBlank(filedError, "pwd", validPwd) // 非空白验证
+		isLength(filedError, "pwd", validPwd, 4, 32)// 输入长度验证
+		if len(filedError) > 0{ // 有表单验证错误信息
 			writeFieldError(writer, filedError)
 			return
 		}
 
-		inForm := controllerappmodifypwdform.ModifyPwdAppForm{}
+		inForm:=controllerappmodifypwdform.ModifyPwdAppForm{}
 		inFormOldPwd := getStringArray(requestFormData, "oldPwd")
-		if inFormOldPwd != nil { // 如果参数存在
+		if inFormOldPwd != nil {// 如果参数存在
 			inForm.OldPwd = inFormOldPwd[0]
 		}
 
 		inFormPwd := getStringArray(requestFormData, "pwd")
-		if inFormPwd != nil { // 如果参数存在
+		if inFormPwd != nil {// 如果参数存在
 			inForm.Pwd = inFormPwd[0]
 		}
 
@@ -884,7 +883,7 @@ func startWebServer(port int) {
 			return
 		}
 		requestFormData := getRequestFormData(request) //获取表单数据
-		var id int64                                   // 初始化变量
+		var id int64 // 初始化变量
 		idArr := getInt64Array(requestFormData, "id")
 		if idArr != nil { // 如果参数存在
 			id = idArr[0]
@@ -905,7 +904,7 @@ func startWebServer(port int) {
 			return
 		}
 		requestFormData := getRequestFormData(request) //获取表单数据
-		var ids []int64                                // 初始化变量
+		var ids []int64 // 初始化变量
 		idsArr := getInt64Array(requestFormData, "ids")
 		if idsArr != nil { // 如果参数存在
 			ids = idsArr
@@ -930,7 +929,7 @@ func startWebServer(port int) {
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.HtmlInterceptor(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-		writeToTemplate(writer, body, "resources/templates/app/profile.html", "resources/templates/app/include/head.html", "resources/templates/app/include/top-bar.html")
+		writeToTemplate(writer, body, "resources/templates/app/profile.html", "resources/templates/app/include/top-bar.html", "resources/templates/app/include/head.html")
 	})
 	http.HandleFunc("/app/profile/init", func(writer http.ResponseWriter, request *http.Request) {
 		if request.Method != "POST" {
@@ -961,43 +960,43 @@ func startWebServer(port int) {
 		// 记录表单验证错误信息
 		filedError := map[string][]string{}
 		validUploadMaxSize := getStringArray(requestFormData, "uploadMaxSize")
-		isDigits(filedError, "uploadMaxSize", validUploadMaxSize, 11, 0) // 数值值区间验证
-		isNotBlank(filedError, "uploadMaxSize", validUploadMaxSize)      // 非空白验证
+		isDigits(filedError, "uploadMaxSize", validUploadMaxSize, 11, 0)// 数值值区间验证
+		isNotBlank(filedError, "uploadMaxSize", validUploadMaxSize) // 非空白验证
 		validFolders := getStringArray(requestFormData, "folders")
 		isNotBlank(filedError, "folders", validFolders) // 非空白验证
-		if len(filedError) > 0 {                        // 有表单验证错误信息
+		if len(filedError) > 0{ // 有表单验证错误信息
 			writeFieldError(writer, filedError)
 			return
 		}
 
-		form := controllerappprofileform.ProfileForm{}
+		form:=controllerappprofileform.ProfileForm{}
 		formOpenSqlLog := getBoolArray(requestFormData, "openSqlLog")
-		if formOpenSqlLog != nil { // 如果参数存在
+		if formOpenSqlLog != nil {// 如果参数存在
 			form.OpenSqlLog = formOpenSqlLog[0]
 		}
 
 		formHasReadOnly := getBoolArray(requestFormData, "hasReadOnly")
-		if formHasReadOnly != nil { // 如果参数存在
+		if formHasReadOnly != nil {// 如果参数存在
 			form.HasReadOnly = formHasReadOnly[0]
 		}
 
 		formUploadMaxSize := getInt64Array(requestFormData, "uploadMaxSize")
-		if formUploadMaxSize != nil { // 如果参数存在
+		if formUploadMaxSize != nil {// 如果参数存在
 			form.UploadMaxSize = formUploadMaxSize[0]
 		}
 
 		formFolders := getStringArray(requestFormData, "folders")
-		if formFolders != nil { // 如果参数存在
+		if formFolders != nil {// 如果参数存在
 			form.Folders = formFolders[0]
 		}
 
 		formSyncDomains := getStringArray(requestFormData, "syncDomains")
-		if formSyncDomains != nil { // 如果参数存在
+		if formSyncDomains != nil {// 如果参数存在
 			form.SyncDomains = formSyncDomains[0]
 		}
 
 		formToken := getStringArray(requestFormData, "token")
-		if formToken != nil { // 如果参数存在
+		if formToken != nil {// 如果参数存在
 			form.Token = formToken[0]
 		}
 
@@ -1068,7 +1067,7 @@ func startWebServer(port int) {
 			return
 		}
 		requestFormData := getRequestFormData(request) //获取表单数据
-		var flag int                                   // 初始化变量
+		var flag int // 初始化变量
 		flagArr := getIntArray(requestFormData, "flag")
 		if flagArr != nil { // 如果参数存在
 			flag = flagArr[0]
@@ -1089,7 +1088,7 @@ func startWebServer(port int) {
 			return
 		}
 		requestFormData := getRequestFormData(request) //获取表单数据
-		var flag int                                   // 初始化变量
+		var flag int // 初始化变量
 		flagArr := getIntArray(requestFormData, "flag")
 		if flagArr != nil { // 如果参数存在
 			flag = flagArr[0]
@@ -1110,7 +1109,7 @@ func startWebServer(port int) {
 			return
 		}
 		requestFormData := getRequestFormData(request) //获取表单数据
-		var flag int                                   // 初始化变量
+		var flag int // 初始化变量
 		flagArr := getIntArray(requestFormData, "flag")
 		if flagArr != nil { // 如果参数存在
 			flag = flagArr[0]
@@ -1196,7 +1195,7 @@ func startWebServer(port int) {
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.HtmlInterceptor(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-		writeToTemplate(writer, body, "resources/templates/app/trash.html", "resources/templates/app/include/head.html", "resources/templates/app/include/top-bar.html", "resources/templates/app/include/trash/trash_toolbar.html", "resources/templates/app/include/trash/trash_list.html", "resources/templates/app/include/trash/trash_right_option.html")
+		writeToTemplate(writer, body, "resources/templates/app/trash.html", "resources/templates/app/include/trash/trash_toolbar.html", "resources/templates/app/include/trash/trash_list.html", "resources/templates/app/include/trash/trash_right_option.html", "resources/templates/app/include/head.html", "resources/templates/app/include/top-bar.html")
 	})
 	http.HandleFunc("/app/trash/get_list", func(writer http.ResponseWriter, request *http.Request) {
 		if request.Method != "POST" {
@@ -1223,7 +1222,7 @@ func startWebServer(port int) {
 			return
 		}
 		requestFormData := getRequestFormData(request) //获取表单数据
-		var ids []int64                                // 初始化变量
+		var ids []int64 // 初始化变量
 		idsArr := getInt64Array(requestFormData, "ids")
 		if idsArr != nil { // 如果参数存在
 			ids = idsArr
@@ -1244,7 +1243,7 @@ func startWebServer(port int) {
 			return
 		}
 		requestFormData := getRequestFormData(request) //获取表单数据
-		var ids []int64                                // 初始化变量
+		var ids []int64 // 初始化变量
 		idsArr := getInt64Array(requestFormData, "ids")
 		if idsArr != nil { // 如果参数存在
 			ids = idsArr
@@ -1296,7 +1295,7 @@ func startWebServer(port int) {
 			return
 		}
 		requestFormData := getRequestFormData(request) //获取表单数据
-		var id int64                                   // 初始化变量
+		var id int64 // 初始化变量
 		idArr := getInt64Array(requestFormData, "id")
 		if idArr != nil { // 如果参数存在
 			id = idArr[0]
@@ -1321,43 +1320,43 @@ func startWebServer(port int) {
 		// 记录表单验证错误信息
 		filedError := map[string][]string{}
 		validName := getStringArray(requestFormData, "name")
-		isNotEmpty(filedError, "name", validName)      // 非空验证
-		isLength(filedError, "name", validName, 2, 32) // 输入长度验证
+		isNotEmpty(filedError, "name", validName) // 非空验证
+		isLength(filedError, "name", validName, 2, 32)// 输入长度验证
 		validEmail := getStringArray(requestFormData, "email")
 		isEmail(filedError, "email", validEmail) // 邮箱格式验证
-		if len(filedError) > 0 {                 // 有表单验证错误信息
+		if len(filedError) > 0{ // 有表单验证错误信息
 			writeFieldError(writer, filedError)
 			return
 		}
 
-		inForm := controllerappuserform.UserEditInoutForm{}
+		inForm:=controllerappuserform.UserEditInoutForm{}
 		inFormId := getInt64Array(requestFormData, "id")
-		if inFormId != nil { // 如果参数存在
+		if inFormId != nil {// 如果参数存在
 			inForm.Id = inFormId[0]
 		}
 
 		inFormName := getStringArray(requestFormData, "name")
-		if inFormName != nil { // 如果参数存在
+		if inFormName != nil {// 如果参数存在
 			inForm.Name = inFormName[0]
 		}
 
 		inFormEmail := getStringArray(requestFormData, "email")
-		if inFormEmail != nil { // 如果参数存在
+		if inFormEmail != nil {// 如果参数存在
 			inForm.Email = inFormEmail[0]
 		}
 
 		inFormState := getInt8Array(requestFormData, "state")
-		if inFormState != nil { // 如果参数存在
+		if inFormState != nil {// 如果参数存在
 			inForm.State = inFormState[0]
 		}
 
 		inFormDate := getStringArray(requestFormData, "date")
-		if inFormDate != nil { // 如果参数存在
+		if inFormDate != nil {// 如果参数存在
 			inForm.Date = inFormDate[0]
 		}
 
 		inFormPwd := getStringArray(requestFormData, "pwd")
-		if inFormPwd != nil { // 如果参数存在
+		if inFormPwd != nil {// 如果参数存在
 			inForm.Pwd = inFormPwd[0]
 		}
 
@@ -1423,7 +1422,7 @@ func startWebServer(port int) {
 			return
 		}
 		requestFormData := getRequestFormData(request) //获取表单数据
-		var lastId int64                               // 初始化变量
+		var lastId int64 // 初始化变量
 		lastIdArr := getInt64Array(requestFormData, "lastId")
 		if lastIdArr != nil { // 如果参数存在
 			lastId = lastIdArr[0]
@@ -1432,8 +1431,8 @@ func startWebServer(port int) {
 		pathVariables := make([]string, 0)
 		varPath := request.URL.Path[13:]
 		pathVariableSplitArr := []string{"", "/listen"}
-
-		if !strings.HasSuffix(varPath, "/listen") { //如果不是以指定的字符串结尾
+		
+		if !strings.HasSuffix(varPath, "/listen") {//如果不是以指定的字符串结尾
 			writer.WriteHeader(http.StatusNotFound)
 			return
 		}
@@ -1463,7 +1462,7 @@ func startWebServer(port int) {
 			return
 		}
 		requestFormData := getRequestFormData(request) //获取表单数据
-		var lastId int64                               // 初始化变量
+		var lastId int64 // 初始化变量
 		lastIdArr := getInt64Array(requestFormData, "lastId")
 		if lastIdArr != nil { // 如果参数存在
 			lastId = lastIdArr[0]
@@ -1489,7 +1488,7 @@ func startWebServer(port int) {
 			return
 		}
 		requestFormData := getRequestFormData(request) //获取表单数据
-		var tbName string                              // 初始化变量
+		var tbName string // 初始化变量
 		tbNameArr := getStringArray(requestFormData, "tbName")
 		if tbNameArr != nil { // 如果参数存在
 			tbName = tbNameArr[0]
@@ -1515,7 +1514,7 @@ func startWebServer(port int) {
 			return
 		}
 		requestFormData := getRequestFormData(request) //获取表单数据
-		var tbName string                              // 初始化变量
+		var tbName string // 初始化变量
 		tbNameArr := getStringArray(requestFormData, "tbName")
 		if tbNameArr != nil { // 如果参数存在
 			tbName = tbNameArr[0]
@@ -1539,7 +1538,8 @@ func startWebServer(port int) {
 		pathVariables := make([]string, 0)
 		varPath := request.URL.Path[22:]
 		pathVariableSplitArr := []string{"", ""}
-
+		
+		
 		for i := 0; i < len(pathVariableSplitArr)-1; i++ {
 			varPath = varPath[len(pathVariableSplitArr[i]):]
 			if pathVariableSplitArr[i+1] == "" { //这已经是最后一个参数了
