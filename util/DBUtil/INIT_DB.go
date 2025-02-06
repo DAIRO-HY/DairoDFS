@@ -2,7 +2,6 @@ package DBUtil
 
 import (
 	"DairoDFS/resources"
-	"DairoDFS/util/GoroutineLocal"
 	"DairoDFS/util/LogUtil"
 	"fmt"
 	"log"
@@ -13,7 +12,7 @@ import (
 )
 
 // VERSION 数据库版本号
-const VERSION = 2
+const VERSION = 3
 
 func init() {
 	_, err := os.Stat(DB_PATH)
@@ -30,17 +29,15 @@ func init() {
 	}
 
 	// 打开数据库连接，没有文件时会自动创建
-	//db, _ := sql.Open("sqlite3", DB_PATH)
 	upgrade()
-	Commit()
-	GoroutineLocal.Clear()
 }
 
 /**
 * 更新表结构
  */
 func upgrade() {
-	version, _ := SelectSingleOne[int]("PRAGMA USER_VERSION")
+	var version int
+	DBConn.QueryRow("PRAGMA USER_VERSION").Scan(&version)
 	if version == 0 {
 		create()
 	}
@@ -48,19 +45,19 @@ func upgrade() {
 	}
 
 	//设置数据库版本号
-	ExecIgnoreError("PRAGMA USER_VERSION = " + strconv.Itoa(VERSION))
+	DBConn.Exec("PRAGMA USER_VERSION = " + strconv.Itoa(VERSION))
 }
 
 func create() {
 	sqlFiles := []string{"dfs_file.sql", "local_file.sql", "share.sql", "share_file.sql", "sql_log.sql", "user.sql", "user_token.sql"}
 	for _, fn := range sqlFiles {
 		createSql, _ := resources.SqlFolder.ReadFile("sql/create/" + fn)
-		ExecIgnoreError(string(createSql))
+		DBConn.Exec(string(createSql))
 	}
 
 	//将dfs_file表复制一份,用来保存彻底删除的数据
 	dfsFileDeleteData, _ := resources.SqlFolder.ReadFile("sql/create/dfs_file.sql")
 	dfsFileDeleteSql := string(dfsFileDeleteData)
 	dfsFileDeleteSql = strings.ReplaceAll(dfsFileDeleteSql, "dfs_file", "dfs_file_delete")
-	ExecIgnoreError(dfsFileDeleteSql)
+	DBConn.Exec(dfsFileDeleteSql)
 }
