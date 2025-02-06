@@ -18,7 +18,6 @@ import (
 	"DairoDFS/util/VideoUtil"
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"math"
 	"os"
 	"path/filepath"
@@ -51,12 +50,12 @@ func start() {
 	for {
 		cond.L.Lock()
 		for !hasData {
-			fmt.Println("Worker 等待新任务...")
+			//fmt.Println("文件处理：等待新任务...")
 			cond.Wait() // 没数据时进入等待状态
 		}
 		cond.L.Unlock()
 
-		fmt.Println("Worker 开始新任务...")
+		//fmt.Println("文件处理：开始新任务...")
 		for {
 			dfsList := DfsFileDao.SelectNoHandle()
 			if len(dfsList) == 0 {

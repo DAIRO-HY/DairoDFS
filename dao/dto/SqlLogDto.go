@@ -1,7 +1,5 @@
 package dto
 
-import "time"
-
 /**
  * sql数据库日志
  */
@@ -15,7 +13,7 @@ type SqlLogDto struct {
 	/**
 	 * 日志时间
 	 */
-	Date time.Time
+	Date int64
 
 	/**
 	 * sql文

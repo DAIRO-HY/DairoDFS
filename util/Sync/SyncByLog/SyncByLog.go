@@ -1,7 +1,18 @@
 package SyncByLog
 
 import (
+	"DairoDFS/application"
+	"DairoDFS/dao/SqlLogDao"
+	"DairoDFS/dao/dto"
+	"DairoDFS/extension/String"
+	"DairoDFS/util/DBUtil"
+	"DairoDFS/util/Sync/SyncHandle"
 	"DairoDFS/util/Sync/bean"
+	"encoding/json"
+	"fmt"
+	"os"
+	"strconv"
+	"strings"
 	"sync"
 )
 
@@ -49,16 +60,11 @@ func IsRuning() bool {
 	return result
 }
 
-//
-//
-///**
-// * 最后同步的ID存放目录
-// */
-//private val syncLastIdFilePath by lazy {
-//    "${Boot.service.dataPath}/sync_last_id"
-//}
-//
-//
+/**
+* 最后同步的ID存放目录
+ */
+var syncLastIdFilePath = application.DataPath + "/sync_last_id"
+
 ///**
 // * 获取配置同步主机
 // */
@@ -229,120 +235,100 @@ func IsRuning() bool {
 //        this.syncSocket.send(info)
 //    }
 //}
-//
-///**
-// * 从主机请求到的日志保存到本地日志
-// */
-//private fun addLog(info: SyncServerInfo, jsonData: JsonNode) {
-//    jsonData.forEach {
-//        val id = it.path("id").longValue()
-//        val date = it.path("date").longValue()
-//        val sql = it.path("sql").textValue()
-//        val paramJson = it.path("param").textValue()
-//
-//        try {
-//            Constant.dbService.exec(
-//                "insert into sql_log(id,date,sql,param,state,source) values(?,?,?,?,?,?)",
-//                id,
-//                date,
-//                sql,
-//                paramJson,
-//                0,
-//                info.url
-//            )
-//        } catch (e: Exception) {
-//
-//            //日志已经添加
-//            if (e.message == "[SQLITE_CONSTRAINT_PRIMARYKEY] A PRIMARY KEY constraint failed (UNIQUE constraint failed: sql_log.id)") {
-//                return@forEach
-//            } else {
-//                throw e
-//            }
-//        }
-//    }
-//}
-//
-///**
-// * 执行日志里的sql语句
-// */
-//private fun executeSqlLog(info: SyncServerInfo) {
-//    val list =
-//        Constant.dbService.selectList("select * from sql_log where state in (0,2) order by id asc limit 1000")
-//    if (list.isEmpty()) {
-//        return
-//    }
-//    list.forEach {
-//        val id = it["id"] as Long
-//        val sql = it["sql"] as String
-//        val paramJsonStr = it["param"] as String
-//
-//        //sql语句的参数列表
-//        val params = Json.readList(paramJsonStr, Any::class.java) as ArrayList
-//
-//        //日志执行结束后执行sql
-//        var afterSql: String? = null
-//        val handleSql = sql.replace(" ", "").replace("\n", "").lowercase()
-//        if (handleSql.startsWith("insertintolocal_file")) {//如果当前sql语句是往本地文件表里添加一条数据
-//            LocalFileSyncHandle.byLog(info, params)
-//        } else if (handleSql.startsWith("insertintodfs_file(")) {//如果该sql语句是添加文件
-//            afterSql = DfsFileSyncHandle.handleBySyncLog(info, params)
-//        } else {
-//        }
-//
-//
-//        val ps = Constant.dbService.getStatement(sql)
-//        params.forEachIndexed { i, v ->
-//            ps.setObject(i + 1, v)
-//        }
-//        try {
-//            ps.executeUpdate()
-//            if (afterSql != null) {
-//                Constant.dbService.exec(afterSql)
-//            }
-//            Constant.dbService.exec("update sql_log set state = 1 where id = ?", id)
-//        } catch (e: Exception) {
-//            Constant.dbService.exec("update sql_log set state = 2, err = ? where id = ?", e.toString(), id)
-//            throw e
-//        } finally {
-//            ps.close()
-//        }
-//    }
-//
-//    //记录当前同步的数据条数
-//    info.syncCount += list.size
-//    this.syncSocket.send(info)
-//    executeSqlLog(info)
-//}
-//
-/**
- * 保存最后一次请求的日志ID
- */
-func SaveLastId(info bean.SyncServerInfo, lastId int64) {
 
-	////记录最后一次请求到的日志ID文件
-	//val lastLogIdFile = File(this.syncLastIdFilePath + "." + info.url.md5)
-	//
-	////执行成功之后立即将当前日志的日期保存到本地,降低sql被重复执行的BUG
-	//lastLogIdFile.writeText(lastId.toString())
+// 从主机请求到的日志保存到本地日志
+func addLog(info bean.SyncServerInfo, dataList []dto.SqlLogDto) {
+	for _, it := range dataList {
+		_, err := DBUtil.DBConn.Exec("insert into sql_log(id,date,sql,param,state,source) values(?,?,?,?,?,?)",
+			it.Id, it.Date, it.Sql, it.Param, 0, info.Url)
+		if err != nil {
+			if strings.Contains(err.Error(), "UNIQUE constraint failed: sql_log.id") {
+				// 这条数据已经添加
+				continue
+			} else {
+				//@TODO:这条数据添加报错，需要做点什么
+				fmt.Println(err)
+			}
+		}
+	}
 }
 
-//
-///**
-// * 保存最后一次请求的日志ID
-// */
-//fun getLastId(info: SyncServerInfo): Long {
-//
-//    //记录最后一次请求到的日志ID文件
-//    val lastLogIdFile = File(this.syncLastIdFilePath + "." + info.url.md5)
-//
-//    //从文件获取最后一次请求到的日志ID
-//    return try {
-//        lastLogIdFile.readText().toLong()
-//    } catch (e: Exception) {
-//        0L
-//    }
-//}
-//
+/**
+* 执行日志里的sql语句
+ */
+func executeSqlLog(info bean.SyncServerInfo) {
+	list := SqlLogDao.GetNotExecuteList()
+	if len(list) == 0 {
+		return
+	}
+	for _, it := range list {
+
+		//sql语句的参数列表
+		paramtaList := make([]any, 0)
+		toJsonErr := json.Unmarshal([]byte(it.Param), &paramtaList)
+		if toJsonErr != nil {
+			//`TODO:
+		}
+
+		//日志执行结束后执行sql
+		var afterSql string
+
+		//用来判断是否指定的sql语句
+		handleSql := it.Sql
+		handleSql = strings.ReplaceAll(handleSql, " ", "")
+		handleSql = strings.ReplaceAll(handleSql, "\r\n", "")
+		handleSql = strings.ReplaceAll(handleSql, "\r", "")
+		handleSql = strings.ReplaceAll(handleSql, "\n", "")
+		if strings.HasPrefix(handleSql, "insertintolocal_file") { //如果当前sql语句是往本地文件表里添加一条数据
+			SyncHandle.ByLog(info, paramtaList)
+		} else if strings.HasPrefix(handleSql, "insertintodfs_file(") { //如果该sql语句是添加文件
+			afterSql = SyncHandle.HandleBySyncLog(info, paramtaList)
+		} else {
+		}
+		_, execSqlErr := DBUtil.DBConn.Exec(it.Sql, paramtaList...)
+		if execSqlErr != nil {
+			//@TODO:
+			DBUtil.DBConn.Exec("update sql_log set state = 2, err = ? where id = ?", execSqlErr.Error(), it.Id)
+			return
+		}
+		if afterSql != "" {
+			_, afterSqlErr := DBUtil.DBConn.Exec(afterSql)
+			if afterSqlErr != nil {
+				//`TODO:
+			}
+		}
+		DBUtil.DBConn.Exec("update sql_log set state = 1 where id = ?", it.Id)
+	}
+
+	//记录当前同步的数据条数
+	info.SyncCount += len(list)
+	//this.syncSocket.send(info)
+	executeSqlLog(info)
+}
+
+// 保存最后一次请求的日志ID
+func SaveLastId(info bean.SyncServerInfo, lastId int64) {
+
+	//记录最后一次请求到的日志ID文件
+	lastLogIdFile := syncLastIdFilePath + "." + String.ToMd5(info.Url)
+
+	//执行成功之后立即将当前日志的日期保存到本地,降低sql被重复执行的BUG
+	os.WriteFile(lastLogIdFile, []byte(String.ValueOf(lastId)), 0644)
+}
+
+// 保存最后一次请求的日志ID
+func getLastId(info bean.SyncServerInfo) int64 {
+
+	//记录最后一次请求到的日志ID文件
+	lastLogIdFile := syncLastIdFilePath + "." + String.ToMd5(info.Url)
+	data, err := os.ReadFile(lastLogIdFile)
+	if err != nil {
+		return 0
+	}
+	lastId, _ := strconv.ParseInt(string(data), 10, 64)
+	return lastId
+}
+
 ///**
 // * 发送同步通知
 // */
