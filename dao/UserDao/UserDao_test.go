@@ -15,7 +15,7 @@ import (
 func TestAdd(t *testing.T) {
 
 	name := "1000"
-	id := DBUtil.ID()
+	id := Number.ID()
 	state := int8(1)
 	date := time.Now()
 	insertDto := dto.UserDto{
@@ -37,7 +37,7 @@ func TestAdd(t *testing.T) {
  * @param dto 用户信息
  */
 func TestSelectOne(t *testing.T) {
-	id := DBUtil.ID()
+	id := Number.ID()
 	DBUtil.InsertIgnoreError("insert into user(id, name, pwd, email, encryptionKey, state, date) values (?, ?, ?, ?, ?, ?, ?)",
 		id, fmt.Sprintf("dto.Name%d", id), "dto.Pwd", "dto.Email", "dto.EncryptionKey", 1, time.Now())
 	dto := SelectOne(id)

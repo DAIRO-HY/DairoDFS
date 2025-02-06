@@ -8,9 +8,9 @@ import (
 	"DairoDFS/exception"
 	"DairoDFS/extension/Bool"
 	"DairoDFS/extension/File"
+	"DairoDFS/extension/Number"
 	"DairoDFS/extension/String"
 	"DairoDFS/service/DfsFileService"
-	"DairoDFS/util/DBUtil"
 	"DairoDFS/util/DfsFileUtil"
 	"DairoDFS/util/ImageUtil"
 	"DairoDFS/util/ImageUtil/PSDUtil"
@@ -153,7 +153,7 @@ func makeExtra(dfsFileDto dto.DfsFileDto) error {
 	if len(existsExtraList) > 0 { //该文件已经存在了附属文件,直接使用
 		for _, it := range existsExtraList {
 			extraDto := dto.DfsFileDto{
-				Id:          DBUtil.ID(),
+				Id:          Number.ID(),
 				Name:        it.Name,
 				Size:        it.Size,
 				LocalId:     it.LocalId,
@@ -218,7 +218,7 @@ func makeExtra(dfsFileDto dto.DfsFileDto) error {
 			return err
 		}
 		extraDto := dto.DfsFileDto{
-			Id:          DBUtil.ID(),
+			Id:          Number.ID(),
 			Name:        "preview",
 			Size:        int64(len(pngData)),
 			LocalId:     localFileDto.Id,
@@ -311,7 +311,7 @@ func makeExtra(dfsFileDto dto.DfsFileDto) error {
 			}
 
 			extraDto := dto.DfsFileDto{
-				Id:          DBUtil.ID(),
+				Id:          Number.ID(),
 				Name:        String.ValueOf(targetSize),
 				Size:        targetFileInfo.Size(),
 				LocalId:     localFileDto.Id,
@@ -343,7 +343,7 @@ func makeExtra(dfsFileDto dto.DfsFileDto) error {
 			return err
 		}
 		extraDto := dto.DfsFileDto{
-			Id:          DBUtil.ID(),
+			Id:          Number.ID(),
 			Name:        "preview",
 			Size:        int64(len(jpgData)),
 			LocalId:     localFileDto.Id,
@@ -429,7 +429,7 @@ func makeThumb(dfsFileDto dto.DfsFileDto) error {
 
 	//添加缩率图附属文件
 	extraDto := dto.DfsFileDto{
-		Id:          DBUtil.ID(),
+		Id:          Number.ID(),
 		Name:        "thumb",
 		Size:        int64(len(data)),
 		LocalId:     localFileDto.Id,

@@ -1,6 +1,10 @@
 package Number
 
-import "fmt"
+import (
+	"fmt"
+	"sync"
+	"time"
+)
 
 // 数据流量单位换算
 func ToDataSize(input any) string {
@@ -104,4 +108,17 @@ func ToTimeFormat(input any) string {
 		return m + ":" + s
 	}
 	return "00:" + s
+}
+
+var makeIdLock sync.Mutex
+
+// 生成数据库主键ID
+func ID() int64 {
+	makeIdLock.Lock()
+
+	//这里延迟1纳秒，降低生成ID的重复概率
+	time.Sleep(1 * time.Microsecond)
+	id := time.Now().UnixMicro()
+	makeIdLock.Unlock()
+	return id
 }

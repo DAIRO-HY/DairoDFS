@@ -59,7 +59,21 @@ func Error(content string) {
 }
 
 // 记录错误日志
-func Error1(msg string, err error) {
+func Error2(err error) {
+	if err == nil {
+		return
+	}
+	if !LogLevel["error"] {
+		return
+	}
+	write(fmt.Sprintf("error %q", err))
+}
+
+// 记录错误日志
+func Error3(msg string, err error) {
+	if err == nil {
+		return
+	}
 	if !LogLevel["error"] {
 		return
 	}

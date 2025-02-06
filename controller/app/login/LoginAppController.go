@@ -6,8 +6,8 @@ import (
 	"DairoDFS/dao/UserDao"
 	"DairoDFS/dao/UserTokenDao"
 	"DairoDFS/dao/dto"
+	"DairoDFS/extension/Number"
 	"DairoDFS/extension/String"
-	"DairoDFS/util/DBUtil"
 	"net/http"
 	"strconv"
 	"time"
@@ -39,7 +39,7 @@ func DoLogin(loginForm form.LoginAppInForm, _clientFlag int, _version int) any {
 	//TODO:
 	ip := "0.0.0.0"
 	userTokenDto := dto.UserTokenDto{
-		Id:         DBUtil.ID(),
+		Id:         Number.ID(),
 		UserId:     userDto.Id,
 		Date:       time.Now(),
 		Ip:         ip,

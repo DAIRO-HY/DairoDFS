@@ -2,6 +2,7 @@ package DBUtil
 
 import (
 	"DairoDFS/util/CommonUtil"
+	"DairoDFS/util/DBSqlLog"
 	"DairoDFS/util/LogUtil"
 	"database/sql"
 	"fmt"
@@ -9,14 +10,11 @@ import (
 	"log"
 	"reflect"
 	"strings"
-	"sync"
 	"time"
 )
 
 // DB_PATH 文件路径
 const DB_PATH = "./data/dairo-dfs.sqlite"
-
-var makeIdLock sync.Mutex
 
 // sqlite数据库连接对象
 var DBConn *sql.DB
@@ -28,19 +26,6 @@ func init() {
 		log.Fatal(err)
 	}
 	DBConn = db
-}
-
-/**
- * 生成数据库主键ID
- */
-func ID() int64 {
-	makeIdLock.Lock()
-
-	//这里延迟1纳秒，降低生成ID的重复概率
-	time.Sleep(1 * time.Microsecond)
-	id := time.Now().UnixMicro()
-	makeIdLock.Unlock()
-	return id
 }
 
 // 执行sql语句,忽略错误
@@ -55,7 +40,7 @@ func ExecIgnoreError(query string, args ...any) int64 {
 
 // 执行sql
 func Exec(query string, args ...any) (int64, error) {
-	rs, err := DBConn.Exec(query, args...)
+	rs, err := getConnection().Exec(query, args...)
 	if err != nil {
 		return -1, err
 	}
@@ -63,6 +48,7 @@ func Exec(query string, args ...any) (int64, error) {
 	if err != nil {
 		return -1, err
 	}
+	DBSqlLog.Add(query, args)
 	return count, nil
 }
 
@@ -77,8 +63,8 @@ func InsertIgnoreError(query string, args ...any) int64 {
 }
 
 // 添加数据,并返回最后一次添加的ID
-func Insert(insert string, args ...any) (int64, error) {
-	rs, err := DBConn.Exec(insert, args...)
+func Insert(query string, args ...any) (int64, error) {
+	rs, err := getConnection().Exec(query, args...)
 	if err != nil {
 		return -1, err
 	}
@@ -86,6 +72,7 @@ func Insert(insert string, args ...any) (int64, error) {
 	if err != nil {
 		return -1, err
 	}
+	DBSqlLog.Add(query, args)
 	return lastInsertId, nil
 }
 
@@ -97,7 +84,7 @@ func SelectSingleOneIgnoreError[T any](query string, args ...any) T {
 
 // SelectSingleOne 查询第一个数据
 func SelectSingleOne[T any](query string, args ...any) (T, error) {
-	row := DBConn.QueryRow(query, args...)
+	row := getConnection().QueryRow(query, args...)
 	var value *T
 
 	// 使用 Scan 将结果赋值给 value
@@ -149,7 +136,7 @@ func SelectListBk[T any](query string, args ...any) []*T {
 
 // SelectList 查询列表
 func SelectList[T any](query string, args ...any) []T {
-	rows, err := DBConn.Query(query, args...)
+	rows, err := getConnection().Query(query, args...)
 	if err != nil {
 		LogUtil.Error(fmt.Sprintf("查询数据失败:%s: err:%q", query, err))
 		return nil
@@ -285,7 +272,7 @@ func SelectList[T any](query string, args ...any) []T {
 // SelectListNull-总时间 = 1841毫秒
 // SelectListNull-平均时间 = 0.0018410000毫秒
 func SelectListNull[T any](query string, args ...any) []T {
-	rows, err := DBConn.Query(query, args...)
+	rows, err := getConnection().Query(query, args...)
 	if err != nil {
 		LogUtil.Error(fmt.Sprintf("查询数据失败:%s: err:%q", query, err))
 		return nil
@@ -427,7 +414,7 @@ func SelectListNull[T any](query string, args ...any) []T {
 
 // SelectToListMap 将查询结果以List<Map>的类型返回
 func SelectToListMap(query string, args ...any) []map[string]any {
-	rows, err := DBConn.Query(query, args...)
+	rows, err := getConnection().Query(query, args...)
 	if err != nil {
 		LogUtil.Error(fmt.Sprintf("查询数据失败:%s: err:%q", query, err))
 		return nil

@@ -3,7 +3,7 @@ package UserService
 import (
 	"DairoDFS/dao/UserDao"
 	"DairoDFS/dao/dto"
-	"DairoDFS/util/DBUtil"
+	"DairoDFS/extension/Number"
 	"time"
 )
 
@@ -17,7 +17,7 @@ import (
  */
 func Add(dto dto.UserDto) {
 	date := time.Now()
-	id := DBUtil.ID()
+	id := Number.ID()
 	dto.Date = date
 	dto.Id = id
 	UserDao.Add(dto)

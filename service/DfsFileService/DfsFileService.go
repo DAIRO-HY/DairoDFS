@@ -5,8 +5,8 @@ import (
 	"DairoDFS/dao/LocalFileDao"
 	"DairoDFS/dao/dto"
 	"DairoDFS/exception"
+	"DairoDFS/extension/Number"
 	"DairoDFS/extension/String"
-	"DairoDFS/util/DBUtil"
 	"DairoDFS/util/DfsFileUtil"
 	"fmt"
 	"io"
@@ -39,7 +39,7 @@ func AddFile(fileDto dto.DfsFileDto, isOverWrite bool) error {
 		}
 	}
 	fileDto.Date = time.Now()
-	fileDto.Id = DBUtil.ID()
+	fileDto.Id = Number.ID()
 
 	//添加文件
 	DfsFileDao.Add(fileDto)
@@ -385,7 +385,7 @@ func Mkdirs(userId int64, path string) (int64, error) {
 			isCreatModel = true
 		}
 		createFolderDto := dto.DfsFileDto{
-			Id:       DBUtil.ID(),
+			Id:       Number.ID(),
 			UserId:   userId,
 			Name:     it,
 			ParentId: lastFolderId,
@@ -532,7 +532,7 @@ func SaveToLocalFile(md5 string, reader io.Reader) (dto.LocalFileDto, error) {
 	addLocalFileDto := dto.LocalFileDto{
 		Path: localPath,
 		Md5:  md5,
-		Id:   DBUtil.ID(),
+		Id:   Number.ID(),
 	}
 	LocalFileDao.Add(addLocalFileDto)
 	return addLocalFileDto, nil

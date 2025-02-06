@@ -1,6 +1,7 @@
 package app
 
 import (
+	"DairoDFS/util/GoroutineLocal"
 	"net/http"
 	"runtime"
 )
@@ -25,5 +26,6 @@ func Home() {
 // 页面初始化
 // @Html:index.html
 func Index() {
+	GoroutineLocal.Test()
 	runtime.GC()
 }

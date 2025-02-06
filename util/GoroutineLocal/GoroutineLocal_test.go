@@ -8,7 +8,7 @@ import (
 
 // 移除某个协程的所有数据
 func TestRemoveGoroutine(t *testing.T) {
-	RemoveGoroutine()
+	Clear()
 
 	Set("time", time.Now().UnixMicro())
 	fmt.Println("------------------------------------------")
@@ -19,7 +19,7 @@ func TestRemoveGoroutine(t *testing.T) {
 		return true // 继续遍历
 	})
 
-	RemoveGoroutine()
+	Clear()
 	fmt.Println("------------------------------------------")
 
 	// 遍历
@@ -34,7 +34,7 @@ func TestGetGoroutineID(t *testing.T) {
 	count := 1000000
 	now := time.Now().UnixMilli()
 	for i := 0; i < count; i++ {
-		sdf := GetGoroutineID()
+		sdf := id()
 		if sdf == "sdf" {
 			fmt.Printf("OK")
 		}

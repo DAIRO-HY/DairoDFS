@@ -76,7 +76,7 @@ func Instance() *SystemConfig {
 			data, _ := os.ReadFile(application.SYSTEM_JSON_PATH)
 			readJsonErr := json.Unmarshal(data, instance)
 			if readJsonErr != nil {
-				LogUtil.Error1("读取JSON配置文件失败:", readJsonErr)
+				LogUtil.Error3("读取JSON配置文件失败:", readJsonErr)
 				log.Fatal(readJsonErr)
 			}
 		}
@@ -93,7 +93,7 @@ func Save() {
 	if os.IsNotExist(err) { //文件不存在时创建文件夹
 		mkdirErr := os.MkdirAll(String.FileParent(application.SYSTEM_JSON_PATH), os.ModePerm)
 		if mkdirErr != nil {
-			LogUtil.Error1("文件夹创建失败：", mkdirErr)
+			LogUtil.Error3("文件夹创建失败：", mkdirErr)
 			return
 		}
 	}

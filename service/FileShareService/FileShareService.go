@@ -6,8 +6,8 @@ import (
 	"DairoDFS/dao/ShareDao"
 	"DairoDFS/dao/dto"
 	"DairoDFS/exception"
+	"DairoDFS/extension/Number"
 	"DairoDFS/service/DfsFileService"
-	"DairoDFS/util/DBUtil"
 	"strings"
 	"time"
 )
@@ -50,7 +50,7 @@ func Share(userId int64, inForm form.ShareForm) (int64, error) {
 		Thumb:      thumbId,
 		FileCount:  len(inForm.Names),
 		Date:       time.Now(),
-		Id:         DBUtil.ID(),
+		Id:         Number.ID(),
 	}
 	ShareDao.Add(shareDto)
 	return shareDto.Id, nil

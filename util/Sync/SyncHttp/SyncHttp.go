@@ -1,6 +1,8 @@
 package SyncHttp
 
 import (
+	"DairoDFS/exception"
+	"DairoDFS/extension/String"
 	"io"
 	"net"
 	"net/http"
@@ -16,7 +18,7 @@ import (
  * @param url 请求url
  * @return 返回结果
  */
-func Request(url string) string {
+func Request(url string) ([]byte, error) {
 	transport := &http.Transport{
 		DialContext:           (&net.Dialer{Timeout: 3 * time.Second}).DialContext, //连接超时
 		ResponseHeaderTimeout: 30 * time.Second,                                    //读数据超时
@@ -26,16 +28,15 @@ func Request(url string) string {
 	// 创建HTTP GET请求
 	resp, err := client.Get(url)
 	if err != nil {
-		//mine.Info = fmt.Sprintf("下载失败：%q", err)
-		return ""
+		return nil, err
 	}
 	defer resp.Body.Close()
 
 	// 检查HTTP状态码
 	if resp.StatusCode != http.StatusOK {
-		//@TODO:应该返回错误信息
-		return ""
+		bodyData, _ := io.ReadAll(resp.Body)
+		return nil, exception.Biz("Status: " + String.ValueOf(resp.StatusCode) + "  Body:" + string(bodyData))
 	}
 	data, _ := io.ReadAll(resp.Body)
-	return string(data)
+	return data, nil
 }

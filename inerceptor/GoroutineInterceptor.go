@@ -10,6 +10,6 @@ import (
 // @include:/**
 // @order:999999999
 func RemoveGoroutineLocal(writer http.ResponseWriter, request *http.Request, body any) any {
-	GoroutineLocal.RemoveGoroutine()
+	GoroutineLocal.Clear()
 	return body
 }

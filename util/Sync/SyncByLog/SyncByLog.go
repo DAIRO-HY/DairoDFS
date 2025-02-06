@@ -6,7 +6,9 @@ import (
 	"DairoDFS/dao/dto"
 	"DairoDFS/extension/String"
 	"DairoDFS/util/DBUtil"
+	"DairoDFS/util/Sync/SyncByTable"
 	"DairoDFS/util/Sync/SyncHandle"
+	"DairoDFS/util/Sync/SyncHttp"
 	"DairoDFS/util/Sync/bean"
 	"encoding/json"
 	"fmt"
@@ -14,6 +16,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 )
 
 /**
@@ -29,7 +32,7 @@ import (
 /**
  * 当前同步主机信息
  */
-var SyncInfoList []bean.SyncServerInfo
+var SyncInfoList []*bean.SyncServerInfo
 
 /**
  * 是否正在同步中
@@ -157,87 +160,79 @@ var syncLastIdFilePath = application.DataPath + "/sync_last_id"
 //        }
 //    }
 //}
-//
-///**
-// * 启动执行
-// * @param isForce 是否强制执行
-// */
-//fun start(isForce: Boolean = false) {
-//    synchronized(this) {
-//        if (SyncByTable.isRuning) {//全量同步正在进行中
-//            return
-//        }
-//        if (this.mIsRunning) {//并发防止
-//            return
-//        }
-//        this.mIsRunning = true
-//    }
-//    try {
-//        if (isForce) {//强行执行
-//            SyncByLog.syncInfoList.forEach {
-//                it.state = 0
-//            }
-//        }
-//        this.syncInfoList.forEach {
-//            if (it.state != 0) {//只允许待机中的同步
-//                return@forEach
-//            }
-//            it.state = 1//标记为同步中
-//            it.msg = ""
-//            this.syncSocket.send(it)
-//            this.requestSqlLog(it)
-//        }
-//    } finally {
-//        synchronized(this) {
-//            this.mIsRunning = false
-//        }
-//        this.waitTimes = 0
-//    }
-//}
-//
-///**
-// * 循环取sql日志
-// * @return 是否处理完成
-// */
-//private fun requestSqlLog(info: SyncServerInfo) {
-//
-//    //得到最后请求的id
-//    val lastId = this.getLastId(info)
-//    val url = "${info.url}/get_log?lastId=$lastId"
-//    try {
-//        val data = SyncHttp.request(url)
-//        if (data == "[]") {//已经没有sql日志
-//
-//            //执行日志sql
-//            executeSqlLog(info)
-//
-//            info.state = 0//同步完成，标记为待机中
-//            info.msg = ""
-//            info.lastTime = System.currentTimeMillis()//最后一次同步完成时间
-//            this.syncSocket.send(info)
-//            return
-//        }
-//        val jsonData = Json.readValue(data)
-//        addLog(info, jsonData)
-//        val lastLog = jsonData.path(jsonData.size() - 1)
-//
-//        //执行成功之后立即将当前日志的日期保存到本地,降低sql被重复执行的BUG
-//        this.saveLastId(info, lastLog["id"].asText().toLong())
-//
-//        //执行日志sql
-//        executeSqlLog(info)
-//
-//        //递归调用，直到服务端日志同步完成
-//        this.requestSqlLog(info)
-//    } catch (e: Exception) {
-//        info.state = 2//标记为同步失败
-//        info.msg = e.message ?: e.toString()
-//        this.syncSocket.send(info)
-//    }
-//}
+
+/**
+* 启动执行
+* @param isForce 是否强制执行
+ */
+func Start(isForce bool) {
+	if SyncByTable.IsRuning() { //全量同步正在进行中
+		return
+	}
+	if mIsRuning { //并发防止
+		return
+	}
+	mIsRuning = true
+	if isForce { //强行执行
+		for _, it := range SyncInfoList {
+			it.State = 0
+		}
+	}
+	for _, it := range SyncInfoList {
+		if it.State != 0 { //只允许待机中的同步
+			continue
+		}
+		it.State = 1 //标记为同步中
+		it.Msg = ""
+		//this.syncSocket.send(it)
+		requestSqlLog(it)
+	}
+	mIsRuning = false
+	waitTimes = 0
+}
+
+// 循环取sql日志
+// @return 是否处理完成
+func requestSqlLog(info *bean.SyncServerInfo) {
+
+	//得到最后请求的id
+	lastId := getLastId(info)
+	url := info.Url + "/get_log?lastId=" + String.ValueOf(lastId)
+	logData, err := SyncHttp.Request(url)
+	if err != nil {
+		info.State = 2 //标记为同步失败
+		info.Msg = err.Error()
+		//this.syncSocket.send(info)
+		return
+	}
+	if string(logData) == "[]" { //已经没有sql日志
+
+		//执行日志sql
+		executeSqlLog(info)
+
+		info.State = 0 //同步完成，标记为待机中
+		info.Msg = ""
+		info.LastTime = time.Now().UnixMilli() //最后一次同步完成时间
+		//this.syncSocket.send(info)
+		return
+	}
+	logList := make([]dto.SqlLogDto, 0)
+	json.Unmarshal(logData, &logList)
+	addLog(info, logList)
+	lastLog := logList[len(logList)-1]
+
+	//执行成功之后立即将当前日志的日期保存到本地,降低sql被重复执行的BUG
+	SaveLastId(info, lastLog.Id)
+
+	//执行日志sql
+	executeSqlLog(info)
+
+	//递归调用，直到服务端日志同步完成
+	requestSqlLog(info)
+}
 
 // 从主机请求到的日志保存到本地日志
-func addLog(info bean.SyncServerInfo, dataList []dto.SqlLogDto) {
+func addLog(info *bean.SyncServerInfo, dataList []dto.SqlLogDto) {
 	for _, it := range dataList {
 		_, err := DBUtil.DBConn.Exec("insert into sql_log(id,date,sql,param,state,source) values(?,?,?,?,?,?)",
 			it.Id, it.Date, it.Sql, it.Param, 0, info.Url)
@@ -256,7 +251,7 @@ func addLog(info bean.SyncServerInfo, dataList []dto.SqlLogDto) {
 /**
 * 执行日志里的sql语句
  */
-func executeSqlLog(info bean.SyncServerInfo) {
+func executeSqlLog(info *bean.SyncServerInfo) {
 	list := SqlLogDao.GetNotExecuteList()
 	if len(list) == 0 {
 		return
@@ -265,13 +260,7 @@ func executeSqlLog(info bean.SyncServerInfo) {
 
 		//sql语句的参数列表
 		paramtaList := make([]any, 0)
-		toJsonErr := json.Unmarshal([]byte(it.Param), &paramtaList)
-		if toJsonErr != nil {
-			//`TODO:
-		}
-
-		//日志执行结束后执行sql
-		var afterSql string
+		json.Unmarshal([]byte(it.Param), &paramtaList)
 
 		//用来判断是否指定的sql语句
 		handleSql := it.Sql
@@ -279,6 +268,9 @@ func executeSqlLog(info bean.SyncServerInfo) {
 		handleSql = strings.ReplaceAll(handleSql, "\r\n", "")
 		handleSql = strings.ReplaceAll(handleSql, "\r", "")
 		handleSql = strings.ReplaceAll(handleSql, "\n", "")
+
+		//日志执行结束后执行sql
+		var afterSql string
 		if strings.HasPrefix(handleSql, "insertintolocal_file") { //如果当前sql语句是往本地文件表里添加一条数据
 			SyncHandle.ByLog(info, paramtaList)
 		} else if strings.HasPrefix(handleSql, "insertintodfs_file(") { //如果该sql语句是添加文件
@@ -286,16 +278,12 @@ func executeSqlLog(info bean.SyncServerInfo) {
 		} else {
 		}
 		_, execSqlErr := DBUtil.DBConn.Exec(it.Sql, paramtaList...)
-		if execSqlErr != nil {
-			//@TODO:
+		if execSqlErr != nil { //sql语句执行失败
 			DBUtil.DBConn.Exec("update sql_log set state = 2, err = ? where id = ?", execSqlErr.Error(), it.Id)
 			return
 		}
 		if afterSql != "" {
-			_, afterSqlErr := DBUtil.DBConn.Exec(afterSql)
-			if afterSqlErr != nil {
-				//`TODO:
-			}
+			DBUtil.DBConn.Exec(afterSql)
 		}
 		DBUtil.DBConn.Exec("update sql_log set state = 1 where id = ?", it.Id)
 	}
@@ -307,7 +295,7 @@ func executeSqlLog(info bean.SyncServerInfo) {
 }
 
 // 保存最后一次请求的日志ID
-func SaveLastId(info bean.SyncServerInfo, lastId int64) {
+func SaveLastId(info *bean.SyncServerInfo, lastId int64) {
 
 	//记录最后一次请求到的日志ID文件
 	lastLogIdFile := syncLastIdFilePath + "." + String.ToMd5(info.Url)
@@ -317,7 +305,7 @@ func SaveLastId(info bean.SyncServerInfo, lastId int64) {
 }
 
 // 保存最后一次请求的日志ID
-func getLastId(info bean.SyncServerInfo) int64 {
+func getLastId(info *bean.SyncServerInfo) int64 {
 
 	//记录最后一次请求到的日志ID文件
 	lastLogIdFile := syncLastIdFilePath + "." + String.ToMd5(info.Url)

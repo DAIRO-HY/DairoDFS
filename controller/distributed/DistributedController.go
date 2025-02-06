@@ -2,7 +2,7 @@ package distributed
 
 import (
 	"DairoDFS/dao/SqlLogDao"
-	"DairoDFS/util/DBUtil"
+	"DairoDFS/extension/Number"
 	"net/http"
 	"time"
 )
@@ -10,7 +10,7 @@ import (
 /**
  * 数据同步处理Controller
  */
-//@Group:/distributed/{token}
+//@Group:/distributed
 
 /**
  * 长连接心跳间隔时间
@@ -90,7 +90,7 @@ func GetLog(lastId int64) []map[string]any {
 /**
  * 主机发起同步通知
  */
-//@Request:/push_notify
+//@//Request:/push_notify
 func pushNotify() {
 	//thread {
 	//    SyncByLog.start()
@@ -103,7 +103,7 @@ func pushNotify() {
  */
 //@Request:/get_aop_id
 func GetAopId() int64 {
-	return DBUtil.ID()
+	return Number.ID()
 }
 
 /**
@@ -136,7 +136,7 @@ func GetTableId(tbName string, lastId int64, aopId int64) string {
  * @param ids 要取的数据id列表
  */
 //@Request:/get_table_data
-func getTableData(tbName string, ids string) []any {
+func GetTableData(tbName string, ids string) []any {
 	//if (SyncByTable.isRuning || SyncByLog.isRunning) {
 	//    throw BusinessException("主机正在同步数据中，请等待完成后继续。")
 	//}
@@ -153,7 +153,7 @@ func getTableData(tbName string, ids string) []any {
  * @param id 文件ID
  */
 //@Request:/download/{md5}
-func download(writer http.ResponseWriter, request *http.Request, md5 string) {
+func Download(writer http.ResponseWriter, request *http.Request, md5 string) {
 	//if (SyncByTable.isRuning || SyncByLog.isRunning) {
 	//    throw BusinessException("主机正在同步数据中，请等待完成后继续。")
 	//}

@@ -44,7 +44,7 @@ func byTable(info bean.SyncServerInfo, item map[string]any) {
 /**
  * 日志同步时的特殊处理
  */
-func ByLog(info bean.SyncServerInfo, params []any) {
+func ByLog(info *bean.SyncServerInfo, params []any) {
 
 	////得到文件的md5
 	//val md5 = params[2] as String

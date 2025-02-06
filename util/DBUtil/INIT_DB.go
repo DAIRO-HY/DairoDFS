@@ -2,6 +2,7 @@ package DBUtil
 
 import (
 	"DairoDFS/resources"
+	"DairoDFS/util/GoroutineLocal"
 	"DairoDFS/util/LogUtil"
 	"fmt"
 	"log"
@@ -31,6 +32,8 @@ func init() {
 	// 打开数据库连接，没有文件时会自动创建
 	//db, _ := sql.Open("sqlite3", DB_PATH)
 	upgrade()
+	Commit()
+	GoroutineLocal.Clear()
 }
 
 /**

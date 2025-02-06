@@ -59,7 +59,7 @@ func Handle(info bean.SyncServerInfo, dfsFile *dto.DfsFileDto) error {
 	return nil
 }
 
-func HandleBySyncLog(info bean.SyncServerInfo, params []any) string {
+func HandleBySyncLog(info *bean.SyncServerInfo, params []any) string {
 
 	////用户文件id
 	//val id = params[0].toString().toLong()

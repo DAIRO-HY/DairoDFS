@@ -7,7 +7,6 @@ import (
 	"DairoDFS/util/Sync/SyncHttp"
 	"DairoDFS/util/Sync/bean"
 	"encoding/json"
-	"fmt"
 	"strconv"
 	"strings"
 	"sync"
@@ -74,7 +73,12 @@ func doSync() {
 		//this.syncSocket.send(info)
 
 		//断面ID,从主机端获取的数据ID不得大于该值
-		aopId := getAopId(info)
+		aopId, aopIdErr := getAopId(info)
+		if aopIdErr != nil {
+			info.State = 2
+			info.Msg = "获取断面ID失败：" + aopIdErr.Error()
+			return
+		}
 		tbNames := []string{
 			"user",
 			"user_token",
@@ -91,7 +95,7 @@ func doSync() {
 		_, err := DBUtil.DBConn.Exec("delete from sql_log where source = ? and id < ?", info.Url, aopId)
 		if err != nil {
 			info.State = 2
-			info.Msg = fmt.Sprintf("%q", err)
+			info.Msg = err.Error()
 			return
 		}
 
@@ -105,10 +109,15 @@ func doSync() {
 /**
  * 循环同步数据，直到包数据同步完成
  */
-func loopSync(info bean.SyncServerInfo, tbName string, lastId int64, aopId int64) {
+func loopSync(info *bean.SyncServerInfo, tbName string, lastId int64, aopId int64) {
 
 	//通过表名从主机端获取某个断面以后的id列表
-	masterIds := getTableId(info, tbName, lastId, aopId)
+	masterIds, masterIdsErr := getTableId(info, tbName, lastId, aopId)
+	if masterIdsErr != nil {
+		info.State = 2
+		info.Msg = masterIdsErr.Error()
+		return
+	}
 	if masterIds == "" { //同步主机端的数据已经全部取完
 		return
 	}
@@ -131,10 +140,15 @@ func loopSync(info bean.SyncServerInfo, tbName string, lastId int64, aopId int64
 	}
 
 	//得到需要同步的数据
-	data := getTableData(info, tbName, needSyncIds)
+	tableData, tableDataErr := getTableData(info, tbName, needSyncIds)
+	if tableDataErr != nil {
+		info.State = 2
+		info.Msg = "获取表数据失败：" + masterIdsErr.Error()
+		return
+	}
 
 	dataList := make([]map[string]any, 0)
-	json.Unmarshal([]byte(data), &dataList)
+	json.Unmarshal(tableData, &dataList)
 
 	//插入数据
 	insertData(info, tbName, dataList)
@@ -151,11 +165,14 @@ func loopSync(info bean.SyncServerInfo, tbName string, lastId int64, aopId int64
  * 获取一个断面ID，防止再全量同步的过程中，主机又增加数据，导致全量同步数据不完整
  * 其实就是服务器端的时间戳
  */
-func getAopId(info bean.SyncServerInfo) int64 {
+func getAopId(info *bean.SyncServerInfo) (int64, error) {
 	url := info.Url + "/get_aop_id"
-	aopIdStr := SyncHttp.Request(url)
-	aopId, _ := strconv.ParseInt(aopIdStr, 10, 64)
-	return aopId
+	data, err := SyncHttp.Request(url)
+	if err != nil {
+		return 0, err
+	}
+	aopId, _ := strconv.ParseInt(string(data), 10, 64)
+	return aopId, nil
 }
 
 /**
@@ -165,10 +182,13 @@ func getAopId(info bean.SyncServerInfo) int64 {
  * @param lastId 上次获取到的最后一个id
  * @param aopId 本次同步的服务器端的最大id
  */
-func getTableId(info bean.SyncServerInfo, tbName string, lastId int64, aopId int64) string {
-	url1 := info.Url + "/get_table_id?tbName=" + tbName + "&lastId=" + String.ValueOf(lastId) + "&aopId=" + String.ValueOf(aopId)
-	ids := SyncHttp.Request(url1)
-	return ids
+func getTableId(info *bean.SyncServerInfo, tbName string, lastId int64, aopId int64) (string, error) {
+	url := info.Url + "/get_table_id?tbName=" + tbName + "&lastId=" + String.ValueOf(lastId) + "&aopId=" + String.ValueOf(aopId)
+	data, err := SyncHttp.Request(url)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
 }
 
 /**
@@ -197,16 +217,15 @@ func filterNotExistsId(tbName string, ids string) string {
 /**
  * 从同步主机端取数据
  */
-func getTableData(info bean.SyncServerInfo, tbName string, ids string) string {
+func getTableData(info *bean.SyncServerInfo, tbName string, ids string) ([]byte, error) {
 	url := info.Url + "/get_table_data?tbName=" + tbName + "&ids=" + ids
-	data := SyncHttp.Request(url)
-	return data
+	return SyncHttp.Request(url)
 }
 
 /**
  * 同步主机数据
  */
-func insertData(info bean.SyncServerInfo, tbName string, dataList []map[string]any) {
+func insertData(info *bean.SyncServerInfo, tbName string, dataList []map[string]any) {
 	//data.forEach { item ->
 	//    item as ObjectNode
 	//    when (tbName) {
