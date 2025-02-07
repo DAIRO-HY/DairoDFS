@@ -90,13 +90,13 @@ func Download(info bean.SyncServerInfo, md5 string, retryTimes int) (string, err
 	defer file.Close()
 	for {
 		n, readErr := res.Body.Read(cache)
-		if readErr == io.EOF { //数据已经读取完毕
-			break
-		}
 		if n > 0 {
 			downloadedSize += int64(n)
 			file.Write(cache[:n])
 			info.Msg = "正在同步文件：" + String.ValueOf(downloadedSize) + "(${downloadedSize.toDataSize})/${total.toDataSize}"
+		}
+		if readErr == io.EOF { //数据已经读取完毕
+			break
 		}
 	}
 	saveFileInfo, err = os.Stat(savePath)

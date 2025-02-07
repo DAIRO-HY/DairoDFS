@@ -86,6 +86,14 @@ func startWebServer(port int) {
 			return
 		}
 		var body any = nil
+		if !inerceptor.StartTransaction(writer, request) {
+
+			// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.HtmlInterceptor(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			return
+		}
 		if !inerceptor.LoginValidate(writer, request) {
 
 			// 始终都要执行后的操作
@@ -107,6 +115,14 @@ func startWebServer(port int) {
 			return
 		}
 		var body any = nil
+		if !inerceptor.StartTransaction(writer, request) {
+
+			// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.HtmlInterceptor(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			return
+		}
 		if !inerceptor.LoginValidate(writer, request) {
 
 			// 始终都要执行后的操作
@@ -128,6 +144,13 @@ func startWebServer(port int) {
 			return
 		}
 		var body any = nil
+		if !inerceptor.StartTransaction(writer, request) {
+
+			// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			return
+		}
 		if !inerceptor.LoginValidate(writer, request) {
 
 			// 始终都要执行后的操作
@@ -158,6 +181,14 @@ func startWebServer(port int) {
 			return
 		}
 		var body any = nil
+		if !inerceptor.StartTransaction(writer, request) {
+
+			// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.HtmlInterceptor(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			return
+		}
 		if !inerceptor.LoginValidate(writer, request) {
 
 			// 始终都要执行后的操作
@@ -170,7 +201,7 @@ func startWebServer(port int) {
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.HtmlInterceptor(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-		writeToTemplate(writer, body, "resources/templates/app/files.html", "resources/templates/app/include/files/files_upload.html", "resources/templates/app/include/files_list.html", "resources/templates/app/include/files/files_right_option.html", "resources/templates/app/include/files/files_share.html", "resources/templates/app/include/share_detail_dialog.html", "resources/templates/app/include/file_property_dialog.html", "resources/templates/app/include/top-bar.html", "resources/templates/app/include/files/files_toolbar.html", "resources/templates/app/include/head.html")
+		writeToTemplate(writer, body, "resources/templates/app/files.html", "resources/templates/app/include/head.html", "resources/templates/app/include/top-bar.html", "resources/templates/app/include/files/files_upload.html", "resources/templates/app/include/files_list.html", "resources/templates/app/include/files/files_right_option.html", "resources/templates/app/include/file_property_dialog.html", "resources/templates/app/include/files/files_toolbar.html", "resources/templates/app/include/files/files_share.html", "resources/templates/app/include/share_detail_dialog.html")
 	})
 	http.HandleFunc("/app/files/get_list", func(writer http.ResponseWriter, request *http.Request) {
 		if request.Method != "POST" {
@@ -179,6 +210,13 @@ func startWebServer(port int) {
 			return
 		}
 		var body any = nil
+		if !inerceptor.StartTransaction(writer, request) {
+
+			// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			return
+		}
 		if !inerceptor.LoginValidate(writer, request) {
 
 			// 始终都要执行后的操作
@@ -204,6 +242,13 @@ func startWebServer(port int) {
 			return
 		}
 		var body any = nil
+		if !inerceptor.StartTransaction(writer, request) {
+
+			// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			return
+		}
 		if !inerceptor.LoginValidate(writer, request) {
 
 			// 始终都要执行后的操作
@@ -229,6 +274,13 @@ func startWebServer(port int) {
 			return
 		}
 		var body any = nil
+		if !inerceptor.StartTransaction(writer, request) {
+
+			// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			return
+		}
 		if !inerceptor.LoginValidate(writer, request) {
 
 			// 始终都要执行后的操作
@@ -254,6 +306,13 @@ func startWebServer(port int) {
 			return
 		}
 		var body any = nil
+		if !inerceptor.StartTransaction(writer, request) {
+
+			// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			return
+		}
 		if !inerceptor.LoginValidate(writer, request) {
 
 			// 始终都要执行后的操作
@@ -284,6 +343,13 @@ func startWebServer(port int) {
 			return
 		}
 		var body any = nil
+		if !inerceptor.StartTransaction(writer, request) {
+
+			// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			return
+		}
 		if !inerceptor.LoginValidate(writer, request) {
 
 			// 始终都要执行后的操作
@@ -319,6 +385,13 @@ func startWebServer(port int) {
 			return
 		}
 		var body any = nil
+		if !inerceptor.StartTransaction(writer, request) {
+
+			// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			return
+		}
 		if !inerceptor.LoginValidate(writer, request) {
 
 			// 始终都要执行后的操作
@@ -354,6 +427,13 @@ func startWebServer(port int) {
 			return
 		}
 		var body any = nil
+		if !inerceptor.StartTransaction(writer, request) {
+
+			// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			return
+		}
 		if !inerceptor.LoginValidate(writer, request) {
 
 			// 始终都要执行后的操作
@@ -414,6 +494,13 @@ func startWebServer(port int) {
 			return
 		}
 		var body any = nil
+		if !inerceptor.StartTransaction(writer, request) {
+
+			// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			return
+		}
 		if !inerceptor.LoginValidate(writer, request) {
 
 			// 始终都要执行后的操作
@@ -439,6 +526,13 @@ func startWebServer(port int) {
 			return
 		}
 		var body any = nil
+		if !inerceptor.StartTransaction(writer, request) {
+
+			// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			return
+		}
 		if !inerceptor.LoginValidate(writer, request) {
 
 			// 始终都要执行后的操作
@@ -469,6 +563,13 @@ func startWebServer(port int) {
 			return
 		}
 		var body any = nil
+		if !inerceptor.StartTransaction(writer, request) {
+
+			// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			return
+		}
 		if !inerceptor.LoginValidate(writer, request) {
 
 			// 始终都要执行后的操作
@@ -494,6 +595,13 @@ func startWebServer(port int) {
 			return
 		}
 		var body any = nil
+		if !inerceptor.StartTransaction(writer, request) {
+
+			// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			return
+		}
 		if !inerceptor.LoginValidate(writer, request) {
 
 			// 始终都要执行后的操作
@@ -545,6 +653,13 @@ func startWebServer(port int) {
 			return
 		}
 		var body any = nil
+		if !inerceptor.StartTransaction(writer, request) {
+
+			// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			return
+		}
 		if !inerceptor.LoginValidate(writer, request) {
 
 			// 始终都要执行后的操作
@@ -559,6 +674,13 @@ func startWebServer(port int) {
 	})
 	http.HandleFunc("/app/files/thumb/", func(writer http.ResponseWriter, request *http.Request) {
 		var body any = nil
+		if !inerceptor.StartTransaction(writer, request) {
+
+			// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			return
+		}
 		if !inerceptor.LoginValidate(writer, request) {
 
 			// 始终都要执行后的操作
@@ -603,6 +725,13 @@ func startWebServer(port int) {
 			return
 		}
 		var body any = nil
+		if !inerceptor.StartTransaction(writer, request) {
+
+			// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			return
+		}
 		controllerappinstallcreateadmin.Init(writer, request)
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
@@ -615,6 +744,13 @@ func startWebServer(port int) {
 			return
 		}
 		var body any = nil
+		if !inerceptor.StartTransaction(writer, request) {
+
+			// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			return
+		}
 		requestFormData := getRequestFormData(request) //获取表单数据
 		inForm := controllerappinstallcreateadminform.CreateAdminForm{}
 		inFormName := getStringArray(requestFormData, "name")
@@ -639,6 +775,14 @@ func startWebServer(port int) {
 			return
 		}
 		var body any = nil
+		if !inerceptor.StartTransaction(writer, request) {
+
+			// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.HtmlInterceptor(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			return
+		}
 		controllerappinstallffmpeg.Html()
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.HtmlInterceptor(writer, request, body)
@@ -652,6 +796,13 @@ func startWebServer(port int) {
 			return
 		}
 		var body any = nil
+		if !inerceptor.StartTransaction(writer, request) {
+
+			// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			return
+		}
 		controllerappinstallffmpeg.Recycle()
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
@@ -664,6 +815,13 @@ func startWebServer(port int) {
 			return
 		}
 		var body any = nil
+		if !inerceptor.StartTransaction(writer, request) {
+
+			// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			return
+		}
 		controllerappinstallffmpeg.Install()
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
@@ -671,6 +829,13 @@ func startWebServer(port int) {
 	})
 	http.HandleFunc("/app/install/ffmpeg/progress", func(writer http.ResponseWriter, request *http.Request) {
 		var body any = nil
+		if !inerceptor.StartTransaction(writer, request) {
+
+			// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			return
+		}
 		controllerappinstallffmpeg.Progress(writer, request)
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
@@ -683,6 +848,14 @@ func startWebServer(port int) {
 			return
 		}
 		var body any = nil
+		if !inerceptor.StartTransaction(writer, request) {
+
+			// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.HtmlInterceptor(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			return
+		}
 		controllerappinstallffprobe.Html()
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.HtmlInterceptor(writer, request, body)
@@ -696,6 +869,13 @@ func startWebServer(port int) {
 			return
 		}
 		var body any = nil
+		if !inerceptor.StartTransaction(writer, request) {
+
+			// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			return
+		}
 		controllerappinstallffprobe.Recycle()
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
@@ -708,6 +888,13 @@ func startWebServer(port int) {
 			return
 		}
 		var body any = nil
+		if !inerceptor.StartTransaction(writer, request) {
+
+			// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			return
+		}
 		controllerappinstallffprobe.Install()
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
@@ -715,6 +902,13 @@ func startWebServer(port int) {
 	})
 	http.HandleFunc("/app/install/ffprobe/progress", func(writer http.ResponseWriter, request *http.Request) {
 		var body any = nil
+		if !inerceptor.StartTransaction(writer, request) {
+
+			// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			return
+		}
 		controllerappinstallffprobe.Progress(writer, request)
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
@@ -727,6 +921,14 @@ func startWebServer(port int) {
 			return
 		}
 		var body any = nil
+		if !inerceptor.StartTransaction(writer, request) {
+
+			// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.HtmlInterceptor(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			return
+		}
 		controllerappinstalllibraw.Html()
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.HtmlInterceptor(writer, request, body)
@@ -740,6 +942,13 @@ func startWebServer(port int) {
 			return
 		}
 		var body any = nil
+		if !inerceptor.StartTransaction(writer, request) {
+
+			// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			return
+		}
 		controllerappinstalllibraw.Recycle()
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
@@ -752,6 +961,13 @@ func startWebServer(port int) {
 			return
 		}
 		var body any = nil
+		if !inerceptor.StartTransaction(writer, request) {
+
+			// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			return
+		}
 		controllerappinstalllibraw.Install()
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
@@ -759,6 +975,13 @@ func startWebServer(port int) {
 	})
 	http.HandleFunc("/app/install/libraw/progress", func(writer http.ResponseWriter, request *http.Request) {
 		var body any = nil
+		if !inerceptor.StartTransaction(writer, request) {
+
+			// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			return
+		}
 		controllerappinstalllibraw.Progress(writer, request)
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
@@ -771,6 +994,14 @@ func startWebServer(port int) {
 			return
 		}
 		var body any = nil
+		if !inerceptor.StartTransaction(writer, request) {
+
+			// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.HtmlInterceptor(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			return
+		}
 		controllerapplogin.Init(writer, request)
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.HtmlInterceptor(writer, request, body)
@@ -784,6 +1015,13 @@ func startWebServer(port int) {
 			return
 		}
 		var body any = nil
+		if !inerceptor.StartTransaction(writer, request) {
+
+			// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			return
+		}
 		requestFormData := getRequestFormData(request) //获取表单数据
 
 		// 记录表单验证错误信息
@@ -844,6 +1082,13 @@ func startWebServer(port int) {
 			return
 		}
 		var body any = nil
+		if !inerceptor.StartTransaction(writer, request) {
+
+			// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			return
+		}
 		controllerapplogin.Logout(request)
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
@@ -856,6 +1101,14 @@ func startWebServer(port int) {
 			return
 		}
 		var body any = nil
+		if !inerceptor.StartTransaction(writer, request) {
+
+			// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.HtmlInterceptor(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			return
+		}
 		if !inerceptor.LoginValidate(writer, request) {
 
 			// 始终都要执行后的操作
@@ -877,6 +1130,13 @@ func startWebServer(port int) {
 			return
 		}
 		var body any = nil
+		if !inerceptor.StartTransaction(writer, request) {
+
+			// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			return
+		}
 		if !inerceptor.LoginValidate(writer, request) {
 
 			// 始终都要执行后的操作
@@ -927,6 +1187,14 @@ func startWebServer(port int) {
 			return
 		}
 		var body any = nil
+		if !inerceptor.StartTransaction(writer, request) {
+
+			// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.HtmlInterceptor(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			return
+		}
 		if !inerceptor.LoginValidate(writer, request) {
 
 			// 始终都要执行后的操作
@@ -939,7 +1207,7 @@ func startWebServer(port int) {
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.HtmlInterceptor(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-		writeToTemplate(writer, body, "resources/templates/app/my_share.html", "resources/templates/app/include/top-bar.html", "resources/templates/app/include/share_detail_dialog.html", "resources/templates/app/include/head.html")
+		writeToTemplate(writer, body, "resources/templates/app/my_share.html", "resources/templates/app/include/head.html", "resources/templates/app/include/top-bar.html", "resources/templates/app/include/share_detail_dialog.html")
 	})
 	http.HandleFunc("/app/my_share/get_list", func(writer http.ResponseWriter, request *http.Request) {
 		if request.Method != "POST" {
@@ -948,6 +1216,13 @@ func startWebServer(port int) {
 			return
 		}
 		var body any = nil
+		if !inerceptor.StartTransaction(writer, request) {
+
+			// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			return
+		}
 		if !inerceptor.LoginValidate(writer, request) {
 
 			// 始终都要执行后的操作
@@ -967,6 +1242,13 @@ func startWebServer(port int) {
 			return
 		}
 		var body any = nil
+		if !inerceptor.StartTransaction(writer, request) {
+
+			// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			return
+		}
 		if !inerceptor.LoginValidate(writer, request) {
 
 			// 始终都要执行后的操作
@@ -992,6 +1274,13 @@ func startWebServer(port int) {
 			return
 		}
 		var body any = nil
+		if !inerceptor.StartTransaction(writer, request) {
+
+			// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			return
+		}
 		if !inerceptor.LoginValidate(writer, request) {
 
 			// 始终都要执行后的操作
@@ -1017,6 +1306,14 @@ func startWebServer(port int) {
 			return
 		}
 		var body any = nil
+		if !inerceptor.StartTransaction(writer, request) {
+
+			// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.HtmlInterceptor(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			return
+		}
 		if !inerceptor.LoginValidate(writer, request) {
 
 			// 始终都要执行后的操作
@@ -1038,6 +1335,13 @@ func startWebServer(port int) {
 			return
 		}
 		var body any = nil
+		if !inerceptor.StartTransaction(writer, request) {
+
+			// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			return
+		}
 		if !inerceptor.LoginValidate(writer, request) {
 
 			// 始终都要执行后的操作
@@ -1057,6 +1361,13 @@ func startWebServer(port int) {
 			return
 		}
 		var body any = nil
+		if !inerceptor.StartTransaction(writer, request) {
+
+			// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			return
+		}
 		if !inerceptor.LoginValidate(writer, request) {
 
 			// 始终都要执行后的操作
@@ -1126,6 +1437,13 @@ func startWebServer(port int) {
 			return
 		}
 		var body any = nil
+		if !inerceptor.StartTransaction(writer, request) {
+
+			// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			return
+		}
 		if !inerceptor.LoginValidate(writer, request) {
 
 			// 始终都要执行后的操作
@@ -1145,6 +1463,14 @@ func startWebServer(port int) {
 			return
 		}
 		var body any = nil
+		if !inerceptor.StartTransaction(writer, request) {
+
+			// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.HtmlInterceptor(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			return
+		}
 		if !inerceptor.LoginValidate(writer, request) {
 
 			// 始终都要执行后的操作
@@ -1166,6 +1492,13 @@ func startWebServer(port int) {
 			return
 		}
 		var body any = nil
+		if !inerceptor.StartTransaction(writer, request) {
+
+			// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			return
+		}
 		if !inerceptor.LoginValidate(writer, request) {
 
 			// 始终都要执行后的操作
@@ -1185,6 +1518,13 @@ func startWebServer(port int) {
 			return
 		}
 		var body any = nil
+		if !inerceptor.StartTransaction(writer, request) {
+
+			// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			return
+		}
 		if !inerceptor.LoginValidate(writer, request) {
 
 			// 始终都要执行后的操作
@@ -1210,6 +1550,13 @@ func startWebServer(port int) {
 			return
 		}
 		var body any = nil
+		if !inerceptor.StartTransaction(writer, request) {
+
+			// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			return
+		}
 		if !inerceptor.LoginValidate(writer, request) {
 
 			// 始终都要执行后的操作
@@ -1235,6 +1582,13 @@ func startWebServer(port int) {
 			return
 		}
 		var body any = nil
+		if !inerceptor.StartTransaction(writer, request) {
+
+			// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			return
+		}
 		if !inerceptor.LoginValidate(writer, request) {
 
 			// 始终都要执行后的操作
@@ -1260,6 +1614,14 @@ func startWebServer(port int) {
 			return
 		}
 		var body any = nil
+		if !inerceptor.StartTransaction(writer, request) {
+
+			// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.HtmlInterceptor(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			return
+		}
 		if !inerceptor.LoginValidate(writer, request) {
 
 			// 始终都要执行后的操作
@@ -1281,6 +1643,13 @@ func startWebServer(port int) {
 			return
 		}
 		var body any = nil
+		if !inerceptor.StartTransaction(writer, request) {
+
+			// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			return
+		}
 		if !inerceptor.LoginValidate(writer, request) {
 
 			// 始终都要执行后的操作
@@ -1300,6 +1669,13 @@ func startWebServer(port int) {
 			return
 		}
 		var body any = nil
+		if !inerceptor.StartTransaction(writer, request) {
+
+			// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			return
+		}
 		if !inerceptor.LoginValidate(writer, request) {
 
 			// 始终都要执行后的操作
@@ -1319,6 +1695,13 @@ func startWebServer(port int) {
 			return
 		}
 		var body any = nil
+		if !inerceptor.StartTransaction(writer, request) {
+
+			// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			return
+		}
 		if !inerceptor.LoginValidate(writer, request) {
 
 			// 始终都要执行后的操作
@@ -1338,6 +1721,14 @@ func startWebServer(port int) {
 			return
 		}
 		var body any = nil
+		if !inerceptor.StartTransaction(writer, request) {
+
+			// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.HtmlInterceptor(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			return
+		}
 		if !inerceptor.LoginValidate(writer, request) {
 
 			// 始终都要执行后的操作
@@ -1359,6 +1750,13 @@ func startWebServer(port int) {
 			return
 		}
 		var body any = nil
+		if !inerceptor.StartTransaction(writer, request) {
+
+			// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			return
+		}
 		if !inerceptor.LoginValidate(writer, request) {
 
 			// 始终都要执行后的操作
@@ -1378,6 +1776,13 @@ func startWebServer(port int) {
 			return
 		}
 		var body any = nil
+		if !inerceptor.StartTransaction(writer, request) {
+
+			// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			return
+		}
 		if !inerceptor.LoginValidate(writer, request) {
 
 			// 始终都要执行后的操作
@@ -1403,6 +1808,13 @@ func startWebServer(port int) {
 			return
 		}
 		var body any = nil
+		if !inerceptor.StartTransaction(writer, request) {
+
+			// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			return
+		}
 		if !inerceptor.LoginValidate(writer, request) {
 
 			// 始终都要执行后的操作
@@ -1428,6 +1840,13 @@ func startWebServer(port int) {
 			return
 		}
 		var body any = nil
+		if !inerceptor.StartTransaction(writer, request) {
+
+			// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			return
+		}
 		if !inerceptor.LoginValidate(writer, request) {
 
 			// 始终都要执行后的操作
@@ -1447,6 +1866,14 @@ func startWebServer(port int) {
 			return
 		}
 		var body any = nil
+		if !inerceptor.StartTransaction(writer, request) {
+
+			// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.HtmlInterceptor(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			return
+		}
 		if !inerceptor.LoginValidate(writer, request) {
 
 			// 始终都要执行后的操作
@@ -1459,7 +1886,7 @@ func startWebServer(port int) {
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.HtmlInterceptor(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-		writeToTemplate(writer, body, "resources/templates/app/user_edit.html", "resources/templates/app/include/head.html", "resources/templates/app/include/top-bar.html")
+		writeToTemplate(writer, body, "resources/templates/app/user_edit.html", "resources/templates/app/include/top-bar.html", "resources/templates/app/include/head.html")
 	})
 	http.HandleFunc("/app/user_edit/init", func(writer http.ResponseWriter, request *http.Request) {
 		if request.Method != "POST" {
@@ -1468,6 +1895,13 @@ func startWebServer(port int) {
 			return
 		}
 		var body any = nil
+		if !inerceptor.StartTransaction(writer, request) {
+
+			// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			return
+		}
 		if !inerceptor.LoginValidate(writer, request) {
 
 			// 始终都要执行后的操作
@@ -1493,6 +1927,13 @@ func startWebServer(port int) {
 			return
 		}
 		var body any = nil
+		if !inerceptor.StartTransaction(writer, request) {
+
+			// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			return
+		}
 		if !inerceptor.LoginValidate(writer, request) {
 
 			// 始终都要执行后的操作
@@ -1572,6 +2013,14 @@ func startWebServer(port int) {
 			return
 		}
 		var body any = nil
+		if !inerceptor.StartTransaction(writer, request) {
+
+			// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.HtmlInterceptor(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			return
+		}
 		if !inerceptor.LoginValidate(writer, request) {
 
 			// 始终都要执行后的操作
@@ -1593,6 +2042,13 @@ func startWebServer(port int) {
 			return
 		}
 		var body any = nil
+		if !inerceptor.StartTransaction(writer, request) {
+
+			// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			return
+		}
 		if !inerceptor.LoginValidate(writer, request) {
 
 			// 始终都要执行后的操作
@@ -1605,14 +2061,14 @@ func startWebServer(port int) {
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 		writeToResponse(writer, body)
 	})
-	http.HandleFunc("/distributed/", func(writer http.ResponseWriter, request *http.Request) {
+	http.HandleFunc("/distributed/listen/", func(writer http.ResponseWriter, request *http.Request) {
 		if request.Method != "GET" {
 			writer.WriteHeader(http.StatusMethodNotAllowed) // 设置状态码
 			writer.Write([]byte("Method Not Allowed"))
 			return
 		}
 		var body any = nil
-		if !inerceptor.LoginValidate(writer, request) {
+		if !inerceptor.StartTransaction(writer, request) {
 
 			// 始终都要执行后的操作
 			body = inerceptor.Commit(writer, request, body)
@@ -1627,13 +2083,9 @@ func startWebServer(port int) {
 		}
 
 		pathVariables := make([]string, 0)
-		varPath := request.URL.Path[13:]
-		pathVariableSplitArr := []string{"", "/listen"}
+		varPath := request.URL.Path[20:]
+		pathVariableSplitArr := []string{"", ""}
 
-		if !strings.HasSuffix(varPath, "/listen") { //如果不是以指定的字符串结尾
-			writer.WriteHeader(http.StatusNotFound)
-			return
-		}
 		for i := 0; i < len(pathVariableSplitArr)-1; i++ {
 			varPath = varPath[len(pathVariableSplitArr[i]):]
 			if pathVariableSplitArr[i+1] == "" { //这已经是最后一个参数了
@@ -1649,14 +2101,14 @@ func startWebServer(port int) {
 			}
 		}
 		clientToken := pathVariables[0]
-		controllerdistributed.Listen(writer, request, clientToken, lastId)
+		controllerdistributed.Listen(writer, clientToken, lastId)
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 		writeToResponse(writer, body)
 	})
 	http.HandleFunc("/distributed/get_log", func(writer http.ResponseWriter, request *http.Request) {
 		var body any = nil
-		if !inerceptor.LoginValidate(writer, request) {
+		if !inerceptor.StartTransaction(writer, request) {
 
 			// 始终都要执行后的操作
 			body = inerceptor.Commit(writer, request, body)
@@ -1676,7 +2128,7 @@ func startWebServer(port int) {
 	})
 	http.HandleFunc("/distributed/get_aop_id", func(writer http.ResponseWriter, request *http.Request) {
 		var body any = nil
-		if !inerceptor.LoginValidate(writer, request) {
+		if !inerceptor.StartTransaction(writer, request) {
 
 			// 始终都要执行后的操作
 			body = inerceptor.Commit(writer, request, body)
@@ -1690,7 +2142,7 @@ func startWebServer(port int) {
 	})
 	http.HandleFunc("/distributed/get_table_id", func(writer http.ResponseWriter, request *http.Request) {
 		var body any = nil
-		if !inerceptor.LoginValidate(writer, request) {
+		if !inerceptor.StartTransaction(writer, request) {
 
 			// 始终都要执行后的操作
 			body = inerceptor.Commit(writer, request, body)
@@ -1720,7 +2172,7 @@ func startWebServer(port int) {
 	})
 	http.HandleFunc("/distributed/get_table_data", func(writer http.ResponseWriter, request *http.Request) {
 		var body any = nil
-		if !inerceptor.LoginValidate(writer, request) {
+		if !inerceptor.StartTransaction(writer, request) {
 
 			// 始终都要执行后的操作
 			body = inerceptor.Commit(writer, request, body)
@@ -1745,7 +2197,7 @@ func startWebServer(port int) {
 	})
 	http.HandleFunc("/distributed/download/", func(writer http.ResponseWriter, request *http.Request) {
 		var body any = nil
-		if !inerceptor.LoginValidate(writer, request) {
+		if !inerceptor.StartTransaction(writer, request) {
 
 			// 始终都要执行后的操作
 			body = inerceptor.Commit(writer, request, body)

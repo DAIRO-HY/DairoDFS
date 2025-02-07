@@ -1,7 +1,7 @@
 package inerceptor
 
 import (
-	"DairoDFS/util/DBUtil"
+	"DairoDFS/util/DBConnection"
 	"net/http"
 )
 
@@ -10,6 +10,6 @@ import (
 // @include:**
 // @order:999999997
 func Commit(writer http.ResponseWriter, request *http.Request, body any) any {
-	DBUtil.Commit()
+	DBConnection.Commit()
 	return body
 }

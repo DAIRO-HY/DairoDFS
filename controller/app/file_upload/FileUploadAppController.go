@@ -5,6 +5,7 @@ import (
 	"DairoDFS/extension/File"
 	"DairoDFS/extension/String"
 	"DairoDFS/service/DfsFileService"
+	"DairoDFS/util/DBConnection"
 	"DairoDFS/util/DfsFileHandleUtil"
 	"DairoDFS/util/DfsFileUtil"
 	"DairoDFS/util/LoginState"
@@ -59,9 +60,8 @@ func Upload(request *http.Request, folder string, contentType string) error {
 		return addErr
 	}
 
-	//@TODO:待实现
-	////开启生成缩略图线程
-	//DfsFileHandleUtil.start()
+	//立即提交事务，否则可能导致文件处理任务获取不到数据
+	DBConnection.Commit()
 	DfsFileHandleUtil.NotifyWorker()
 	return nil
 }

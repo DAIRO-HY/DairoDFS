@@ -299,3 +299,12 @@ func TestUniqueName(t *testing.T) {
 	fmt.Println(count)
 	//Commit()
 }
+
+/**
+ * 添加一条数据
+ * @param dto 用户信息
+ */
+func TestSelectOne2(t *testing.T) {
+	count, _ := SelectSingleOne[int64]("select pwd from user")
+	fmt.Println(count)
+}

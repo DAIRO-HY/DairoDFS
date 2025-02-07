@@ -19,6 +19,9 @@ const _START_KEY = "START_KEY"
 // 事务数据库协程本地变量
 const _TRANSACTION_KEY = "DB"
 
+// 事务数据库协程本地变量
+const _AUTO_COMMIT_KEY = "AUTO_COMMIT_KEY"
+
 // sqlite数据库连接对象
 var DBConn *sql.DB
 
@@ -79,6 +82,27 @@ func getConnection() any {
 	return createTx
 }
 
+// 设置提交事务方式
+// flag ture：自动提交 false：手动提交
+func SetAutoCommit(flag bool) {
+	_, isExists := GoroutineLocal.Get(_AUTO_COMMIT_KEY)
+	if flag {
+		if isExists {
+			GoroutineLocal.Remove(_AUTO_COMMIT_KEY)
+		}
+	} else {
+		if !isExists {
+			GoroutineLocal.Set(_AUTO_COMMIT_KEY, struct{}{})
+		}
+	}
+}
+
+// 是否自动提交事务
+func IsAutoCommit() bool {
+	_, isExists := GoroutineLocal.Get(_AUTO_COMMIT_KEY)
+	return !isExists
+}
+
 // 开始事务
 func StartTransaction() {
 	_, isExists := GoroutineLocal.Get(_START_KEY)
@@ -93,8 +117,8 @@ func Commit() {
 	value, isExists := GoroutineLocal.Get(_TRANSACTION_KEY)
 	if isExists {
 		tx := value.(*sql.Tx)
-		DBSqlLog.SaveLog(tx)
 		tx.Commit()
+		DBSqlLog.Push(DBConn)
 		DBSqlLog.Clear()
 		GoroutineLocal.Remove(_TRANSACTION_KEY)
 	}
@@ -114,11 +138,29 @@ func Rollback() {
 
 // 执行写数据操作
 func Write(query string, args ...any) (sql.Result, error) {
+	isAutoCommit := IsAutoCommit()
+	if !isAutoCommit { //手动提交表单的话，在开启事务
+		StartTransaction()
+	}
 	switch value := getConnection().(type) {
 	case *sql.DB:
-		return value.Exec(query, args...)
+		r, e := value.Exec(query, args...)
+		if e == nil { //保存执行的sql
+			DBSqlLog.Add(query, args)
+			if isAutoCommit { //自动提交事务时，需要手动将数据保存到DB
+				DBSqlLog.Push(DBConn)
+			}
+		}
+		return r, e
 	case *sql.Tx:
-		return value.Exec(query, args...)
+		r, e := value.Exec(query, args...)
+		if e == nil { //保存执行的sql
+			DBSqlLog.Add(query, args)
+			if isAutoCommit { //自动提交事务时，需要手动将数据保存到DB
+				DBSqlLog.Push(DBConn)
+			}
+		}
+		return r, e
 	default:
 		return nil, nil
 	}

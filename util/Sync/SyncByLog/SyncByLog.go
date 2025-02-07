@@ -2,16 +2,19 @@ package SyncByLog
 
 import (
 	"DairoDFS/application"
+	"DairoDFS/controller/distributed"
 	"DairoDFS/dao/SqlLogDao"
 	"DairoDFS/dao/dto"
 	"DairoDFS/extension/String"
-	"DairoDFS/util/DBUtil"
-	"DairoDFS/util/Sync/SyncByTable"
+	"DairoDFS/util/DBConnection"
 	"DairoDFS/util/Sync/SyncHandle"
 	"DairoDFS/util/Sync/SyncHttp"
 	"DairoDFS/util/Sync/bean"
 	"encoding/json"
 	"fmt"
+	"io"
+	"net"
+	"net/http"
 	"os"
 	"strconv"
 	"strings"
@@ -104,71 +107,77 @@ var syncLastIdFilePath = application.DataPath + "/sync_last_id"
 //        listen(it)
 //    }
 //}
-//
-///**
-// * 监听服务端日志变化
-// */
-//private fun listen(info: SyncServerInfo) {
-//    thread {
-//        while (true) {
-//            sleep(1000)
-//            val http =
-//                URL(info.url + "/${SystemConfig.instance.token}/listen?lastId=" + this.getLastId(info)).openConnection() as HttpURLConnection
-//            http.readTimeout = DistributedController.KEEP_ALIVE_TIME + 10
-//            http.connectTimeout = 10000
-//
-//            val listenHttp = SyncLogListenHttpBean(http)
-//            this.waitingHttpList.add(listenHttp)
-//            try {
-//                http.connect()
-//                val iStream = http.inputStream
-//                iStream.use {
-//                    var tag: Int
-//                    while (it.read().also { tag = it } != -1) {
-//
-//                        //记录最有一次心跳时间
-//                        info.lastHeartTime = System.currentTimeMillis()
-//                        info.msg = "心跳检测中。"
-//                        this.syncSocket.send(info)
-//                        if (tag == 1) {//接收到的标记为1时，代表服务器端有新的日志
-//                            this.start()
-//                            break
-//                        }
-//                    }
-//                }
-//            } catch (e: Exception) {
-//                if (!listenHttp.isCanceled) {
-//                    //e.printStackTrace()
-//                    info.msg = "服务端心跳检查失败。"
-//                    this.syncSocket.send(info)
-//
-//                    //如果网络连接报错，则等待一段时间之后在恢复
-//                    sleep(10000)
-//                }
-//            } finally {
-//                http.disconnect()
-//            }
-//
-//            //每次同步完成之后都重新开启新的请求
-//            this.waitingHttpList.remove(listenHttp)
-//            if (listenHttp.isCanceled) {//如果已经被取消
-//                break
-//            }
-//            if (info.state == 2) {//如果同步发生了错误
-//                break
-//            }
-//        }
-//    }
-//}
+
+/**
+* 监听服务端日志变化
+ */
+func listen(info *bean.SyncServerInfo) {
+	loopFunc := func() bool {
+		transport := &http.Transport{
+			DialContext:           (&net.Dialer{Timeout: 3 * time.Second}).DialContext, //连接超时
+			ResponseHeaderTimeout: (distributed.KEEP_ALIVE_TIME + 10) * time.Second,    //读数据超时
+		}
+		client := &http.Client{Transport: transport}
+		url := info.Url + "/distributed/listen?lastId=" + String.ValueOf(getLastId(info))
+
+		// 创建HTTP GET请求
+		resp, err := client.Get(url)
+		if err != nil {
+			//fmt.Println("服务端心跳检查失败，间隔30秒之后会重试。错误：" + err.Error())
+			info.Msg = "服务端心跳检查失败，间隔30秒之后会重试。错误：" + err.Error()
+			time.Sleep(5 * time.Second)
+			return false
+		}
+		defer resp.Body.Close()
+		//if resp.StatusCode != http.StatusOK {
+		//	bodyData, _ := io.ReadAll(resp.Body)
+		//	info.Msg = "服务端心跳检查失败,Status:" + String.ValueOf(resp.StatusCode) + ",Body:" + string(bodyData) + "。错误：" + err.Error()
+		//	time.Sleep(30 * time.Second)
+		//	break
+		//}
+		buf := make([]byte, 1)
+		for {
+			n, readErr := resp.Body.Read(buf)
+			if n > 0 {
+
+				//记录最有一次心跳时间
+				info.LastHeartTime = time.Now().UnixMilli()
+				info.Msg = "心跳检测中。"
+				tag := buf[0]
+				if tag == 1 { //接收到的标记为1时，代表服务器端有新的日志
+					requestSqlLog(info)
+					break
+				}
+				continue
+			}
+			if readErr != nil {
+				if readErr != io.EOF {
+					info.Msg = "服务端心跳检查失败。" + readErr.Error()
+				}
+				break
+			}
+		}
+		if info.State == 2 { //如果同步发生了错误
+			return true
+		}
+		return false
+	}
+	for {
+		time.Sleep(3 * time.Second)
+		if loopFunc() {
+			break
+		}
+	}
+}
 
 /**
 * 启动执行
 * @param isForce 是否强制执行
  */
 func Start(isForce bool) {
-	if SyncByTable.IsRuning() { //全量同步正在进行中
-		return
-	}
+	//if SyncByTable.IsRuning() { //全量同步正在进行中 @TODO:应该判断全量同步是否正在进行中
+	//	return
+	//}
 	if mIsRuning { //并发防止
 		return
 	}
@@ -191,18 +200,24 @@ func Start(isForce bool) {
 	waitTimes = 0
 }
 
+var syncLock sync.Mutex
+
 // 循环取sql日志
 // @return 是否处理完成
 func requestSqlLog(info *bean.SyncServerInfo) {
 
+	//单线程同步
+	syncLock.Lock()
+
 	//得到最后请求的id
 	lastId := getLastId(info)
-	url := info.Url + "/get_log?lastId=" + String.ValueOf(lastId)
+	url := info.Url + "/distributed/get_log?lastId=" + String.ValueOf(lastId)
 	logData, err := SyncHttp.Request(url)
 	if err != nil {
 		info.State = 2 //标记为同步失败
 		info.Msg = err.Error()
 		//this.syncSocket.send(info)
+		syncLock.Unlock()
 		return
 	}
 	if string(logData) == "[]" { //已经没有sql日志
@@ -214,6 +229,7 @@ func requestSqlLog(info *bean.SyncServerInfo) {
 		info.Msg = ""
 		info.LastTime = time.Now().UnixMilli() //最后一次同步完成时间
 		//this.syncSocket.send(info)
+		syncLock.Unlock()
 		return
 	}
 	logList := make([]dto.SqlLogDto, 0)
@@ -227,6 +243,7 @@ func requestSqlLog(info *bean.SyncServerInfo) {
 	//执行日志sql
 	executeSqlLog(info)
 
+	syncLock.Unlock()
 	//递归调用，直到服务端日志同步完成
 	requestSqlLog(info)
 }
@@ -234,7 +251,7 @@ func requestSqlLog(info *bean.SyncServerInfo) {
 // 从主机请求到的日志保存到本地日志
 func addLog(info *bean.SyncServerInfo, dataList []dto.SqlLogDto) {
 	for _, it := range dataList {
-		_, err := DBUtil.DBConn.Exec("insert into sql_log(id,date,sql,param,state,source) values(?,?,?,?,?,?)",
+		_, err := DBConnection.DBConn.Exec("insert into sql_log(id,date,sql,param,state,source) values(?,?,?,?,?,?)",
 			it.Id, it.Date, it.Sql, it.Param, 0, info.Url)
 		if err != nil {
 			if strings.Contains(err.Error(), "UNIQUE constraint failed: sql_log.id") {
@@ -277,15 +294,15 @@ func executeSqlLog(info *bean.SyncServerInfo) {
 			afterSql = SyncHandle.HandleBySyncLog(info, paramtaList)
 		} else {
 		}
-		_, execSqlErr := DBUtil.DBConn.Exec(it.Sql, paramtaList...)
+		_, execSqlErr := DBConnection.DBConn.Exec(it.Sql, paramtaList...)
 		if execSqlErr != nil { //sql语句执行失败
-			DBUtil.DBConn.Exec("update sql_log set state = 2, err = ? where id = ?", execSqlErr.Error(), it.Id)
+			DBConnection.DBConn.Exec("update sql_log set state = 2, err = ? where id = ?", execSqlErr.Error(), it.Id)
 			return
 		}
 		if afterSql != "" {
-			DBUtil.DBConn.Exec(afterSql)
+			DBConnection.DBConn.Exec(afterSql)
 		}
-		DBUtil.DBConn.Exec("update sql_log set state = 1 where id = ?", it.Id)
+		DBConnection.DBConn.Exec("update sql_log set state = 1 where id = ?", it.Id)
 	}
 
 	//记录当前同步的数据条数

@@ -92,7 +92,7 @@ func doSync() {
 		}
 
 		//从日志数据表中删除当前已经同步成功的服务端日志
-		_, err := DBUtil.DBConn.Exec("delete from sql_log where source = ? and id < ?", info.Url, aopId)
+		_, err := DBConnection.DBConn.Exec("delete from sql_log where source = ? and id < ?", info.Url, aopId)
 		if err != nil {
 			info.State = 2
 			info.Msg = err.Error()

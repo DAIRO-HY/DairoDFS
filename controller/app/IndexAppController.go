@@ -1,7 +1,7 @@
 package app
 
 import (
-	"DairoDFS/util/DBUtil"
+	"DairoDFS/util/DBConnection"
 	"DairoDFS/util/GoroutineLocal"
 	"fmt"
 	"net/http"
@@ -30,10 +30,11 @@ func Home() {
 func Index() {
 
 	// 获取连接池统计信息
-	stats := DBUtil.DBConn.Stats()
+	stats := DBConnection.DBConn.Stats()
 	fmt.Printf("当前打开的连接数: %d      ", stats.OpenConnections)
 	fmt.Printf("正在使用的连接数: %d      ", stats.InUse)
 	fmt.Printf("空闲的连接数: %d\n", stats.Idle)
 	GoroutineLocal.Test()
 	runtime.GC()
+	//distributed.Test()
 }

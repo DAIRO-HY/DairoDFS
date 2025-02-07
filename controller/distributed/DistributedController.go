@@ -1,9 +1,11 @@
 package distributed
 
 import (
+	"DairoDFS/controller/distributed/DistributedPush"
 	"DairoDFS/dao/SqlLogDao"
 	"DairoDFS/extension/Number"
 	"net/http"
+	"sync"
 	"time"
 )
 
@@ -13,33 +15,13 @@ import (
 //@Group:/distributed
 
 /**
- * 长连接心跳间隔时间
+ * 长连接心跳间隔时间(秒)
  */
-const KEEP_ALIVE_TIME = 120 * 1000
+const KEEP_ALIVE_TIME = 120
 
-/**
- * 记录分机端的请求
- */
-var distributedClientResponseList = make(map[string]DistributedClientResponseBean)
-
-/**
- * 通知分机端同步
- */
-func push() {
-	for _, it := range distributedClientResponseList {
-		it.writer.Write([]byte{1})
-	}
-
-	////一定要将同步客户端response信息列表复制一份在进行通知，因为调用notifyAll()时，其他线程有可能移除对象，而HashSet不能边遍历边移除对象，这回导致报错
-	//this.distributedClientResponseList.map { it }.forEach {
-	//    synchronized(it) {
-	//
-	//        //标记为已经结束
-	//        it.isCancel = true
-	//        (it as Object).notifyAll()
-	//    }
-	//}
-}
+// 记录分机端的请求
+var waitingRequestMap = make(map[string]int64)
+var waitingRequestLock sync.Mutex
 
 /**
  * 分机端同步监听请求
@@ -47,35 +29,29 @@ func push() {
  * @param clientToken 分机端的票据
  * @param lastId 分机端同步到日志最大ID,用来解决分机端在判断是否最新日志的过程中,又有新的日志增加,虽然是小概率事件,但还是有发生的可能
  */
-//@Get:/{clientToken}/listen
-func Listen(writer http.ResponseWriter, request *http.Request, clientToken string, lastId int64) {
-	defer delete(distributedClientResponseList, clientToken)
-	preClient, isExists := distributedClientResponseList[clientToken]
-	if isExists {
-
-		//将上一个标记为已经结束
-		preClient.isCancel = true
-		//(preClient as Object).notifyAll()
-	}
-
-	//构建分机端同步response信息
-	responseBean := DistributedClientResponseBean{
-		clientToken: clientToken,
-		writer:      writer,
-	}
-
-	//添加新的等待
-	distributedClientResponseList[clientToken] = responseBean
+//@Get:/listen/{clientToken}
+func Listen(writer http.ResponseWriter, clientToken string, lastId int64) {
+	waitingRequestLock.Lock()
+	time.Sleep(1 * time.Microsecond) //确保每次生成的时间戳不一样
+	nowMicro := time.Now().UnixMicro()
+	waitingRequestMap[clientToken] = nowMicro //添加新的等待
+	waitingRequestLock.Unlock()
+	DistributedPush.Cond.Broadcast()
 	for {
 		if SqlLogDao.LastID() > lastId { //分机端数据并不是最新的,立即通知更新
 			writer.Write([]byte{1})
+			writer.(http.Flusher).Flush()
 			break
 		}
 
 		//间隔一段时间往客户端发送0，以保持长连接
-		writer.Write([]byte{1})
-		time.Sleep(KEEP_ALIVE_TIME * time.Millisecond)
-		if responseBean.isCancel {
+		writer.Write([]byte{0})
+		writer.(http.Flusher).Flush()
+		DistributedPush.Cond.L.Lock()
+		DistributedPush.Cond.Wait()
+		DistributedPush.Cond.L.Unlock()
+		existsMicro, isExists := waitingRequestMap[clientToken]
+		if !isExists || existsMicro != nowMicro { //已经被新的请求替代
 			break
 		}
 	}

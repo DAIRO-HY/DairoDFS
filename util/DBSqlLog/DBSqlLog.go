@@ -1,6 +1,7 @@
 package DBSqlLog
 
 import (
+	"DairoDFS/controller/distributed/DistributedPush"
 	"DairoDFS/dao/dto"
 	"DairoDFS/extension/Number"
 	"DairoDFS/util/GoroutineLocal"
@@ -32,8 +33,8 @@ func Add(sql string, param []any) {
 	*logList = append(*logList, logDto)
 }
 
-// 保存日志
-func SaveLog(tx *sql.Tx) {
+// 保存日志数据库
+func Push(db *sql.DB) {
 	value, isExists := GoroutineLocal.Get(_SQL_LOG_KEY)
 	if !isExists {
 		return
@@ -43,9 +44,13 @@ func SaveLog(tx *sql.Tx) {
 		return
 	}
 	for _, it := range *logList {
-		_, err := tx.Exec("insert into sql_log(id,sql,param,date,state,source) values(?,?,?,?,1,'0.0.0.0')", Number.ID(), it.Sql, it.Param, time.Now().UnixMilli())
+		_, err := db.Exec("insert into sql_log(id,sql,param,date,state,source) values(?,?,?,?,1,'0.0.0.0')", Number.ID(), it.Sql, it.Param, time.Now().UnixMilli())
 		LogUtil.Error2(err)
 	}
+
+	//保存完之后清空内容
+	*logList = []dto.SqlLogDto{}
+	DistributedPush.Push()
 }
 
 // 清空sql日志

@@ -23,7 +23,7 @@ func Thumb(path string, maxWidth int, maxHeight int) ([]byte, error) {
  * -vcodec png指定输出图片格式为png
  */
 func ToPng(path string) ([]byte, error) {
-	okData, cmdErr := ShellUtil.ExecToOkData("\"" + application.FfmpegPath + "\" -i " + path + " -f image2 -vcodec png -")
+	okData, cmdErr := ShellUtil.ExecToOkData("\"" + application.FfmpegPath + "/ffmpeg\" -i " + path + " -f image2 -vcodec png -")
 	if cmdErr != nil { //如果发生了异常，异常信息记录在了错误流数据中
 		return nil, cmdErr
 	}

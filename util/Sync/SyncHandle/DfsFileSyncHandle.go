@@ -6,7 +6,7 @@ import (
 	"DairoDFS/dao/dto"
 	"DairoDFS/exception"
 	"DairoDFS/service/DfsFileService"
-	"DairoDFS/util/DBUtil"
+	"DairoDFS/util/DBConnection"
 	"DairoDFS/util/Sync/bean"
 )
 
@@ -29,18 +29,18 @@ func Handle(info bean.SyncServerInfo, dfsFile *dto.DfsFileDto) error {
 		// 如果都是文件夹，则保留主机端的文件夹，具体步骤如下
 		// 1、将本地的DFS文件夹下的所有文件及文件夹全部移动到主机端的文件夹下
 		// 2、删除本地文件夹（这可能会导致已经分享出去的连接失效）
-		_, err := DBUtil.DBConn.Exec("update dfs_file set parentId = ? where parentId = ?", dfsFile.Id, existsDfsFile.Id)
+		_, err := DBConnection.DBConn.Exec("update dfs_file set parentId = ? where parentId = ?", dfsFile.Id, existsDfsFile.Id)
 		if err != nil {
 			//@TODO:待确认
 		}
-		_, err = DBUtil.DBConn.Exec("delete from dfs_file where id = ?", existsDfsFile.Id)
+		_, err = DBConnection.DBConn.Exec("delete from dfs_file where id = ?", existsDfsFile.Id)
 		if err != nil {
 			//@TODO:待确认
 		}
 	} else if dfsFile.LocalId > 0 && existsDfsFile.LocalId > 0 {
 		// 如果都是文件，则保留最新的一个文件，将日期比较老的文件加入到历史记录
 		if dfsFile.Id > existsDfsFile.Id { //当前主机端的文件比较新，则将本地的文件设置为历史文件
-			_, err := DBUtil.DBConn.Exec("update dfs_file set isHistory = 1 where id = ?", existsDfsFile.Id)
+			_, err := DBConnection.DBConn.Exec("update dfs_file set isHistory = 1 where id = ?", existsDfsFile.Id)
 			if err != nil {
 				//@TODO:待确认
 			}

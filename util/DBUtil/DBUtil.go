@@ -3,7 +3,6 @@ package DBUtil
 import (
 	"DairoDFS/util/CommonUtil"
 	"DairoDFS/util/DBConnection"
-	"DairoDFS/util/DBSqlLog"
 	"DairoDFS/util/LogUtil"
 	"database/sql"
 	"fmt"
@@ -26,7 +25,6 @@ func ExecIgnoreError(query string, args ...any) int64 {
 
 // 执行sql
 func Exec(query string, args ...any) (int64, error) {
-	DBConnection.StartTransaction()
 	rs, err := DBConnection.Write(query, args...)
 	if err != nil {
 		return -1, err
@@ -35,7 +33,6 @@ func Exec(query string, args ...any) (int64, error) {
 	if err != nil {
 		return -1, err
 	}
-	DBSqlLog.Add(query, args)
 	return count, nil
 }
 
@@ -51,7 +48,7 @@ func InsertIgnoreError(query string, args ...any) int64 {
 
 // 添加数据,并返回最后一次添加的ID
 func Insert(query string, args ...any) (int64, error) {
-	DBConnection.StartTransaction()
+
 	rs, err := DBConnection.Write(query, args...)
 	if err != nil {
 		return -1, err
@@ -60,7 +57,6 @@ func Insert(query string, args ...any) (int64, error) {
 	if err != nil {
 		return -1, err
 	}
-	DBSqlLog.Add(query, args)
 	return lastInsertId, nil
 }
 
@@ -81,6 +77,9 @@ func SelectSingleOne[T any](query string, args ...any) (T, error) {
 	if err != nil {
 		LogUtil.Debug(fmt.Sprintf("error: %q, sql: %s", err, query))
 		return *new(T), err // 返回默认值和错误
+	}
+	if value == nil { //c查询到的值本省为null
+		return *new(T), nil
 	}
 	return *value, nil
 }
