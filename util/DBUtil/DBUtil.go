@@ -20,15 +20,22 @@ const DB_PATH = "./data/dairo-dfs.sqlite"
 var DBConn *sql.DB
 
 func init() {
-	db, err := sql.Open("sqlite3", DB_PATH)
+	//_busy_timeout：设置数据库被锁时超时
+	db, err := sql.Open("sqlite3", DB_PATH+"?_busy_timeout=10000")
 	if err != nil {
 		LogUtil.Error(fmt.Sprintf("打开数据库失败 err:%q", err))
 		log.Fatal(err)
 	}
 
-	db.SetMaxOpenConns(20)               // 设置最大打开连接数，值越大支持的并发越高，但常驻内存也会增加。默认无限，大并发可能会导致内存激增。建议设置
-	db.SetMaxIdleConns(5)                // 设置最大空闲连接数
+	db.SetMaxOpenConns(10)               // 设置最大打开连接数，值越大支持的并发越高，但常驻内存也会增加。默认无限，大并发可能会导致内存激增。建议设置
+	db.SetMaxIdleConns(3)                // 设置最大空闲连接数
 	db.SetConnMaxLifetime(1 * time.Hour) // SQLite 通常是文件数据库，不需要 SetConnMaxLifetime，默认让连接长期存活。
+
+	//设置数据库被锁时超时，由于通过sql.Open打开的是一个数据库连接池，所以这里设置可能不生效，推介通过连接参数设置
+	//db.Exec("PRAGMA busy_timeout = 100000;")
+	//if err1 != nil {
+	//	fmt.Println(err1)
+	//}
 
 	//DELETE:（默认）
 	//适用于大多数单线程或低并发应用。

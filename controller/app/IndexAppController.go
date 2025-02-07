@@ -1,7 +1,9 @@
 package app
 
 import (
+	"DairoDFS/util/DBUtil"
 	"DairoDFS/util/GoroutineLocal"
+	"fmt"
 	"net/http"
 	"runtime"
 )
@@ -26,6 +28,12 @@ func Home() {
 // 页面初始化
 // @Html:index.html
 func Index() {
+
+	// 获取连接池统计信息
+	stats := DBUtil.DBConn.Stats()
+	fmt.Printf("当前打开的连接数: %d      ", stats.OpenConnections)
+	fmt.Printf("正在使用的连接数: %d      ", stats.InUse)
+	fmt.Printf("空闲的连接数: %d\n", stats.Idle)
 	GoroutineLocal.Test()
 	runtime.GC()
 }

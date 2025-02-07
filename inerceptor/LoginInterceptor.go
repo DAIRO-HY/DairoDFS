@@ -14,7 +14,7 @@ import (
 // @include:/**
 // @exclude:/app/login**,/app/install**
 func LoginValidate(writer http.ResponseWriter, request *http.Request) bool {
-	@TODO:未登录是数据库事务没有被释放的BUG还未解决
+	//@TODO:未登录是数据库事务没有被释放的BUG还未解决
 
 	//获取APP登录票据
 	cookieToken, _ := request.Cookie("token")
