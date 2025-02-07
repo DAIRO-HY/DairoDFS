@@ -3,6 +3,7 @@ package DBUtil
 import (
 	"DairoDFS/dao/dto"
 	"DairoDFS/extension/Number"
+	"DairoDFS/util/DBConnection"
 	"fmt"
 	"reflect"
 	"strconv"
@@ -191,7 +192,7 @@ func TestDB(t *testing.T) {
 	structval := reflect.ValueOf(user).Elem()
 	field := structval.FieldByName("Id")
 
-	row := DBConn.QueryRow("select id,name from user where id = ?", id)
+	row := DBConnection.DBConn.QueryRow("select id,name from user where id = ?", id)
 
 	scanArr := []any{
 		field.Addr().Interface(),
@@ -255,37 +256,46 @@ func TestUniqueName(t *testing.T) {
 	//	}()
 	//}
 
-	for i := 0; i < 10; i++ {
-		go func() {
-			tx := getConnection()
-			fmt.Printf("%d:tx := getConnection()\n", i)
-			_, err := tx.Exec(`insert into dfs_file (id, userId, parentId, name, "size", contentType, localId, "date", property, isExtra, isHistory,
-			                 deleteDate, state, stateMsg)values (?,1,?,'abc',1,'text',0,0,null,0,0,null,0,null);`, Number.ID(), Number.ID())
-			fmt.Printf("%d -> %d\n", i, time.Now().UnixMilli())
-			time.Sleep(1 * time.Second)
-			//Commit()
-			if err != nil {
-				fmt.Printf("%d-err:%q\n", i, err)
-			}
-		}()
-	}
-	time.Sleep(10 * time.Millisecond)
-	go func() {
-		var count int
-		tx := getConnection()
-		fmt.Println("tx := getConnection()")
-		row := tx.QueryRow(`select count(*) from dfs_file limit 1`)
-		row.Scan(&count)
-		fmt.Printf("count-->%d\n", count)
-	}()
-	time.Sleep(10 * time.Millisecond)
-	for {
+	//for i := 0; i < 10; i++ {
+	//	go func() {
+	//		tx := getConnection()
+	//		fmt.Printf("%d:tx := getConnection()\n", i)
+	//		_, err := tx.Exec(`insert into dfs_file (id, userId, parentId, name, "size", contentType, localId, "date", property, isExtra, isHistory,
+	//		                 deleteDate, state, stateMsg)values (?,1,?,'abc',1,'text',0,0,null,0,0,null,0,null);`, Number.ID(), Number.ID())
+	//		fmt.Printf("%d -> %d\n", i, time.Now().UnixMilli())
+	//		time.Sleep(1 * time.Second)
+	//		//Commit()
+	//		if err != nil {
+	//			fmt.Printf("%d-err:%q\n", i, err)
+	//		}
+	//	}()
+	//}
+	//time.Sleep(10 * time.Millisecond)
+	//go func() {
+	//	var count int
+	//	tx := getConnection()
+	//	fmt.Println("tx := getConnection()")
+	//	row := tx.QueryRow(`select count(*) from dfs_file limit 1`)
+	//	row.Scan(&count)
+	//	fmt.Printf("count-->%d\n", count)
+	//}()
+	//time.Sleep(10 * time.Millisecond)
+	//for {
+	//
+	//	// 获取连接池统计信息
+	//	//stats := DBConn.Stats()
+	//	//fmt.Printf("当前打开的连接数: %d      ", stats.OpenConnections)
+	//	//fmt.Printf("正在使用的连接数: %d      ", stats.InUse)
+	//	//fmt.Printf("空闲的连接数: %d\n", stats.Idle)
+	//	time.Sleep(3000 * time.Millisecond)
+	//}
 
-		// 获取连接池统计信息
-		//stats := DBConn.Stats()
-		//fmt.Printf("当前打开的连接数: %d      ", stats.OpenConnections)
-		//fmt.Printf("正在使用的连接数: %d      ", stats.InUse)
-		//fmt.Printf("空闲的连接数: %d\n", stats.Idle)
-		time.Sleep(3000 * time.Millisecond)
-	}
+	DBConnection.StartTransaction()
+	DBConnection.Write(`insert into dfs_file (id, userId, parentId, name, "size", contentType, localId, "date", property, isExtra, isHistory,
+			                 deleteDate, state, stateMsg)values (?,1,?,'abc',1,'text',0,0,null,0,0,null,0,null);`, Number.ID(), Number.ID())
+	DBConnection.Commit()
+	var count int
+	DBConnection.QueryRow("select count(*) from main.dfs_file").Scan(&count)
+	fmt.Println(count)
+	//Commit()
 }

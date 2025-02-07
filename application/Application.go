@@ -43,39 +43,25 @@ const REQUEST_USER_ID = "USER_ID"
  */
 const REQUEST_IS_ADMIN = "IS_ADMIN"
 
-/**
- * DB文件路径
- */
-var DbPath = "./data/dairo-dfs.sqlite"
-
-/**
- * 数据存放文件夹
- */
+// 数据存放文件夹
 var DataPath = "./data"
 
-/**
- * 数据存放文件夹
- */
+// 数据库存放文件夹
+var SQLITE_PATH = DataPath + "/dairo-dfs.sqlite"
+
+// 数据存放文件夹
 var TEMP_PATH = DataPath + "/temp"
 
-/**
- * ffmpeg安装目录
- */
+// ffmpeg安装目录
 var FfmpegPath = DataPath + "/ffmpeg"
 
-/**
- * ffprobe安装目录
- */
+// ffprobe安装目录
 var FfprobePath = DataPath + "/ffprobe"
 
-/**
- * libraw安装目录
- */
+// libraw安装目录
 var LibrawPath = DataPath + "/libraw"
 
-/**
- * libraw中的Dcraw模拟器存放路径
- */
+// libraw中的Dcraw模拟器存放路径
 var LIBRAW_BIN = LibrawPath + "/LibRaw-0.21.2/bin"
 
 // 是否开发模式

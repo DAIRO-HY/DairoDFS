@@ -2,6 +2,7 @@ package DBUtil
 
 import (
 	"DairoDFS/util/CommonUtil"
+	"DairoDFS/util/DBConnection"
 	"DairoDFS/util/DBSqlLog"
 	"DairoDFS/util/LogUtil"
 	"database/sql"
@@ -12,50 +13,6 @@ import (
 	"strings"
 	"time"
 )
-
-// DB_PATH 文件路径
-const DB_PATH = "./data/dairo-dfs.sqlite"
-
-// sqlite数据库连接对象
-var DBConn *sql.DB
-
-func init() {
-	//_busy_timeout：设置数据库被锁时超时
-	db, err := sql.Open("sqlite3", DB_PATH+"?_busy_timeout=10000")
-	if err != nil {
-		LogUtil.Error(fmt.Sprintf("打开数据库失败 err:%q", err))
-		log.Fatal(err)
-	}
-
-	db.SetMaxOpenConns(10)               // 设置最大打开连接数，值越大支持的并发越高，但常驻内存也会增加。默认无限，大并发可能会导致内存激增。建议设置
-	db.SetMaxIdleConns(3)                // 设置最大空闲连接数
-	db.SetConnMaxLifetime(1 * time.Hour) // SQLite 通常是文件数据库，不需要 SetConnMaxLifetime，默认让连接长期存活。
-
-	//设置数据库被锁时超时，由于通过sql.Open打开的是一个数据库连接池，所以这里设置可能不生效，推介通过连接参数设置
-	//db.Exec("PRAGMA busy_timeout = 100000;")
-	//if err1 != nil {
-	//	fmt.Println(err1)
-	//}
-
-	//DELETE:（默认）
-	//适用于大多数单线程或低并发应用。
-	//每次事务提交后，SQLite 会删除 journal 文件。
-	//事务可靠性高，文件不会增长。
-	//适用场景：桌面应用、小型嵌入式系统等。
-
-	//TRUNCATE:
-	//和 DELETE 类似，但提交事务时不会删除 journal 文件，而是清空它。
-	//优点：避免频繁创建和删除 journal 文件，稍微提高性能。
-	//适用场景：低并发但写入频繁的应用（比如定期记录日志）。
-	//其他模式（了解）
-
-	//WAL:（适用于高并发）：适合多个读者、较少写者的场景（如 Web 服务器）。
-	//MEMORY：事务日志存放在内存中，速度最快，且较少磁盘IO，但掉电数据可能丢失，但使用commit之后数据不会丢失。
-	//PERSIST：保留 journal 文件，但不清空内容，适合避免文件创建开销。
-	//OFF：完全关闭事务日志，不推荐（容易数据损坏）。
-	db.Exec("PRAGMA journal_mode=WAL;")
-	DBConn = db
-}
 
 // 执行sql语句,忽略错误
 func ExecIgnoreError(query string, args ...any) int64 {
@@ -69,7 +26,8 @@ func ExecIgnoreError(query string, args ...any) int64 {
 
 // 执行sql
 func Exec(query string, args ...any) (int64, error) {
-	rs, err := getConnection().Exec(query, args...)
+	DBConnection.StartTransaction()
+	rs, err := DBConnection.Write(query, args...)
 	if err != nil {
 		return -1, err
 	}
@@ -93,7 +51,8 @@ func InsertIgnoreError(query string, args ...any) int64 {
 
 // 添加数据,并返回最后一次添加的ID
 func Insert(query string, args ...any) (int64, error) {
-	rs, err := getConnection().Exec(query, args...)
+	DBConnection.StartTransaction()
+	rs, err := DBConnection.Write(query, args...)
 	if err != nil {
 		return -1, err
 	}
@@ -113,7 +72,7 @@ func SelectSingleOneIgnoreError[T any](query string, args ...any) T {
 
 // SelectSingleOne 查询第一个数据
 func SelectSingleOne[T any](query string, args ...any) (T, error) {
-	row := getConnection().QueryRow(query, args...)
+	row := DBConnection.QueryRow(query, args...)
 	var value *T
 
 	// 使用 Scan 将结果赋值给 value
@@ -165,7 +124,7 @@ func SelectListBk[T any](query string, args ...any) []*T {
 
 // SelectList 查询列表
 func SelectList[T any](query string, args ...any) []T {
-	rows, err := getConnection().Query(query, args...)
+	rows, err := DBConnection.Query(query, args...)
 	if err != nil {
 		LogUtil.Error(fmt.Sprintf("查询数据失败:%s: err:%q", query, err))
 		return nil
@@ -301,7 +260,7 @@ func SelectList[T any](query string, args ...any) []T {
 // SelectListNull-总时间 = 1841毫秒
 // SelectListNull-平均时间 = 0.0018410000毫秒
 func SelectListNull[T any](query string, args ...any) []T {
-	rows, err := getConnection().Query(query, args...)
+	rows, err := DBConnection.Query(query, args...)
 	if err != nil {
 		LogUtil.Error(fmt.Sprintf("查询数据失败:%s: err:%q", query, err))
 		return nil
@@ -443,7 +402,7 @@ func SelectListNull[T any](query string, args ...any) []T {
 
 // SelectToListMap 将查询结果以List<Map>的类型返回
 func SelectToListMap(query string, args ...any) []map[string]any {
-	rows, err := getConnection().Query(query, args...)
+	rows, err := DBConnection.Query(query, args...)
 	if err != nil {
 		LogUtil.Error(fmt.Sprintf("查询数据失败:%s: err:%q", query, err))
 		return nil
