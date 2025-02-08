@@ -11,20 +11,6 @@ import (
 	"time"
 )
 
-// 生成ID测试
-func TestID(t *testing.T) {
-	var idMap = make(map[int64]bool)
-	for i := 0; i < 100; i++ {
-		id := Number.ID()
-		_, isExits := idMap[id]
-		if isExits {
-			fmt.Printf("-->%d\n", id)
-			t.Error("生成了重复的id")
-		}
-		idMap[id] = true
-	}
-}
-
 /**
  * 添加一条数据
  * @param dto 用户信息

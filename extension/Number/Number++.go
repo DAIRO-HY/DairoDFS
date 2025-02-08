@@ -110,15 +110,23 @@ func ToTimeFormat(input any) string {
 	return "00:" + s
 }
 
+// 生成ID的锁
 var makeIdLock sync.Mutex
 
-// 生成数据库主键ID
+// 记录上一次生成的id
+var preId int64
+
+// ID 生成数据库主键ID
 func ID() int64 {
 	makeIdLock.Lock()
-
-	//这里延迟1纳秒，降低生成ID的重复概率
-	time.Sleep(1 * time.Microsecond)
-	id := time.Now().UnixMicro()
-	makeIdLock.Unlock()
-	return id
+	defer makeIdLock.Unlock()
+	for {
+		id := time.Now().UnixMilli()
+		if id == preId { //与上次生成的id重复,等待一段时间再生成
+			time.Sleep(500 * time.Microsecond)
+			continue
+		}
+		preId = id
+		return id
+	}
 }
