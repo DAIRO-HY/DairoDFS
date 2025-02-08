@@ -8,7 +8,7 @@ import (
 /**
  * 获取未执行和执行失败的记录
  */
-func GetNotExecuteList() []dto.SqlLogDto {
+func GetNotRunList() []dto.SqlLogDto {
 	return DBUtil.SelectList[dto.SqlLogDto]("select * from sql_log where state in (0,2) order by id limit 1000")
 }
 

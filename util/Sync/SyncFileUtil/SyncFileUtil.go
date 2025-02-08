@@ -33,7 +33,7 @@ import (
  * @param retryTimes 记录出错重试次数
  * @return 存储目录
  */
-func Download(info bean.SyncServerInfo, md5 string, retryTimes int) (string, error) {
+func Download(info *bean.SyncServerInfo, md5 string, retryTimes int) (string, error) {
 
 	//得到文件存储目录
 	savePath := application.TEMP_PATH + "/" + md5
@@ -45,7 +45,7 @@ func Download(info bean.SyncServerInfo, md5 string, retryTimes int) (string, err
 	if !os.IsNotExist(err) { //若文件已经存在
 		downloadStart = saveFileInfo.Size()
 	}
-	url := info.Url + "/download/" + md5
+	url := info.Url + "/distributed/download/" + md5
 
 	// 创建一个新的HTTP请求
 	request, _ := http.NewRequest("GET", url, nil)
@@ -103,6 +103,5 @@ func Download(info bean.SyncServerInfo, md5 string, retryTimes int) (string, err
 	if downloadedSize != total || total != saveFileInfo.Size() {
 		return "", exception.Biz("文件虽然下载完成,但文件似乎并不完整,请排查问题；Content-Length:" + String.ValueOf(total) + " downloadedSize:" + String.ValueOf(downloadedSize) + " 实际下载到的文件大小:" + String.ValueOf(saveFileInfo.Size()))
 	}
-	info.Msg = ""
 	return savePath, nil
 }

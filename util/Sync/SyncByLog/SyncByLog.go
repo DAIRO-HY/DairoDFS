@@ -11,7 +11,6 @@ import (
 	"DairoDFS/util/Sync/SyncHttp"
 	"DairoDFS/util/Sync/bean"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net"
 	"net/http"
@@ -174,6 +173,7 @@ func listen(info *bean.SyncServerInfo) {
 * 启动执行
 * @param isForce 是否强制执行
  */
+//准备废弃该函数
 func Start(isForce bool) {
 	//if SyncByTable.IsRuning() { //全量同步正在进行中 @TODO:应该判断全量同步是否正在进行中
 	//	return
@@ -223,7 +223,12 @@ func requestSqlLog(info *bean.SyncServerInfo) {
 	if string(logData) == "[]" { //已经没有sql日志
 
 		//执行日志sql
-		executeSqlLog(info)
+		runSqlErr := runSql(info)
+		if runSqlErr != nil {
+			info.State = 2
+			info.Msg = runSqlErr.Error()
+			return
+		}
 
 		info.State = 0 //同步完成，标记为待机中
 		info.Msg = ""
@@ -234,50 +239,65 @@ func requestSqlLog(info *bean.SyncServerInfo) {
 	}
 	logList := make([]dto.SqlLogDto, 0)
 	json.Unmarshal(logData, &logList)
-	addLog(info, logList)
+
+	//将sql日志添加到数据库
+	insertLogErr := insertLog(info, logList)
+	if insertLogErr != nil {
+		info.State = 2
+		info.Msg = insertLogErr.Error()
+		return
+	}
 	lastLog := logList[len(logList)-1]
 
 	//执行成功之后立即将当前日志的日期保存到本地,降低sql被重复执行的BUG
 	SaveLastId(info, lastLog.Id)
 
 	//执行日志sql
-	executeSqlLog(info)
+	runSqlErr := runSql(info)
+	if runSqlErr != nil {
+		info.State = 2
+		info.Msg = runSqlErr.Error()
+		return
+	}
 
 	syncLock.Unlock()
+
 	//递归调用，直到服务端日志同步完成
 	requestSqlLog(info)
 }
 
 // 从主机请求到的日志保存到本地日志
-func addLog(info *bean.SyncServerInfo, dataList []dto.SqlLogDto) {
+func insertLog(info *bean.SyncServerInfo, dataList []dto.SqlLogDto) error {
 	for _, it := range dataList {
-		_, err := DBConnection.DBConn.Exec("insert into sql_log(id,date,sql,param,state,source) values(?,?,?,?,?,?)",
+		_, insertErr := DBConnection.DBConn.Exec("insert into sql_log(id,date,sql,param,state,source) values(?,?,?,?,?,?)",
 			it.Id, it.Date, it.Sql, it.Param, 0, info.Url)
-		if err != nil {
-			if strings.Contains(err.Error(), "UNIQUE constraint failed: sql_log.id") {
+		if insertErr != nil {
+			if strings.Contains(insertErr.Error(), "UNIQUE constraint failed: sql_log.id") {
 				// 这条数据已经添加
 				continue
 			} else {
-				//@TODO:这条数据添加报错，需要做点什么
-				fmt.Println(err)
+				return insertErr
 			}
 		}
 	}
+	return nil
 }
 
 /**
 * 执行日志里的sql语句
  */
-func executeSqlLog(info *bean.SyncServerInfo) {
-	list := SqlLogDao.GetNotExecuteList()
-	if len(list) == 0 {
-		return
+func runSql(info *bean.SyncServerInfo) error {
+
+	//获取还未执行的sql语句
+	notRunList := SqlLogDao.GetNotRunList()
+	if len(notRunList) == 0 {
+		return nil
 	}
-	for _, it := range list {
+	for _, it := range notRunList {
 
 		//sql语句的参数列表
-		paramtaList := make([]any, 0)
-		json.Unmarshal([]byte(it.Param), &paramtaList)
+		paramList := make([]any, 0)
+		json.Unmarshal([]byte(it.Param), &paramList)
 
 		//用来判断是否指定的sql语句
 		handleSql := it.Sql
@@ -289,15 +309,19 @@ func executeSqlLog(info *bean.SyncServerInfo) {
 		//日志执行结束后执行sql
 		var afterSql string
 		if strings.HasPrefix(handleSql, "insertintolocal_file") { //如果当前sql语句是往本地文件表里添加一条数据
-			SyncHandle.ByLog(info, paramtaList)
+			handleLocalFileErr := SyncHandle.ByLog(info, paramList)
+			if handleLocalFileErr != nil {
+				DBConnection.DBConn.Exec("update sql_log set state = 2, err = ? where id = ?", handleLocalFileErr.Error(), it.Id)
+				return handleLocalFileErr
+			}
 		} else if strings.HasPrefix(handleSql, "insertintodfs_file(") { //如果该sql语句是添加文件
-			afterSql = SyncHandle.HandleBySyncLog(info, paramtaList)
+			afterSql = SyncHandle.HandleBySyncLog(info, paramList)
 		} else {
 		}
-		_, execSqlErr := DBConnection.DBConn.Exec(it.Sql, paramtaList...)
+		_, execSqlErr := DBConnection.DBConn.Exec(it.Sql, paramList...)
 		if execSqlErr != nil { //sql语句执行失败
 			DBConnection.DBConn.Exec("update sql_log set state = 2, err = ? where id = ?", execSqlErr.Error(), it.Id)
-			return
+			return execSqlErr
 		}
 		if afterSql != "" {
 			DBConnection.DBConn.Exec(afterSql)
@@ -306,9 +330,9 @@ func executeSqlLog(info *bean.SyncServerInfo) {
 	}
 
 	//记录当前同步的数据条数
-	info.SyncCount += len(list)
+	info.SyncCount += len(notRunList)
 	//this.syncSocket.send(info)
-	executeSqlLog(info)
+	return runSql(info)
 }
 
 // 保存最后一次请求的日志ID

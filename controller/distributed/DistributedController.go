@@ -2,8 +2,10 @@ package distributed
 
 import (
 	"DairoDFS/controller/distributed/DistributedPush"
+	"DairoDFS/dao/LocalFileDao"
 	"DairoDFS/dao/SqlLogDao"
 	"DairoDFS/extension/Number"
+	"DairoDFS/util/DfsFileUtil"
 	"net/http"
 	"sync"
 	"time"
@@ -130,14 +132,14 @@ func GetTableData(tbName string, ids string) []any {
  */
 //@Request:/download/{md5}
 func Download(writer http.ResponseWriter, request *http.Request, md5 string) {
+	//TODO:如果本机正在同步数据,则禁止往分机端传递文件
 	//if (SyncByTable.isRuning || SyncByLog.isRunning) {
-	//    throw BusinessException("主机正在同步数据中，请等待完成后继续。")
+	//   throw BusinessException("主机正在同步数据中，请等待完成后继续。")
 	//}
-	//val localFileDto = this.localFileDao.selectByFileMd5(md5)
-	//if (localFileDto == null) {
-	//    response.status = HttpStatus.NOT_FOUND.value()
-	//    return
-	//}
-	//response.reset() //清除buffer缓存
-	//DfsFileUtil.download(localFileDto, request, response)
+	localFileDto, isExists := LocalFileDao.SelectByFileMd5(md5)
+	if !isExists {
+		writer.WriteHeader(http.StatusNotFound)
+		return
+	}
+	DfsFileUtil.Download(localFileDto.Path, writer, request)
 }

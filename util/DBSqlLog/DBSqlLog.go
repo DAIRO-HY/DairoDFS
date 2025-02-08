@@ -34,7 +34,7 @@ func Add(sql string, param []any) {
 }
 
 // 保存日志数据库
-func Push(db *sql.DB) {
+func Insert(db *sql.DB) {
 	value, isExists := GoroutineLocal.Get(_SQL_LOG_KEY)
 	if !isExists {
 		return

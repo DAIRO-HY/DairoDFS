@@ -212,7 +212,7 @@ func DownloadDfs(dfsFile dto.DfsFileDto, writer http.ResponseWriter, request *ht
 		writer.WriteHeader(http.StatusNotFound)
 		return
 	}
-	download(localFile.Path, writer, request)
+	Download(localFile.Path, writer, request)
 }
 
 /**
@@ -221,7 +221,7 @@ func DownloadDfs(dfsFile dto.DfsFileDto, writer http.ResponseWriter, request *ht
 * @param writer 往客户端返回内容
 * @param request 客户端请求
  */
-func download(path string, writer http.ResponseWriter, request *http.Request) {
+func Download(path string, writer http.ResponseWriter, request *http.Request) {
 	fileInfo, err := os.Stat(path)
 	if os.IsNotExist(err) { //文件不存在
 		writer.WriteHeader(http.StatusNotFound)

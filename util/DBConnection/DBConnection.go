@@ -118,7 +118,7 @@ func Commit() {
 	if isExists {
 		tx := value.(*sql.Tx)
 		tx.Commit()
-		DBSqlLog.Push(DBConn)
+		DBSqlLog.Insert(DBConn)
 		DBSqlLog.Clear()
 		GoroutineLocal.Remove(_TRANSACTION_KEY)
 	}
@@ -148,7 +148,7 @@ func Write(query string, args ...any) (sql.Result, error) {
 		if e == nil { //保存执行的sql
 			DBSqlLog.Add(query, args)
 			if isAutoCommit { //自动提交事务时，需要手动将数据保存到DB
-				DBSqlLog.Push(DBConn)
+				DBSqlLog.Insert(DBConn)
 			}
 		}
 		return r, e
@@ -157,7 +157,7 @@ func Write(query string, args ...any) (sql.Result, error) {
 		if e == nil { //保存执行的sql
 			DBSqlLog.Add(query, args)
 			if isAutoCommit { //自动提交事务时，需要手动将数据保存到DB
-				DBSqlLog.Push(DBConn)
+				DBSqlLog.Insert(DBConn)
 			}
 		}
 		return r, e

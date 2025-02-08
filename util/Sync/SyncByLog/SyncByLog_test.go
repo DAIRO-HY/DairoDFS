@@ -15,7 +15,7 @@ import (
 
 func TestAddLog(t *testing.T) {
 	application.Init()
-	addLog(&bean.SyncServerInfo{Url: "asdafsfsdfdsf"}, []dto.SqlLogDto{
+	insertLog(&bean.SyncServerInfo{Url: "asdafsfsdfdsf"}, []dto.SqlLogDto{
 		{
 			Id:    123,
 			Date:  time.Now().UnixMilli(),
@@ -27,7 +27,7 @@ func TestAddLog(t *testing.T) {
 
 func TestExecuteSqlLog(t *testing.T) {
 	application.Init()
-	executeSqlLog(&bean.SyncServerInfo{Url: "asdafsfsdfdsf"})
+	runSql(&bean.SyncServerInfo{Url: "asdafsfsdfdsf"})
 }
 
 func TestSaveLastId(t *testing.T) {
