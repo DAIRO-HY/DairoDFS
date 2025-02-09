@@ -1,6 +1,7 @@
 ﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
+    {{template "head" .}}
     <title>同步状态</title>
     <style>
         /* 定义旋转动画 */
@@ -21,11 +22,6 @@
 </head>
 <body>
 {{template "top-bar" .}}
-<div class="mx-3 mt-3 px-3 row g-0 rounded shadow bg-content-bar" style="line-height: 44px;">
-    <div class="col-6 fs-5">同步状态</div>
-    <div class="col-6 text-end" style="font-size: 0;">
-    </div>
-</div>
 <div class="m-3 p-2 rounded shadow bg-content">
     <div class="text-start">
         <div id="table"></div>
