@@ -315,7 +315,11 @@ func runSql(info *bean.SyncServerInfo) error {
 				return handleLocalFileErr
 			}
 		} else if strings.HasPrefix(handleSql, "insertintodfs_file(") { //如果该sql语句是添加文件
-			afterSql = SyncHandle.HandleBySyncLog(info, paramList)
+			sql, err := SyncHandle.HandleBySyncLog(info, paramList)
+			if err != nil {
+				return err
+			}
+			afterSql = sql
 		} else {
 		}
 		_, execSqlErr := DBConnection.DBConn.Exec(it.Sql, paramList...)
