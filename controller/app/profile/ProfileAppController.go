@@ -4,6 +4,7 @@ import (
 	"DairoDFS/application/SystemConfig"
 	"DairoDFS/controller/app/profile/form"
 	"DairoDFS/extension/String"
+	"DairoDFS/util/Sync/SyncByLog"
 	"strings"
 )
 
@@ -68,8 +69,8 @@ func Update(form form.ProfileForm) error {
 	//SyncByLog.init()
 	SystemConfig.Save()
 
-	//@TODO:等待完成
-	//SyncByLog.listenAll()
+	//重新开启监听
+	SyncByLog.ListenAll()
 	return nil
 }
 

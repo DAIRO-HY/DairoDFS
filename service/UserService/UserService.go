@@ -16,9 +16,7 @@ import (
  * @param dto 用户Dto
  */
 func Add(dto dto.UserDto) {
-	date := time.Now()
-	id := Number.ID()
-	dto.Date = date
-	dto.Id = id
+	dto.Date = time.Now().UnixMilli()
+	dto.Id = Number.ID()
 	UserDao.Add(dto)
 }

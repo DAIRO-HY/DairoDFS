@@ -1,7 +1,5 @@
 package dto
 
-import "time"
-
 /**
  * 包含缩略图的文件信息
  */
@@ -45,7 +43,7 @@ type DfsFileThumbDto struct {
 	/**
 	 * 创建日期
 	 */
-	Date time.Time
+	Date int64
 
 	/**
 	 * 文件属性，比如图片尺寸，视频分辨率等信息，JSON字符串

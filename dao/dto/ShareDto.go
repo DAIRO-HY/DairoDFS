@@ -1,7 +1,5 @@
 package dto
 
-import "time"
-
 type ShareDto struct {
 
 	/**
@@ -57,5 +55,5 @@ type ShareDto struct {
 	/**
 	 * 创建日期
 	 */
-	Date time.Time
+	Date int64
 }

@@ -34,6 +34,9 @@ import (
  * @return 存储目录
  */
 func Download(info *bean.SyncServerInfo, md5 string, retryTimes int) (string, error) {
+	if info.IsStop {
+		return "", exception.Biz("同步被强制取消")
+	}
 
 	//得到文件存储目录
 	savePath := application.TEMP_PATH + "/" + md5
@@ -57,6 +60,7 @@ func Download(info *bean.SyncServerInfo, md5 string, retryTimes int) (string, er
 		ResponseHeaderTimeout: 10 * time.Second,                                     //读数据超时
 	}
 	client := &http.Client{Transport: transport}
+	defer client.CloseIdleConnections()
 	res, err := client.Do(request)
 	if err != nil { //网络连接失败时可能会报错
 		if retryTimes < 5 { //重试次数达到上线之后，直接报错
@@ -89,6 +93,9 @@ func Download(info *bean.SyncServerInfo, md5 string, retryTimes int) (string, er
 	file, err := os.OpenFile(savePath, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
 	defer file.Close()
 	for {
+		if info.IsStop {
+			return "", exception.Biz("同步被强制取消")
+		}
 		n, readErr := res.Body.Read(cache)
 		if n > 0 {
 			downloadedSize += int64(n)

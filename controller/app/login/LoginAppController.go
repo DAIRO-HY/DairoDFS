@@ -41,7 +41,7 @@ func DoLogin(loginForm form.LoginAppInForm, _clientFlag int, _version int) any {
 	userTokenDto := dto.UserTokenDto{
 		Id:         Number.ID(),
 		UserId:     userDto.Id,
-		Date:       time.Now(),
+		Date:       time.Now().UnixMilli(),
 		Ip:         ip,
 		ClientFlag: _clientFlag,
 		Version:    _version,

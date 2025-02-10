@@ -55,7 +55,7 @@ func GetList() []form.MyShareForm {
 			FolderFlag: it.FolderFlag,
 			EndDate:    endDate,
 			Thumb:      Bool.Is(it.Thumb != 0, "/app/files/thumb/"+String.ValueOf(it.Thumb), ""),
-			Date:       Date.Format(it.Date),
+			Date:       Date.FormatByTimespan(it.Date),
 		}
 		list = append(list, shareForm)
 	}
@@ -89,7 +89,7 @@ func GetDetail(id int64) any {
 		Id:      shareDto.Id,
 		Url:     url,
 		Names:   shareDto.Names,
-		Date:    Date.Format(shareDto.Date),
+		Date:    Date.FormatByTimespan(shareDto.Date),
 		EndDate: endDate,
 		Pwd:     Bool.Is(shareDto.Pwd == "", "无", shareDto.Pwd),
 		Folder:  folder,

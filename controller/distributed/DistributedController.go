@@ -5,8 +5,10 @@ import (
 	"DairoDFS/dao/LocalFileDao"
 	"DairoDFS/dao/SqlLogDao"
 	"DairoDFS/extension/Number"
+	"DairoDFS/util/DBUtil"
 	"DairoDFS/util/DfsFileUtil"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 )
@@ -15,11 +17,6 @@ import (
  * 数据同步处理Controller
  */
 //@Group:/distributed
-
-/**
- * 长连接心跳间隔时间(秒)
- */
-const KEEP_ALIVE_TIME = 120
 
 // 记录分机端的请求
 var waitingRequestMap = make(map[string]int64)
@@ -84,28 +81,26 @@ func GetAopId() int64 {
 	return Number.ID()
 }
 
-/**
- * 获取每个表的id
- * @param tbName 表名
- * @param lastId 已经取到的最后一个id
- * @param aopId 断面ID
- */
-//@Request:/get_table_id
+// 限制每次同步数据量，条数不宜过大,过大可能导致客户端请求失败
+const _MAX_SYNC_DATA_LIMIT = 100
+
+// 获取每个表的id
+// tbName 表名
+// lastId 已经取到的最后一个id
+// aopId 断面ID
+// @Request:/get_table_id
 func GetTableId(tbName string, lastId int64, aopId int64) string {
+	//TODO:如果本机正在同步数据,则禁止往分机端传递文件
 	//if (SyncByTable.isRuning || SyncByLog.isRunning) {
-	//    throw BusinessException("主机正在同步数据中，请等待完成后继续。")
+	//   throw BusinessException("主机正在同步数据中，请等待完成后继续。")
 	//}
-	//
-	////条数不宜过大,过大可能导致客户端请求失败
-	//val maxLimit = 100
-	//return Constant.dbService.selectList(
-	//    String::class,
-	//    "select id from $tbName where id > ? and id < ? order by id asc limit ?",
-	//    lastId,
-	//    aopId,
-	//    maxLimit
-	//).joinToString(separator = ",") { it }
-	return ""
+	idList := DBUtil.SelectList[string](
+		"select id from "+tbName+" where id > ? and id < ? order by id asc limit ?",
+		lastId,
+		aopId,
+		_MAX_SYNC_DATA_LIMIT,
+	)
+	return strings.Join(idList, ",")
 }
 
 /**
@@ -114,14 +109,12 @@ func GetTableId(tbName string, lastId int64, aopId int64) string {
  * @param ids 要取的数据id列表
  */
 //@Request:/get_table_data
-func GetTableData(tbName string, ids string) []any {
+func GetTableData(tbName string, ids string) []map[string]any {
+	//TODO:如果本机正在同步数据,则禁止往分机端传递文件
 	//if (SyncByTable.isRuning || SyncByLog.isRunning) {
-	//    throw BusinessException("主机正在同步数据中，请等待完成后继续。")
+	//   throw BusinessException("主机正在同步数据中，请等待完成后继续。")
 	//}
-	//return Constant.dbService.selectList(
-	//    "select * from $tbName where id in ($ids)"
-	//)
-	return nil
+	return DBUtil.SelectToListMap("select * from " + tbName + " where id in (" + ids + ")")
 }
 
 /**

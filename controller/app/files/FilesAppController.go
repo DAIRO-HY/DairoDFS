@@ -38,7 +38,7 @@ func GetList(folder string) []form.FileForm {
 			Id:       it.Id,
 			Name:     it.Name,
 			Size:     it.Size,
-			Date:     Date.Format(it.Date),
+			Date:     Date.FormatByTimespan(it.Date),
 			FileFlag: it.LocalId != 0,
 			Thumb:    Bool.Is(it.HasThumb, "/app/files/thumb/"+String.ValueOf(it.Id), ""),
 		}
@@ -167,7 +167,7 @@ func GetProperty(paths []string) any {
 		}
 		dfsFile, _ := DfsFileDao.SelectOne(fileId)
 		outForm.Name = dfsFile.Name
-		outForm.Date = Date.Format(dfsFile.Date)
+		outForm.Date = Date.FormatByTimespan(dfsFile.Date)
 		outForm.Path = path
 		outForm.IsFile = dfsFile.IsFile()
 		if dfsFile.IsFile() { //文件时
@@ -178,7 +178,7 @@ func GetProperty(paths []string) any {
 				hForm := form.FilePropertyHistoryForm{
 					Id:   it.Id,
 					Size: Number.ToDataSize(it.Size),
-					Date: Date.Format(it.Date),
+					Date: Date.FormatByTimespan(it.Date),
 				}
 				historyList = append(historyList, hForm)
 			}

@@ -26,7 +26,7 @@ func EditHtml() {}
 func EditInit(id int64) form.UserEditInoutForm {
 	if id != 0 {
 		userDto, _ := UserDao.SelectOne(id)
-		date := Date.Format(userDto.Date)
+		date := Date.FormatByTimespan(userDto.Date)
 		pwd := PWD_PLACEHOLDER
 		return form.UserEditInoutForm{
 			Id:    userDto.Id,

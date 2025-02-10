@@ -30,7 +30,7 @@ func Init() form.SelfSetForm {
 		Id:            userDto.Id,
 		Name:          userDto.Name,
 		Email:         userDto.Email,
-		Date:          Date.Format(userDto.Date),
+		Date:          Date.FormatByTimespan(userDto.Date),
 		UrlPath:       userDto.UrlPath,
 		ApiToken:      userDto.ApiToken,
 		EncryptionKey: userDto.EncryptionKey,

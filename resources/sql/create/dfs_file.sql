@@ -8,7 +8,7 @@ CREATE TABLE dfs_file
     size        INT8                        NOT NULL,           -- 大小
     contentType VARCHAR(32)                 NULL,               -- 文件类型(文件专用)
     localId     INT8                        NOT NULL DEFAULT 0, -- 本地文件存储id(文件专用)
-    date        DATETIME                    NOT NULL,           -- 创建日期
+    date        INT8                        NOT NULL,           -- 创建日期
     property    TEXT                        NULL,               -- 文件属性，比如图片尺寸，视频分辨率等信息，JSON字符串
     isExtra     INT1                        NOT NULL DEFAULT 0, -- 是否附属文件，比如视频的标清文件，高清文件，PSD图片的预览图片，cr3的预览图片等
     isHistory   INT1                        NOT NULL DEFAULT 0, -- 是否历史版本(文件专用),1:历史版本 0:当前版本

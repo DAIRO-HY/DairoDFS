@@ -15,11 +15,11 @@ type SyncServerForm struct {
 	Msg string `json:"msg,omitempty"`
 
 	/** 同步日志数 **/
-	SyncCount int `json:"sync_count,omitempty"`
+	SyncCount int `json:"syncCount,omitempty"`
 
 	/** 最后一次同步完成时间 **/
-	LastTime int64 `json:"last_time,omitempty"`
+	LastTime string `json:"lastTime,omitempty"`
 
 	/** 最后一次心跳时间 **/
-	LastHeartTime int64 `json:"last_heart_time,omitempty"`
+	LastHeartTime string `json:"lastHeartTime,omitempty"`
 }

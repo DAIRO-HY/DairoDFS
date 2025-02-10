@@ -24,7 +24,7 @@ func ListInit() []form.UserListOutForm {
 	dtoList := UserDao.SelectAll()
 	var userList []form.UserListOutForm
 	for _, it := range dtoList {
-		date := Date.Format(it.Date)
+		date := Date.FormatByTimespan(it.Date)
 		state := Bool.Is(it.State == 1, "启用", "禁用")
 		userList = append(userList, form.UserListOutForm{
 			Id:    it.Id,

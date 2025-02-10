@@ -2,14 +2,17 @@ package SyncByLog
 
 import (
 	"DairoDFS/application"
-	"DairoDFS/controller/distributed"
+	"DairoDFS/controller/distributed/DistributedPush"
 	"DairoDFS/dao/SqlLogDao"
 	"DairoDFS/dao/dto"
+	"DairoDFS/extension/Date"
 	"DairoDFS/extension/String"
 	"DairoDFS/util/DBConnection"
 	"DairoDFS/util/Sync/SyncHandle"
 	"DairoDFS/util/Sync/SyncHttp"
+	"DairoDFS/util/Sync/SyncInfoManager"
 	"DairoDFS/util/Sync/bean"
+	"context"
 	"encoding/json"
 	"io"
 	"net"
@@ -32,11 +35,6 @@ import (
 //}
 
 /**
- * 当前同步主机信息
- */
-var SyncInfoList []*bean.SyncServerInfo
-
-/**
  * 是否正在同步中
  */
 var mIsRuning bool
@@ -49,14 +47,7 @@ var mIsRuning bool
 
 var lock sync.Mutex
 
-/**
- * 记录等待了的时间
- */
-var waitTimes = 0
-
-/**
- * 获取运行状态
- */
+// 获取运行状态
 func IsRuning() bool {
 	var result bool
 	lock.Lock()
@@ -65,107 +56,86 @@ func IsRuning() bool {
 	return result
 }
 
-/**
-* 最后同步的ID存放目录
- */
+// 最后同步的ID存放目录
 var syncLastIdFilePath = application.DataPath + "/sync_last_id"
 
-///**
-// * 获取配置同步主机
-// */
-//fun init() {
-//    this.syncInfoList = SystemConfig.instance.syncDomains.mapIndexed { index, it ->
-//        val info = SyncServerInfo()
-//        info.url = it
-//        info.no = index + 1
-//        info
-//    }
-//}
-//
-///**
-// * 等待中的请求
-// */
-//private val waitingHttpList = HashSet<SyncLogListenHttpBean>()
-//
-///**
-// * 监听所有配置的主机
-// */
-//fun listenAll() = thread {
-//
-//    //先停止掉之前所有的轮询
-//    this.waitingHttpList.forEach {
-//        try {
-//            it.cancle()
-//        } catch (_: Exception) {
-//        }
-//    }
-//
-//    //清空监听等待
-//    this.waitingHttpList.clear()
-//    this.syncInfoList.forEach {
-//        listen(it)
-//    }
-//}
-
-/**
-* 监听服务端日志变化
- */
-func listen(info *bean.SyncServerInfo) {
-	loopFunc := func() bool {
-		transport := &http.Transport{
-			DialContext:           (&net.Dialer{Timeout: 3 * time.Second}).DialContext, //连接超时
-			ResponseHeaderTimeout: (distributed.KEEP_ALIVE_TIME + 10) * time.Second,    //读数据超时
-		}
-		client := &http.Client{Transport: transport}
-		url := info.Url + "/distributed/listen?lastId=" + String.ValueOf(getLastId(info))
-
-		// 创建HTTP GET请求
-		resp, err := client.Get(url)
-		if err != nil {
-			//fmt.Println("服务端心跳检查失败，间隔30秒之后会重试。错误：" + err.Error())
-			info.Msg = "服务端心跳检查失败，间隔30秒之后会重试。错误：" + err.Error()
-			time.Sleep(5 * time.Second)
-			return false
-		}
-		defer resp.Body.Close()
-		//if resp.StatusCode != http.StatusOK {
-		//	bodyData, _ := io.ReadAll(resp.Body)
-		//	info.Msg = "服务端心跳检查失败,Status:" + String.ValueOf(resp.StatusCode) + ",Body:" + string(bodyData) + "。错误：" + err.Error()
-		//	time.Sleep(30 * time.Second)
-		//	break
-		//}
-		buf := make([]byte, 1)
-		for {
-			n, readErr := resp.Body.Read(buf)
-			if n > 0 {
-
-				//记录最有一次心跳时间
-				info.LastHeartTime = time.Now().UnixMilli()
-				info.Msg = "心跳检测中。"
-				tag := buf[0]
-				if tag == 1 { //接收到的标记为1时，代表服务器端有新的日志
-					requestSqlLog(info)
-					break
-				}
-				continue
-			}
-			if readErr != nil {
-				if readErr != io.EOF {
-					info.Msg = "服务端心跳检查失败。" + readErr.Error()
-				}
-				break
-			}
-		}
-		if info.State == 2 { //如果同步发生了错误
-			return true
-		}
-		return false
+// 监听所有配置的主机
+func ListenAll() {
+	SyncInfoManager.ReloadList()
+	for _, it := range SyncInfoManager.SyncInfoList {
+		go listen(it)
 	}
+}
+
+// 监听服务端日志变化
+func listen(info *bean.SyncServerInfo) {
 	for {
-		time.Sleep(3 * time.Second)
-		if loopFunc() {
+		if info.IsStop { // 如果被强行终止
 			break
 		}
+		time.Sleep(1 * time.Second)
+		loopListen(info)
+	}
+}
+
+// 循环发起请求
+// return 是否停止循环
+func loopListen(info *bean.SyncServerInfo) {
+	if info.IsStop {
+		return
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	info.CancelFunc = cancel
+	url := info.Url + "/distributed/listen?lastId=" + String.ValueOf(getLastId(info))
+	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	transport := &http.Transport{
+		//MaxIdleConns:          1,
+		//MaxConnsPerHost:       1,
+		//IdleConnTimeout:       1 * time.Millisecond,
+		DialContext:           (&net.Dialer{Timeout: 3 * time.Second}).DialContext,  //连接超时
+		ResponseHeaderTimeout: (DistributedPush.KEEP_ALIVE_TIME + 10) * time.Second, //读数据超时
+	}
+	client := &http.Client{Transport: transport}
+	defer client.CloseIdleConnections()
+
+	// 创建HTTP GET请求
+	resp, err := client.Do(req)
+	if err != nil {
+		sleepTime := 5
+		info.Msg = Date.Format(time.Now()) + ":服务端心跳检查失败，间隔" + String.ValueOf(sleepTime) + "秒之后会重试。错误：" + err.Error()
+		time.Sleep(time.Duration(sleepTime) * time.Second)
+		return
+	}
+	defer resp.Body.Close()
+	buf := make([]byte, 1)
+	for {
+		if info.IsStop {
+			break
+		}
+		n, readErr := resp.Body.Read(buf)
+		if n > 0 {
+
+			//记录最有一次心跳时间
+			info.LastHeartTime = time.Now().UnixMilli()
+			info.Msg = "心跳检测中。"
+			tag := buf[0]
+			//fmt.Println("-->" + String.ValueOf(info.No) + ":" + String.ValueOf(tag))
+			if tag == 1 { //接收到的标记为1时，代表服务器端有新的日志
+				requestSqlLog(info)
+				break
+			}
+			continue
+		}
+		if readErr != nil {
+			if readErr != io.EOF {
+				info.Msg = "服务端心跳检查失败。" + readErr.Error()
+			}
+			break
+		}
+	}
+	if info.State == 2 { //如果同步发生了错误
+		info.Cancel()
 	}
 }
 
@@ -173,32 +143,31 @@ func listen(info *bean.SyncServerInfo) {
 * 启动执行
 * @param isForce 是否强制执行
  */
-//准备废弃该函数
-func Start(isForce bool) {
-	//if SyncByTable.IsRuning() { //全量同步正在进行中 @TODO:应该判断全量同步是否正在进行中
-	//	return
-	//}
-	if mIsRuning { //并发防止
-		return
-	}
-	mIsRuning = true
-	if isForce { //强行执行
-		for _, it := range SyncInfoList {
-			it.State = 0
-		}
-	}
-	for _, it := range SyncInfoList {
-		if it.State != 0 { //只允许待机中的同步
-			continue
-		}
-		it.State = 1 //标记为同步中
-		it.Msg = ""
-		//this.syncSocket.send(it)
-		requestSqlLog(it)
-	}
-	mIsRuning = false
-	waitTimes = 0
-}
+////准备废弃该函数
+//func Start(isForce bool) {
+//	//if SyncByTable.IsRuning() { //全量同步正在进行中 @TODO:应该判断全量同步是否正在进行中
+//	//	return
+//	//}
+//	if mIsRuning { //并发防止
+//		return
+//	}
+//	mIsRuning = true
+//	if isForce { //强行执行
+//		for _, it := range SyncInfoList {
+//			it.State = 0
+//		}
+//	}
+//	for _, it := range SyncInfoList {
+//		if it.State != 0 { //只允许待机中的同步
+//			continue
+//		}
+//		it.State = 1 //标记为同步中
+//		it.Msg = ""
+//		requestSqlLog(it)
+//	}
+//	mIsRuning = false
+//	waitTimes = 0
+//}
 
 var syncLock sync.Mutex
 
@@ -208,6 +177,9 @@ func requestSqlLog(info *bean.SyncServerInfo) {
 
 	//单线程同步
 	syncLock.Lock()
+	if info.IsStop { // 如果被强行终止
+		return
+	}
 
 	//得到最后请求的id
 	lastId := getLastId(info)
@@ -237,6 +209,8 @@ func requestSqlLog(info *bean.SyncServerInfo) {
 		syncLock.Unlock()
 		return
 	}
+	info.State = 1 //标记为正在同步中
+	info.Msg = "正在同步"
 	logList := make([]dto.SqlLogDto, 0)
 	json.Unmarshal(logData, &logList)
 

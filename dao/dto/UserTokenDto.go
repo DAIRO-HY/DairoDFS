@@ -1,7 +1,5 @@
 package dto
 
-import "time"
-
 type UserTokenDto struct {
 
 	/**
@@ -37,7 +35,7 @@ type UserTokenDto struct {
 	/**
 	 * 创建日期
 	 */
-	Date time.Time
+	Date int64
 
 	/**
 	 * 客户端版本

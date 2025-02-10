@@ -1,15 +1,11 @@
 package dto
 
-import "time"
-
 type UserDto struct {
 
 	/**
 	 * 主键
 	 */
-	Id  int64
-	Id2 int64
-	Id3 *int64
+	Id int64
 
 	/**
 	 * 用户名
@@ -49,5 +45,5 @@ type UserDto struct {
 	/**
 	 * 创建日期
 	 */
-	Date time.Time
+	Date int64
 }

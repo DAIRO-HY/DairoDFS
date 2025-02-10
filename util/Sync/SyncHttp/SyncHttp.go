@@ -24,6 +24,7 @@ func Request(url string) ([]byte, error) {
 		ResponseHeaderTimeout: 30 * time.Second,                                    //读数据超时
 	}
 	client := &http.Client{Transport: transport}
+	defer client.CloseIdleConnections()
 
 	// 创建HTTP GET请求
 	resp, err := client.Get(url)

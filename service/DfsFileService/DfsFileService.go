@@ -38,7 +38,7 @@ func AddFile(fileDto dto.DfsFileDto, isOverWrite bool) error {
 			return exception.EXISTS_FILE(fileDto.Name)
 		}
 	}
-	fileDto.Date = time.Now()
+	fileDto.Date = time.Now().UnixMilli()
 	fileDto.Id = Number.ID()
 
 	//添加文件
@@ -58,7 +58,7 @@ func AddFolder(folderDto dto.DfsFileDto) error {
 		return exception.BizCode(1001, "文件或文件夹已经存在")
 	}
 	folderDto.LocalId = 0
-	folderDto.Date = time.Now()
+	folderDto.Date = time.Now().UnixMilli()
 	DfsFileDao.Add(folderDto)
 	return nil
 }

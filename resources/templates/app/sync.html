@@ -60,8 +60,9 @@
                 {
                     data: "state",
                     title: "状态",
+                    defaultContent: "",
                     render: function (value) {
-                        if (value === 0) {
+                        if (value === undefined || value === 0) {
                             return `<i class="bi bi-clock-fill text-secondary"></i> 空闲`
                         } else if (value === 1) {
                             return `<div class="d-inline-block rotate-icon"><i class="bi bi-fan text-success"></i></div>`
@@ -74,33 +75,21 @@
                 },
                 {
                     data: "lastTime",
-                    title: "最后同步时间",
-                    render: function (value) {
-                        if (value === 0) {
-                            return "未同步"
-                        }
-                        const date = dateFormat(new Date(value))
-                        return "<div>" + date + "</div>"
-                    }
+                    title: "最后同步时间"
                 },
                 {
                     data: "lastHeartTime",
-                    title: "最后心跳时间",
-                    render: function (value) {
-                        if (value === 0) {
-                            return ""
-                        }
-                        const date = dateFormat(new Date(value))
-                        return "<div>" + date + "</div>"
-                    }
+                    title: "最后心跳时间"
                 },
                 {
                     data: "syncCount",
-                    title: "日志数"
+                    title: "日志数",
+                    defaultContent: "0",
                 },
                 {
                     data: "msg",
-                    title: "消息"
+                    title: "消息",
+                    defaultContent: "",
                 }
             ]
         })
@@ -125,16 +114,36 @@
     }
 
     function initSocket() {
-        let socket = new WebSocket(`ws://${location.host}/ws/app/sync`);
+        let socket = new WebSocket(`ws://${location.host}/app/sync/info`);
 
         socket.onopen = function (e) {
-            console.log("Connection established");
-            socket.send("Hello Server");
+            // console.log("Connection established");
+            // socket.send("Hello Server");
         };
-
         socket.onmessage = function (event) {
+            const msg = event.data
+            if (msg === "0") {
+                return
+            }
+            const $table = $("#table").find("table")
+            const datatable = $table.DataTable()
             const data = JSON.parse(event.data)
-            $("#table").setRow(data.no - 1, data)
+            for(let key in data){
+                const index = parseInt(key)
+
+                // 获取第一行的数据对象
+                const rowData = datatable.row(index).data();
+                rowData["state"] = 0
+                for(let vkey in data[key]){//仅更新现有的字段
+                    rowData[vkey] = data[key][vkey]
+                }
+
+                // 重新设置该行的数据
+                datatable.row(index).data(rowData);
+            }
+
+            //重绘
+            datatable.draw();
         };
     }
 </script>

@@ -49,7 +49,7 @@ func Share(userId int64, inForm form.ShareForm) (int64, error) {
 		FolderFlag: folderFlag,
 		Thumb:      thumbId,
 		FileCount:  len(inForm.Names),
-		Date:       time.Now(),
+		Date:       time.Now().UnixMilli(),
 		Id:         Number.ID(),
 	}
 	ShareDao.Add(shareDto)

@@ -13,7 +13,7 @@ import (
 /**
  * 长连接心跳间隔时间(秒)
  */
-const KEEP_ALIVE_TIME = 120
+const KEEP_ALIVE_TIME = 3
 
 // 记录分机端的请求
 var waitingRequestMap = make(map[string]int64)
