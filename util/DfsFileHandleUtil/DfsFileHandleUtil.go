@@ -412,7 +412,8 @@ func makeThumb(dfsFileDto dto.DfsFileDto) error {
 
 		//专业相机RAW图片
 		data, makeThumbErr = RawUtil.Thumb(path, width, height)
-	} else {
+	} else { //无需生成缩略图
+		return nil
 	}
 	if makeThumbErr != nil {
 		return makeThumbErr

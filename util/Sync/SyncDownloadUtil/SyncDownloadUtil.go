@@ -1,4 +1,4 @@
-package SyncFileUtil
+package SyncDownloadUtil
 
 import (
 	"DairoDFS/application"

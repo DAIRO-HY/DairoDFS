@@ -1,4 +1,4 @@
-package SyncHandle
+package DfsFileSyncHandle
 
 import (
 	"DairoDFS/dao/dto"

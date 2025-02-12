@@ -2,13 +2,21 @@ package SyncByTable
 
 import (
 	"DairoDFS/application"
+	"DairoDFS/application/SystemConfig"
 	"DairoDFS/extension/String"
+	"DairoDFS/util/Sync/SyncByLog"
 	"DairoDFS/util/Sync/bean"
 	"fmt"
 	"testing"
+	"time"
 )
 
 func TestDoSync(t *testing.T) {
+	application.Init()
+	SystemConfig.Instance().SyncDomains = []string{"http://localhost:" + String.ValueOf(application.Args.Port)}
+	SyncAll()
+	SyncByLog.ListenAll()
+	time.Sleep(1 * time.Hour)
 }
 
 /**
@@ -22,7 +30,7 @@ func TestLoopSync(t *testing.T) {
 	info := &bean.SyncServerInfo{
 		Url: "http://localhost:" + String.ValueOf(application.Args.Port),
 	}
-	err := loopSync(info, "user", 0, aopId)
+	err := loopSync(info, "local_file", 0, aopId)
 	if err != nil {
 		t.Fatal(err)
 		return
@@ -88,5 +96,5 @@ func TestGetTableData(t *testing.T) {
 		t.Fatal(err)
 		return
 	}
-	fmt.Println(string(data))
+	fmt.Println(data)
 }

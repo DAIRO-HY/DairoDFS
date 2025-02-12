@@ -2,7 +2,7 @@ package SyncByLog
 
 import (
 	"DairoDFS/application"
-	"DairoDFS/controller/distributed"
+	"DairoDFS/controller/distributed/DistributedPush"
 	"DairoDFS/dao/dto"
 	"DairoDFS/util/Sync/bean"
 	"fmt"
@@ -70,8 +70,8 @@ func TestBigRequest(t *testing.T) {
 	}()
 	for i := 0; i < 1000; i++ {
 		transport := &http.Transport{
-			DialContext:           (&net.Dialer{Timeout: 3 * time.Second}).DialContext, //连接超时
-			ResponseHeaderTimeout: (distributed.KEEP_ALIVE_TIME + 10) * time.Second,    //读数据超时
+			DialContext:           (&net.Dialer{Timeout: 3 * time.Second}).DialContext,  //连接超时
+			ResponseHeaderTimeout: (DistributedPush.KEEP_ALIVE_TIME + 10) * time.Second, //读数据超时
 		}
 		client := &http.Client{Transport: transport}
 		url := "http://localhost:8031/distributed/listen?lastId=123"

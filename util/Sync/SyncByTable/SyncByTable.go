@@ -4,6 +4,8 @@ import (
 	"DairoDFS/extension/String"
 	"DairoDFS/util/DBConnection"
 	"DairoDFS/util/DBUtil"
+	"DairoDFS/util/Sync/DfsFileSyncHandle"
+	"DairoDFS/util/Sync/LocalFileSyncHandle"
 	"DairoDFS/util/Sync/SyncByLog"
 	"DairoDFS/util/Sync/SyncHttp"
 	"DairoDFS/util/Sync/SyncInfoManager"
@@ -11,67 +13,16 @@ import (
 	"encoding/json"
 	"strconv"
 	"strings"
-	"sync"
 )
 
-/**
- * 全量同步工具
- */
-
-var lock sync.Mutex
-
-/**
- * 标记全量同步是否正在进行中
- */
-var mIsRuning bool
-
-/**
- * 同步信息Socket
- * 页面实时查看同步信息用
- */
-//private val syncSocket = SyncWebSocketHandler::class.bean
-
-/**
- * 获取运行状态
- */
-//func IsRuning() bool {
-//	var result bool
-//	lock.Lock()
-//	result = mIsRuning
-//	lock.Unlock()
-//	return result
-//}
-
-/**
- * 开始同步
- * @param isForce 是否强制执行
- */
-//func Start(isForce bool) {
-//	if SyncByLog.IsRuning() { //日志同步正在进行中
-//		return
-//	}
-//	if mIsRuning { //并发防止
-//		return
-//	}
-//	defer func() {
-//		mIsRuning = false
-//	}()
-//	mIsRuning = true
-//	if isForce { //强行执行
-//		for _, it := range SyncByLog.SyncInfoList {
-//			it.State = 0
-//		}
-//	}
-//	doSync()
-//}
-
-func doSync() {
+// 同步所有数据
+func SyncAll() {
 
 	// 重新加载同步信息
 	SyncInfoManager.ReloadList()
 	for _, info := range SyncInfoManager.SyncInfoList {
 		info.State = 1
-		info.Msg = ""
+		info.Msg = "全量同步中"
 
 		//从主机端获取断面ID,避免同步过程中，主机数据发生变化导致数据不一致的BUG
 		aopId, aopIdErr := getAopId(info)
@@ -124,7 +75,7 @@ func loopSync(info *bean.SyncServerInfo, tbName string, lastId int64, aopId int6
 	//设置本次获取到的最后一个ID
 	var currentLastId int64
 	if strings.Contains(masterIds, ",") {
-		currentLastId, _ = strconv.ParseInt(masterIds[strings.LastIndex(masterIds, ","):], 10, 64)
+		currentLastId, _ = strconv.ParseInt(masterIds[strings.LastIndex(masterIds, ",")+1:], 10, 64)
 	} else {
 		currentLastId, _ = strconv.ParseInt(masterIds, 10, 64)
 	}
@@ -138,20 +89,19 @@ func loopSync(info *bean.SyncServerInfo, tbName string, lastId int64, aopId int6
 	}
 
 	//得到需要同步的数据
-	tableData, tableDataErr := getTableData(info, tbName, needSyncIds)
+	dataMapList, tableDataErr := getTableData(info, tbName, needSyncIds)
 	if tableDataErr != nil {
 		return tableDataErr
 	}
 
-	dataMap := make([]map[string]any, 0)
-	json.Unmarshal(tableData, &dataMap)
-
 	//插入数据
-	insertData(info, tbName, dataMap)
+	insertErr := insertData(info, tbName, dataMapList)
+	if insertErr != nil {
+		return insertErr
+	}
 
 	//记录当前同步的数据条数
-	info.SyncCount += len(dataMap)
-	//this.syncSocket.send(info)
+	info.SyncCount += len(dataMapList)
 
 	//再次同步
 	return loopSync(info, tbName, currentLastId, aopId)
@@ -216,49 +166,49 @@ func filterNotExistsId(tbName string, ids string) string {
 /**
  * 从同步主机端取数据
  */
-func getTableData(info *bean.SyncServerInfo, tbName string, ids string) ([]byte, error) {
+func getTableData(info *bean.SyncServerInfo, tbName string, ids string) ([]map[string]any, error) {
 	url := info.Url + "/distributed/get_table_data?tbName=" + tbName + "&ids=" + ids
-	return SyncHttp.Request(url)
+	data, err := SyncHttp.Request(url)
+	if err != nil {
+		return nil, err
+	}
+	dataMapList := make([]map[string]any, 0)
+	json.Unmarshal(data, &dataMapList)
+	return dataMapList, nil
 }
 
-/**
- * 同步主机数据
- */
-func insertData(info *bean.SyncServerInfo, tbName string, dataList []map[string]any) {
-	//data.forEach { item ->
-	//    item as ObjectNode
-	//    when (tbName) {
-	//
-	//        //当前请求的是本地文件存储表，先去下载文件
-	//        "local_file" -> LocalFileSyncHandle.byTable(info, item)
-	//
-	//        //如果是用户文件表
-	//        "dfs_file" -> DfsFileSyncHandle.handle(info, item)
-	//    }
-	//
-	//    //要插入的字段
-	//    val fields = ArrayList<String>()
-	//    val values = ArrayList<String?>()
-	//    item.fields().forEach {
-	//        fields.add(it.key)
-	//
-	//        val value = it.value
-	//        if (value.isNull) {//null值
-	//            values.add(null)
-	//        } else {
-	//            values.add(it.value.asText())
-	//        }
-	//    }
-	//    try {
-	//        Constant.dbService.exec(
-	//            "insert into $tbName(${fields.joinToString()}) values (${fields.joinToString { "?" }})",
-	//            *values.toArray()
-	//        )
-	//    } catch (e: Exception) {
-	//        if (e is SQLiteException && e.message!!.contains("UNIQUE constraint failed: user.name")) {
-	//            throw Exception("同步失败，原因： 用户名“${values[2]}”已存在。请先修改用户名为“${values[2]}”的用户后再重试")
-	//        }
-	//        throw e
-	//    }
-	//}
+// 往数据库插入数据
+func insertData(info *bean.SyncServerInfo, tbName string, dataMapList []map[string]any) error {
+	for _, dataMap := range dataMapList {
+		switch tbName {
+		case "local_file": //当前请求的是本地文件存储表，先去下载文件
+			if err := LocalFileSyncHandle.ByTable(info, dataMap); err != nil {
+				return err
+			}
+		case "dfs_file": //如果是用户文件表
+			if err := DfsFileSyncHandle.ByTable(info, dataMap); err != nil {
+				return err
+			}
+		}
+		insertKeys := ""
+		insertValueReplaces := ""
+		insertValues := make([]any, 0)
+		for k, v := range dataMap {
+			insertKeys += k + ","
+			insertValueReplaces += "?,"
+			insertValues = append(insertValues, v)
+		}
+
+		//去掉最后的逗号
+		insertKeys = insertKeys[:len(insertKeys)-1]
+		insertValueReplaces = insertValueReplaces[:len(insertValueReplaces)-1]
+
+		//拼接sql语句
+		insertSql := "insert into " + tbName + " (" + insertKeys + ") values (" + insertValueReplaces + ")"
+		_, insertErr := DBConnection.DBConn.Exec(insertSql, insertValues...)
+		if insertErr != nil {
+			return insertErr
+		}
+	}
+	return nil
 }

@@ -8,7 +8,8 @@ import (
 	"DairoDFS/extension/Date"
 	"DairoDFS/extension/String"
 	"DairoDFS/util/DBConnection"
-	"DairoDFS/util/Sync/SyncHandle"
+	"DairoDFS/util/Sync/DfsFileSyncHandle"
+	"DairoDFS/util/Sync/LocalFileSyncHandle"
 	"DairoDFS/util/Sync/SyncHttp"
 	"DairoDFS/util/Sync/SyncInfoManager"
 	"DairoDFS/util/Sync/bean"
@@ -23,38 +24,6 @@ import (
 	"sync"
 	"time"
 )
-
-/**
- * 应用启动执行
- */
-//class SyncByLogBoot : ApplicationRunner {
-//    override fun run(args: ApplicationArguments) {
-//        SyncByLog.init()
-//        SyncByLog.listenAll()
-//    }
-//}
-
-/**
- * 是否正在同步中
- */
-var mIsRuning bool
-
-/**
- * 同步信息Socket
- * 页面实时查看同步信息用
- */
-//private val syncSocket = SyncWebSocketHandler::class.bean
-
-var lock sync.Mutex
-
-// 获取运行状态
-func IsRuning() bool {
-	var result bool
-	lock.Lock()
-	result = mIsRuning
-	lock.Unlock()
-	return result
-}
 
 // 最后同步的ID存放目录
 var syncLastIdFilePath = application.DataPath + "/sync_last_id"
@@ -139,36 +108,6 @@ func loopListen(info *bean.SyncServerInfo) {
 	}
 }
 
-/**
-* 启动执行
-* @param isForce 是否强制执行
- */
-////准备废弃该函数
-//func Start(isForce bool) {
-//	//if SyncByTable.IsRuning() { //全量同步正在进行中 @TODO:应该判断全量同步是否正在进行中
-//	//	return
-//	//}
-//	if mIsRuning { //并发防止
-//		return
-//	}
-//	mIsRuning = true
-//	if isForce { //强行执行
-//		for _, it := range SyncInfoList {
-//			it.State = 0
-//		}
-//	}
-//	for _, it := range SyncInfoList {
-//		if it.State != 0 { //只允许待机中的同步
-//			continue
-//		}
-//		it.State = 1 //标记为同步中
-//		it.Msg = ""
-//		requestSqlLog(it)
-//	}
-//	mIsRuning = false
-//	waitTimes = 0
-//}
-
 var syncLock sync.Mutex
 
 // 循环取sql日志
@@ -210,7 +149,7 @@ func requestSqlLog(info *bean.SyncServerInfo) {
 		return
 	}
 	info.State = 1 //标记为正在同步中
-	info.Msg = "正在同步"
+	info.Msg = "日志同步中"
 	logList := make([]dto.SqlLogDto, 0)
 	json.Unmarshal(logData, &logList)
 
@@ -283,13 +222,13 @@ func runSql(info *bean.SyncServerInfo) error {
 		//日志执行结束后执行sql
 		var afterSql string
 		if strings.HasPrefix(handleSql, "insertintolocal_file") { //如果当前sql语句是往本地文件表里添加一条数据
-			handleLocalFileErr := SyncHandle.ByLog(info, paramList)
+			handleLocalFileErr := LocalFileSyncHandle.ByLog(info, paramList)
 			if handleLocalFileErr != nil {
 				DBConnection.DBConn.Exec("update sql_log set state = 2, err = ? where id = ?", handleLocalFileErr.Error(), it.Id)
 				return handleLocalFileErr
 			}
 		} else if strings.HasPrefix(handleSql, "insertintodfs_file(") { //如果该sql语句是添加文件
-			sql, err := SyncHandle.HandleBySyncLog(info, paramList)
+			sql, err := DfsFileSyncHandle.ByLog(info, paramList)
 			if err != nil {
 				return err
 			}
