@@ -28,6 +28,9 @@ var DBConn *sql.DB
 func init() {
 
 	//_busy_timeout：设置数据库被锁时超时
+	//经过验证，在journal_mode=WAL模式下，如果开启事务，只有遇到了修改语句才会锁库，select语句不会锁库。
+	//数据库被锁之后其他任何线程，包括其他程序都无法对数据库操作。
+	//数据库被锁之后，查询语句不影响
 	db, err := sql.Open("sqlite3", application.SQLITE_PATH+"?_busy_timeout=10000")
 	if err != nil {
 		LogUtil.Error(fmt.Sprintf("打开数据库失败 err:%q", err))

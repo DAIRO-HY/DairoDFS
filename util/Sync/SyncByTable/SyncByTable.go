@@ -62,6 +62,9 @@ func SyncAll() {
 		SyncByLog.SaveLastId(info, aopId)
 		info.State = 0
 		info.Msg = "全量同步完成"
+
+		//开启日志同步
+		go SyncByLog.ListenAll()
 	}
 }
 

@@ -67,7 +67,7 @@ func Download(info *bean.SyncServerInfo, md5 string, retryTimes int) (string, er
 		if retryTimes < 5 { //重试次数达到上线之后，直接报错
 			retrySecond := 3
 			time.Sleep(time.Duration(retrySecond) * time.Second) //先等待3秒再重试
-			info.Msg = "文件下载失败(正在第" + String.ValueOf(retryTimes) + "次尝试，" + String.ValueOf(retrySecond) + "秒后重试)：" + doErr.Error()
+			info.Msg = "文件下载失败(正在第" + String.ValueOf(retryTimes+1) + "次尝试，" + String.ValueOf(retrySecond) + "秒后重试)：" + doErr.Error()
 			return Download(info, md5, retryTimes+1)
 		} else {
 			return "", doErr
@@ -115,7 +115,7 @@ func Download(info *bean.SyncServerInfo, md5 string, retryTimes int) (string, er
 			if retryTimes < 5 { //重试次数达到上线之后，直接报错
 				retrySecond := 3
 				time.Sleep(time.Duration(retrySecond) * time.Second) //先等待3秒再重试
-				info.Msg = "文件下载失败(正在第" + String.ValueOf(retryTimes) + "次尝试，" + String.ValueOf(retrySecond) + "秒后重试)：" + readErr.Error()
+				info.Msg = "文件下载失败(正在第" + String.ValueOf(retryTimes+1) + "次尝试，" + String.ValueOf(retrySecond) + "秒后重试)：" + readErr.Error()
 				return Download(info, md5, retryTimes+1)
 			} else {
 				return "", readErr

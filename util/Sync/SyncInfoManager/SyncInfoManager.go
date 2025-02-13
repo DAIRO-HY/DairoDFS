@@ -26,6 +26,16 @@ func ReloadList() {
 	}
 }
 
+// 是否有处理失败的数据
+func HasError() bool {
+	for _, it := range SyncInfoList {
+		if it.State == 2 {
+			return true
+		}
+	}
+	return false
+}
+
 // 停止所有同步操作
 func CancelAll() {
 	for _, it := range SyncInfoList {
