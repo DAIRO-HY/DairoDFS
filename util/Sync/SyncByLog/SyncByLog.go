@@ -8,6 +8,7 @@ import (
 	"DairoDFS/extension/Date"
 	"DairoDFS/extension/String"
 	"DairoDFS/util/DBConnection"
+	"DairoDFS/util/Sync"
 	"DairoDFS/util/Sync/DfsFileSyncHandle"
 	"DairoDFS/util/Sync/LocalFileSyncHandle"
 	"DairoDFS/util/Sync/SyncHttp"
@@ -21,7 +22,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 )
 
@@ -108,15 +108,18 @@ func loopListen(info *bean.SyncServerInfo) {
 	}
 }
 
-var syncLock sync.Mutex
-
 // 循环取sql日志
 // @return 是否处理完成
 func requestSqlLog(info *bean.SyncServerInfo) {
 
 	//单线程同步
-	syncLock.Lock()
+	Sync.SyncLock.Lock()
+
+	//由于该函数有递归调用，通过defer关闭可能导致死锁
+	//defer Sync.SyncLock.Unlock()
+
 	if info.IsStop { // 如果被强行终止
+		Sync.SyncLock.Unlock()
 		return
 	}
 
@@ -127,8 +130,7 @@ func requestSqlLog(info *bean.SyncServerInfo) {
 	if err != nil {
 		info.State = 2 //标记为同步失败
 		info.Msg = err.Error()
-		//this.syncSocket.send(info)
-		syncLock.Unlock()
+		Sync.SyncLock.Unlock()
 		return
 	}
 	if string(logData) == "[]" { //已经没有sql日志
@@ -144,8 +146,7 @@ func requestSqlLog(info *bean.SyncServerInfo) {
 		info.State = 0 //同步完成，标记为待机中
 		info.Msg = ""
 		info.LastTime = time.Now().UnixMilli() //最后一次同步完成时间
-		//this.syncSocket.send(info)
-		syncLock.Unlock()
+		Sync.SyncLock.Unlock()
 		return
 	}
 	info.State = 1 //标记为正在同步中
@@ -172,8 +173,7 @@ func requestSqlLog(info *bean.SyncServerInfo) {
 		info.Msg = runSqlErr.Error()
 		return
 	}
-
-	syncLock.Unlock()
+	Sync.SyncLock.Unlock()
 
 	//递归调用，直到服务端日志同步完成
 	requestSqlLog(info)

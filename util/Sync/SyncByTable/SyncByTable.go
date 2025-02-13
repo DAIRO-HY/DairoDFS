@@ -1,9 +1,11 @@
 package SyncByTable
 
 import (
+	"DairoDFS/exception"
 	"DairoDFS/extension/String"
 	"DairoDFS/util/DBConnection"
 	"DairoDFS/util/DBUtil"
+	"DairoDFS/util/Sync"
 	"DairoDFS/util/Sync/DfsFileSyncHandle"
 	"DairoDFS/util/Sync/LocalFileSyncHandle"
 	"DairoDFS/util/Sync/SyncByLog"
@@ -20,6 +22,11 @@ func SyncAll() {
 
 	// 重新加载同步信息
 	SyncInfoManager.ReloadList()
+
+	//单线程同步
+	Sync.SyncLock.Lock()
+	defer Sync.SyncLock.Unlock()
+
 	for _, info := range SyncInfoManager.SyncInfoList {
 		info.State = 1
 		info.Msg = "全量同步中"
@@ -62,6 +69,9 @@ func SyncAll() {
  * 循环同步数据，直到包数据同步完成
  */
 func loopSync(info *bean.SyncServerInfo, tbName string, lastId int64, aopId int64) error {
+	if info.IsStop {
+		return exception.Biz("同步被强制取消")
+	}
 
 	//通过表名从主机端获取某个断面以后的id列表
 	masterIds, masterIdsErr := getTableId(info, tbName, lastId, aopId)

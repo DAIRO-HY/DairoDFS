@@ -3,6 +3,7 @@ package SyncDownloadUtil
 import (
 	"DairoDFS/application"
 	"DairoDFS/exception"
+	"DairoDFS/extension/Number"
 	"DairoDFS/extension/String"
 	"DairoDFS/util/Sync/bean"
 	"io"
@@ -64,7 +65,9 @@ func Download(info *bean.SyncServerInfo, md5 string, retryTimes int) (string, er
 	res, err := client.Do(request)
 	if err != nil { //网络连接失败时可能会报错
 		if retryTimes < 5 { //重试次数达到上线之后，直接报错
-			time.Sleep(3 * time.Second) //先等待3秒再重试
+			retrySecond := 3
+			time.Sleep(time.Duration(retrySecond) * time.Second) //先等待3秒再重试
+			info.Msg = "文件下载失败(正在第" + String.ValueOf(retryTimes) + "次尝试，" + String.ValueOf(retrySecond) + "秒后重试)：" + err.Error()
 			return Download(info, md5, retryTimes+1)
 		} else {
 			return "", err
@@ -89,18 +92,21 @@ func Download(info *bean.SyncServerInfo, md5 string, retryTimes int) (string, er
 	total := res.ContentLength + downloadedSize
 
 	//设置读物数据缓存
-	cache := make([]byte, 64*1024)
+	cache := make([]byte, 8*1024)
 	file, err := os.OpenFile(savePath, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
 	defer file.Close()
 	for {
 		if info.IsStop {
 			return "", exception.Biz("同步被强制取消")
 		}
+
+		//@TEST
+		time.Sleep(10 * time.Millisecond)
 		n, readErr := res.Body.Read(cache)
 		if n > 0 {
 			downloadedSize += int64(n)
 			file.Write(cache[:n])
-			info.Msg = "正在同步文件：" + String.ValueOf(downloadedSize) + "(${downloadedSize.toDataSize})/${total.toDataSize}"
+			info.Msg = "正在同步文件：" + Number.ToDataSize(downloadedSize) + "(" + String.ValueOf(downloadedSize/1024) + "KB)/" + Number.ToDataSize(total)
 		}
 		if readErr == io.EOF { //数据已经读取完毕
 			break

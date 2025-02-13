@@ -133,7 +133,6 @@
 
                 // 获取第一行的数据对象
                 const rowData = datatable.row(index).data();
-                rowData["state"] = 0
                 for(let vkey in data[key]){//仅更新现有的字段
                     rowData[vkey] = data[key][vkey]
                 }

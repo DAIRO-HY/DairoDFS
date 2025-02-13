@@ -4,7 +4,6 @@ import (
 	"DairoDFS/application"
 	"DairoDFS/application/SystemConfig"
 	"DairoDFS/extension/String"
-	"DairoDFS/util/Sync/SyncByLog"
 	"DairoDFS/util/Sync/bean"
 	"fmt"
 	"testing"
@@ -14,8 +13,9 @@ import (
 func TestDoSync(t *testing.T) {
 	application.Init()
 	SystemConfig.Instance().SyncDomains = []string{"http://localhost:" + String.ValueOf(application.Args.Port)}
+	go SyncAll()
+	time.Sleep(100 * time.Microsecond)
 	SyncAll()
-	SyncByLog.ListenAll()
 	time.Sleep(1 * time.Hour)
 }
 

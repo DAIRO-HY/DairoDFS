@@ -20,13 +20,14 @@ func ReloadList() {
 			Url:      it,
 			No:       i + 1,
 			TestTime: time.Now().UnixMicro(),
+			Msg:      "等待同步中",
 		}
 		SyncInfoList = append(SyncInfoList, info)
 	}
 }
 
 // 停止所有同步操作
-func CamcelAll() {
+func CancelAll() {
 	for _, it := range SyncInfoList {
 		it.Cancel() //停止之前所有的监听
 	}

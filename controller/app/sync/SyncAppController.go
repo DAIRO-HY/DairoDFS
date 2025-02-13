@@ -4,6 +4,7 @@ import (
 	"DairoDFS/controller/app/sync/form"
 	"DairoDFS/extension/Bool"
 	"DairoDFS/extension/Date"
+	"DairoDFS/util/Sync/SyncByTable"
 	"DairoDFS/util/Sync/SyncInfoManager"
 	"encoding/json"
 	"fmt"
@@ -43,25 +44,18 @@ func InfoList() []form.SyncServerForm {
 	return formList
 }
 
-/**
- * 日志同步
- */
-//@Post:/by_log
+// 日志同步
+// @Post:/by_log
 func BySync() {
 	//thread {
 	//    SyncByLog.start(true)
 	//}
 }
 
-/**
- * 同步分机端用
- * 全量同步
- */
-//@Post:/by_table
+// 全量同步
+// @Post:/by_table
 func ByTable() {
-	//thread {
-	//    SyncByTable.start(true)
-	//}
+	go SyncByTable.SyncAll()
 }
 
 // 当前同步状态
@@ -85,32 +79,14 @@ func Info(writer http.ResponseWriter, request *http.Request) {
 	defer conn.Close()
 
 	//记录上次发送的数据，如果前后两次发送的数据一样，则不要发送数据
-	//var preJsonData []byte
-	//for {
-	//	time.Sleep(1 * time.Second)
-	//	progressInfo := InfoList() //获取下载信息
-	//	jsonData, _ := json.Marshal(progressInfo)
-	//	if slices.Equal(preJsonData, jsonData) { //比较两次发送的数据，完全一样则只发送一个标记
-	//		if conn.WriteMessage(websocket.TextMessage, []byte("0")) != nil {
-	//			break
-	//		}
-	//		continue
-	//	}
-	//
-	//	// 发送消息
-	//	if conn.WriteMessage(websocket.TextMessage, jsonData) != nil {
-	//		break
-	//	}
-	//	preJsonData = jsonData
-	//}
-
-	//记录上次发送的数据，如果前后两次发送的数据一样，则不要发送数据
 	var preList []form.SyncServerForm
 	for {
 		time.Sleep(3 * time.Second)
-		infoList := InfoList() //获取下载信息
-		if preList == nil {
-			preList = infoList[:]
+		infoList := InfoList()             //获取下载信息
+		if len(preList) != len(infoList) { //初始化上次请求的数据
+			for i := 0; i < len(infoList); i++ {
+				preList = append(preList, form.SyncServerForm{})
+			}
 		}
 
 		//返回给前端的数据，有变化的下标对应的数据Map

@@ -9,7 +9,7 @@ type SyncServerForm struct {
 	Url string `json:"url,omitempty"`
 
 	/** 同步状态 0：待机中   1：同步中  2：同步错误 **/
-	State int `json:"state,omitempty"`
+	State int `json:"state"`
 
 	/** 同步消息 **/
 	Msg string `json:"msg,omitempty"`
