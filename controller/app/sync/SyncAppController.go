@@ -4,6 +4,7 @@ import (
 	"DairoDFS/controller/app/sync/form"
 	"DairoDFS/extension/Bool"
 	"DairoDFS/extension/Date"
+	"DairoDFS/util/Sync/SyncByLog"
 	"DairoDFS/util/Sync/SyncByTable"
 	"DairoDFS/util/Sync/SyncInfoManager"
 	"encoding/json"
@@ -47,9 +48,7 @@ func InfoList() []form.SyncServerForm {
 // 日志同步
 // @Post:/by_log
 func BySync() {
-	//thread {
-	//    SyncByLog.start(true)
-	//}
+	SyncByLog.ListenAll()
 }
 
 // 全量同步
@@ -81,7 +80,7 @@ func Info(writer http.ResponseWriter, request *http.Request) {
 	//记录上次发送的数据，如果前后两次发送的数据一样，则不要发送数据
 	var preList []form.SyncServerForm
 	for {
-		time.Sleep(3 * time.Second)
+		time.Sleep(500 * time.Millisecond)
 		infoList := InfoList()             //获取下载信息
 		if len(preList) != len(infoList) { //初始化上次请求的数据
 			for i := 0; i < len(infoList); i++ {
@@ -108,10 +107,14 @@ func Info(writer http.ResponseWriter, request *http.Request) {
 				}
 			}
 			if hasDiff {
+				outForm.State = it.State
 				outFormIndexMap[x] = *outForm
 			}
 		}
 		if len(outFormIndexMap) == 0 { //没有数据变化
+			if conn.WriteMessage(websocket.TextMessage, []byte("0")) != nil {
+				break
+			}
 			continue
 		}
 		preList = infoList

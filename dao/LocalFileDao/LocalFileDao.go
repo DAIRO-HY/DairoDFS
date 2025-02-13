@@ -3,14 +3,12 @@ package LocalFileDao
 import (
 	"DairoDFS/dao/dto"
 	"DairoDFS/util/DBUtil"
-	"fmt"
 )
 
 /**
  * 添加一条数据
  */
 func Add(dto dto.LocalFileDto) {
-	fmt.Printf("-->localId:%d\n", dto.Id)
 	DBUtil.InsertIgnoreError("insert into local_file(id, path, md5) values (?,?,?)", dto.Id, dto.Path, dto.Md5)
 }
 

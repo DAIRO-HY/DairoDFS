@@ -30,14 +30,16 @@
     <button class="btn btn-primary" type="button" onclick="onSyncAllClick()">全量同步</button>
 </div>
 <script>
+
+    let socket = null
     $(function () {
         getInfoList()
-        initSocket()
     })
 
     function getInfoList() {
         $.ajaxByData("./sync/info_list").success(data => {
             fillDataTable(data)
+            openSocket()
         }).post()
     }
 
@@ -113,9 +115,11 @@
         }).post()
     }
 
-    function initSocket() {
-        let socket = new WebSocket(`ws://${location.host}/app/sync/info`);
-
+    function openSocket() {
+        if (socket != null){
+            socket.close()
+        }
+        socket = new WebSocket(`ws://${location.host}/app/sync/info`);
         socket.onopen = function (e) {
             // console.log("Connection established");
             // socket.send("Hello Server");

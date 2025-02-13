@@ -45,8 +45,8 @@ func Download(info *bean.SyncServerInfo, md5 string, retryTimes int) (string, er
 	//断点下载开始位置
 	var downloadStart int64
 
-	saveFileInfo, err := os.Stat(savePath)
-	if !os.IsNotExist(err) { //若文件已经存在
+	saveFileInfo, statErr := os.Stat(savePath)
+	if !os.IsNotExist(statErr) { //若文件已经存在
 		downloadStart = saveFileInfo.Size()
 	}
 	url := info.Url + "/distributed/download/" + md5
@@ -62,15 +62,15 @@ func Download(info *bean.SyncServerInfo, md5 string, retryTimes int) (string, er
 	}
 	client := &http.Client{Transport: transport}
 	defer client.CloseIdleConnections()
-	res, err := client.Do(request)
-	if err != nil { //网络连接失败时可能会报错
+	res, doErr := client.Do(request)
+	if doErr != nil { //网络连接失败时可能会报错
 		if retryTimes < 5 { //重试次数达到上线之后，直接报错
 			retrySecond := 3
 			time.Sleep(time.Duration(retrySecond) * time.Second) //先等待3秒再重试
-			info.Msg = "文件下载失败(正在第" + String.ValueOf(retryTimes) + "次尝试，" + String.ValueOf(retrySecond) + "秒后重试)：" + err.Error()
+			info.Msg = "文件下载失败(正在第" + String.ValueOf(retryTimes) + "次尝试，" + String.ValueOf(retrySecond) + "秒后重试)：" + doErr.Error()
 			return Download(info, md5, retryTimes+1)
 		} else {
-			return "", err
+			return "", doErr
 		}
 	}
 	defer res.Body.Close()
@@ -93,7 +93,7 @@ func Download(info *bean.SyncServerInfo, md5 string, retryTimes int) (string, er
 
 	//设置读物数据缓存
 	cache := make([]byte, 8*1024)
-	file, err := os.OpenFile(savePath, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
+	file, _ := os.OpenFile(savePath, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
 	defer file.Close()
 	for {
 		if info.IsStop {
@@ -108,11 +108,21 @@ func Download(info *bean.SyncServerInfo, md5 string, retryTimes int) (string, er
 			file.Write(cache[:n])
 			info.Msg = "正在同步文件：" + Number.ToDataSize(downloadedSize) + "(" + String.ValueOf(downloadedSize/1024) + "KB)/" + Number.ToDataSize(total)
 		}
-		if readErr == io.EOF { //数据已经读取完毕
-			break
+		if readErr != nil {
+			if readErr == io.EOF { //数据已经读取完毕
+				break
+			}
+			if retryTimes < 5 { //重试次数达到上线之后，直接报错
+				retrySecond := 3
+				time.Sleep(time.Duration(retrySecond) * time.Second) //先等待3秒再重试
+				info.Msg = "文件下载失败(正在第" + String.ValueOf(retryTimes) + "次尝试，" + String.ValueOf(retrySecond) + "秒后重试)：" + readErr.Error()
+				return Download(info, md5, retryTimes+1)
+			} else {
+				return "", readErr
+			}
 		}
 	}
-	saveFileInfo, err = os.Stat(savePath)
+	saveFileInfo, _ = os.Stat(savePath)
 	if downloadedSize != total || total != saveFileInfo.Size() {
 		return "", exception.Biz("文件虽然下载完成,但文件似乎并不完整,请排查问题；Content-Length:" + String.ValueOf(total) + " downloadedSize:" + String.ValueOf(downloadedSize) + " 实际下载到的文件大小:" + String.ValueOf(saveFileInfo.Size()))
 	}
