@@ -192,7 +192,7 @@ func TestDB(t *testing.T) {
 // 同名文件测试
 func TestUniqueName(t *testing.T) {
 	//go func() {
-	//	_, err := getConnection().Exec(`insert into dfs_file (id, userId, parentId, name, "size", contentType, localId, "date", property, isExtra, isHistory,
+	//	_, err := getConnection().Exec(`insert into dfs_file (id, userId, parentId, name, "size", contentType, storageId, "date", property, isExtra, isHistory,
 	//                  deleteDate, state, stateMsg)values (?,1,1,'abc',1,'text',0,0,null,0,0,null,0,null);`, Number.ID())
 	//	fmt.Printf("1 -> %d\n", time.Now().UnixMilli())
 	//	time.Sleep(3 * time.Second)
@@ -202,7 +202,7 @@ func TestUniqueName(t *testing.T) {
 	//	}
 	//}()
 	//go func() {
-	//	_, err := getConnection().Exec(`insert into dfs_file (id, userId, parentId, name, "size", contentType, localId, "date", property, isExtra, isHistory,
+	//	_, err := getConnection().Exec(`insert into dfs_file (id, userId, parentId, name, "size", contentType, storageId, "date", property, isExtra, isHistory,
 	//                  deleteDate, state, stateMsg)values (?,1,1,'abc',1,'text',0,0,null,0,0,null,0,null);`, Number.ID())
 	//	fmt.Printf("2 -> %d\n", time.Now().UnixMilli())
 	//	time.Sleep(3 * time.Second)
@@ -246,7 +246,7 @@ func TestUniqueName(t *testing.T) {
 	//	go func() {
 	//		tx := getConnection()
 	//		fmt.Printf("%d:tx := getConnection()\n", i)
-	//		_, err := tx.Exec(`insert into dfs_file (id, userId, parentId, name, "size", contentType, localId, "date", property, isExtra, isHistory,
+	//		_, err := tx.Exec(`insert into dfs_file (id, userId, parentId, name, "size", contentType, storageId, "date", property, isExtra, isHistory,
 	//		                 deleteDate, state, stateMsg)values (?,1,?,'abc',1,'text',0,0,null,0,0,null,0,null);`, Number.ID(), Number.ID())
 	//		fmt.Printf("%d -> %d\n", i, time.Now().UnixMilli())
 	//		time.Sleep(1 * time.Second)
@@ -277,7 +277,7 @@ func TestUniqueName(t *testing.T) {
 	//}
 
 	DBConnection.StartTransaction()
-	DBConnection.Write(`insert into dfs_file (id, userId, parentId, name, "size", contentType, localId, "date", property, isExtra, isHistory,
+	DBConnection.Write(`insert into dfs_file (id, userId, parentId, name, "size", contentType, storageId, "date", property, isExtra, isHistory,
 			                 deleteDate, state, stateMsg)values (?,1,?,'abc',1,'text',0,0,null,0,0,null,0,null);`, Number.ID(), Number.ID())
 	DBConnection.Commit()
 	var count int

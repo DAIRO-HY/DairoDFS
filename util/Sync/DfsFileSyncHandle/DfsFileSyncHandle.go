@@ -26,14 +26,14 @@ func ByTable(info *bean.SyncServerInfo, dataMap map[string]any) error {
 	name := dataMap["name"].(string)
 
 	//存储文件id
-	localId := int64(dataMap["localId"].(float64))
+	storageId := int64(dataMap["storageId"].(float64))
 
 	existsFile, isExists := DfsFileDao.SelectByParentIdAndName(userId, parentId, name)
 	if !isExists { //文件不存在时，不做任何处理
 		return nil
 	}
 	//该分机端DFS文件已经存在的话，要做一些特殊处理
-	if localId == 0 && existsFile.LocalId == 0 {
+	if storageId == 0 && existsFile.StorageId == 0 {
 		// 如果都是文件夹，则保留主机端的文件夹，具体步骤如下
 		// 1、将本地的DFS文件夹下的所有文件及文件夹全部移动到主机端的文件夹下
 		// 2、删除本地文件夹（这可能会导致已经分享出去的连接失效）
@@ -43,7 +43,7 @@ func ByTable(info *bean.SyncServerInfo, dataMap map[string]any) error {
 		if _, err := info.DbTx().Exec("delete from dfs_file where id = ?", existsFile.Id); err != nil {
 			return err
 		}
-	} else if localId > 0 && existsFile.LocalId > 0 {
+	} else if storageId > 0 && existsFile.StorageId > 0 {
 		// 如果都是文件，则保留最新的一个文件，将日期比较老的文件加入到历史记录
 		if id > existsFile.Id { //当前主机端的文件比较新，则将本地的文件设置为历史文件
 			if _, err := info.DbTx().Exec("update dfs_file set isHistory = 1 where id = ?", existsFile.Id); err != nil {
@@ -81,14 +81,14 @@ func ByLog(info *bean.SyncServerInfo, params []any) (string, error) {
 	name := params[3].(string)
 
 	//存储文件id
-	localId := int64(params[6].(float64))
+	storageId := int64(params[6].(float64))
 
 	existsFile, isExists := DfsFileDao.SelectByParentIdAndName(userId, parentId, name)
 	if !isExists { //文件不存在时，不做任何处理
 		return "", nil
 	}
 
-	if localId == 0 && existsFile.LocalId == 0 {
+	if storageId == 0 && existsFile.StorageId == 0 {
 		// 如果都是文件夹，则保留主机端的文件夹，具体步骤如下
 		// 1、将本地的DFS文件夹下的所有文件及文件夹全部移动到主机端的文件夹下
 		// 2、删除本地文件夹（这可能会导致已经分享出去的连接失效）
@@ -98,7 +98,7 @@ func ByLog(info *bean.SyncServerInfo, params []any) (string, error) {
 		if _, err := info.DbTx().Exec("delete from dfs_file where id = ?", existsFile.Id); err != nil {
 			return "", err
 		}
-	} else if localId > 0 && existsFile.LocalId > 0 {
+	} else if storageId > 0 && existsFile.StorageId > 0 {
 		// 如果都是文件，则保留最新的一个文件，将日期比较老的文件加入到历史记录
 		if id > existsFile.Id { //当前主机端的文件比较新，则将本地的文件设置为历史文件
 			if _, err := info.DbTx().Exec("update dfs_file set isHistory = 1 where id = ?", existsFile.Id); err != nil {

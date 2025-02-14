@@ -39,7 +39,7 @@ func GetList(folder string) []form.FileForm {
 			Name:     it.Name,
 			Size:     it.Size,
 			Date:     Date.FormatByTimespan(it.Date),
-			FileFlag: it.LocalId != 0,
+			FileFlag: it.StorageId != 0,
 			Thumb:    Bool.Is(it.HasThumb, "/app/files/thumb/"+String.ValueOf(it.Id), ""),
 		}
 		forms = append(forms, outForm)
@@ -198,7 +198,7 @@ func GetProperty(paths []string) any {
 func computeSubTotal(totalForm *form.ComputeSubTotalForm, loginId int64, folderId int64) {
 	subList := DfsFileDao.SelectSubFile(loginId, folderId)
 	for _, it := range subList {
-		if it.LocalId == 0 {
+		if it.StorageId == 0 {
 			totalForm.FolderCount += 1
 			computeSubTotal(totalForm, loginId, it.Id)
 		} else {

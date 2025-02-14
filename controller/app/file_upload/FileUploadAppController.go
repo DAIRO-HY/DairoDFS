@@ -52,11 +52,11 @@ func Upload(request *http.Request, folder string, contentType string) error {
 	defer file.Close()
 
 	//将文件存放到指定目录
-	localFileDto, saveErr := DfsFileService.SaveToLocalFile(md5, file)
+	storageFileDto, saveErr := DfsFileService.SaveToStorageFile(md5, file)
 	if saveErr != nil {
 		return saveErr
 	}
-	if addErr := addDfsFile(LoginState.LoginId(), localFileDto, path, contentType); addErr != nil {
+	if addErr := addDfsFile(LoginState.LoginId(), storageFileDto, path, contentType); addErr != nil {
 		return addErr
 	}
 
@@ -100,7 +100,7 @@ func Upload(request *http.Request, folder string, contentType string) error {
 //            }
 //
 //            //将文件存放到指定目录
-//            this.dfsFileService.saveToLocalFile(md5, file.inputStream())
+//            this.dfsFileService.saveToStorageFile(md5, file.inputStream())
 //            file.delete()
 //
 //            //开启生成缩略图线程
@@ -135,11 +135,11 @@ func Upload(request *http.Request, folder string, contentType string) error {
 //    @ResponseBody
 //    fun byMd5(md5: String, path: String, contentType: String?) {
 //
-//        val localFileDto = this.localFileDao.selectByFileMd5(md5)
+//        val storageFileDto = this.storageFileDao.selectByFileMd5(md5)
 //            ?: throw ErrorCode.NO_EXISTS
 //
 //        //添加到DFS文件
-//        this.addDfsFile(super.loginId, localFileDto, path, contentType)
+//        this.addDfsFile(super.loginId, storageFileDto, path, contentType)
 //
 //        //删除上传的临时文件
 //        File(dataPath + "/temp/" + md5).delete()
@@ -152,11 +152,11 @@ func Upload(request *http.Request, folder string, contentType string) error {
 /**
  * 添加到DFS文件
  * @param userId 会员id
- * @param localFileDto 本地文件Dto
+ * @param storageFileDto 本地文件Dto
  * @param path DFS文件路径
  * @param fileContentType 文件类型
  */
-func addDfsFile(userId int64, localFileDto dto.LocalFileDto, path string, fileContentType string) error {
+func addDfsFile(userId int64, storageFileDto dto.StorageFileDto, path string, fileContentType string) error {
 
 	//文件名
 	name := String.FileName(path)
@@ -177,10 +177,10 @@ func addDfsFile(userId int64, localFileDto dto.LocalFileDto, path string, fileCo
 		contentType = DfsFileUtil.DfsContentType(ext)
 	}
 
-	fileInfo, _ := os.Stat(localFileDto.Path)
+	fileInfo, _ := os.Stat(storageFileDto.Path)
 	fileDto := dto.DfsFileDto{
 		UserId:      userId,
-		LocalId:     localFileDto.Id,
+		StorageId:   storageFileDto.Id,
 		Name:        name,
 		ContentType: contentType,
 		Size:        fileInfo.Size(),

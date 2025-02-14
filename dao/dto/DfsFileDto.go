@@ -35,7 +35,7 @@ type DfsFileDto struct {
 	/**
 	 * 本地文件存储id(文件专用)
 	 */
-	LocalId int64
+	StorageId int64
 
 	/**
 	 * 创建日期
@@ -77,12 +77,12 @@ type DfsFileDto struct {
  * 是否文件
  */
 func (mine DfsFileDto) IsFile() bool {
-	return mine.LocalId > 0
+	return mine.StorageId > 0
 }
 
 /**
  * 是否文件夹
  */
 func (mine DfsFileDto) IsFolder() bool {
-	return mine.LocalId == 0
+	return mine.StorageId == 0
 }

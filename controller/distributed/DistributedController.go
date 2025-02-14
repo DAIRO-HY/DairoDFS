@@ -2,8 +2,8 @@ package distributed
 
 import (
 	"DairoDFS/controller/distributed/DistributedPush"
-	"DairoDFS/dao/LocalFileDao"
 	"DairoDFS/dao/SqlLogDao"
+	"DairoDFS/dao/StorageFileDao"
 	"DairoDFS/extension/Number"
 	"DairoDFS/util/DBUtil"
 	"DairoDFS/util/DfsFileUtil"
@@ -129,10 +129,10 @@ func Download(writer http.ResponseWriter, request *http.Request, md5 string) {
 	//if (SyncByTable.isRuning || SyncByLog.isRunning) {
 	//   throw BusinessException("主机正在同步数据中，请等待完成后继续。")
 	//}
-	localFileDto, isExists := LocalFileDao.SelectByFileMd5(md5)
+	storageFileDto, isExists := StorageFileDao.SelectByFileMd5(md5)
 	if !isExists {
 		writer.WriteHeader(http.StatusNotFound)
 		return
 	}
-	DfsFileUtil.Download(localFileDto.Path, writer, request)
+	DfsFileUtil.Download(storageFileDto.Path, writer, request)
 }

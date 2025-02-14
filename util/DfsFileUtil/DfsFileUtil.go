@@ -3,7 +3,7 @@ package DfsFileUtil
 import (
 	"DairoDFS/application/SystemConfig"
 	"DairoDFS/dao/DfsFileDao"
-	"DairoDFS/dao/LocalFileDao"
+	"DairoDFS/dao/StorageFileDao"
 	"DairoDFS/dao/dto"
 	"DairoDFS/exception"
 	"bufio"
@@ -207,12 +207,12 @@ func DownloadDfs(dfsFile dto.DfsFileDto, writer http.ResponseWriter, request *ht
 	writer.Header().Set("Content-Type", dfsFile.ContentType)
 
 	//本地文件存储信息
-	localFile, isExists := LocalFileDao.SelectOne(dfsFile.LocalId)
+	storageFile, isExists := StorageFileDao.SelectOne(dfsFile.StorageId)
 	if !isExists {
 		writer.WriteHeader(http.StatusNotFound)
 		return
 	}
-	Download(localFile.Path, writer, request)
+	Download(storageFile.Path, writer, request)
 }
 
 /**

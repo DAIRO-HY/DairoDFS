@@ -7,7 +7,7 @@ import (
 	"DairoDFS/util/DBUtil"
 	"DairoDFS/util/Sync"
 	"DairoDFS/util/Sync/DfsFileSyncHandle"
-	"DairoDFS/util/Sync/LocalFileSyncHandle"
+	"DairoDFS/util/Sync/StorageFileSyncHandle"
 	"DairoDFS/util/Sync/SyncByLog"
 	"DairoDFS/util/Sync/SyncHttp"
 	"DairoDFS/util/Sync/SyncInfoManager"
@@ -44,7 +44,7 @@ func SyncAll() {
 			"dfs_file",
 			"dfs_file_delete",
 			"share",
-			"local_file",
+			"storage_file",
 		}
 		for _, it := range tbNames {
 			err := loopSync(info, it, 0, aopId)
@@ -195,8 +195,8 @@ func getTableData(info *bean.SyncServerInfo, tbName string, ids string) ([]map[s
 func insertData(info *bean.SyncServerInfo, tbName string, dataMapList []map[string]any) error {
 	for _, dataMap := range dataMapList {
 		switch tbName {
-		case "local_file": //当前请求的是本地文件存储表，先去下载文件
-			if err := LocalFileSyncHandle.ByTable(info, dataMap); err != nil {
+		case "storage_file": //当前请求的是本地文件存储表，先去下载文件
+			if err := StorageFileSyncHandle.ByTable(info, dataMap); err != nil {
 				return err
 			}
 		case "dfs_file": //如果是用户文件表

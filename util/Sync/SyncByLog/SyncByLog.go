@@ -10,7 +10,7 @@ import (
 	"DairoDFS/util/DBConnection"
 	"DairoDFS/util/Sync"
 	"DairoDFS/util/Sync/DfsFileSyncHandle"
-	"DairoDFS/util/Sync/LocalFileSyncHandle"
+	"DairoDFS/util/Sync/StorageFileSyncHandle"
 	"DairoDFS/util/Sync/SyncHttp"
 	"DairoDFS/util/Sync/SyncInfoManager"
 	"DairoDFS/util/Sync/bean"
@@ -225,8 +225,8 @@ func runSql(info *bean.SyncServerInfo) error {
 
 		//日志执行结束后执行sql
 		var afterSql string
-		if strings.HasPrefix(handleSql, "insertintolocal_file") { //如果当前sql语句是往本地文件表里添加一条数据
-			if err := LocalFileSyncHandle.ByLog(info, paramList); err != nil {
+		if strings.HasPrefix(handleSql, "insertintostorage_file") { //如果当前sql语句是往本地文件表里添加一条数据
+			if err := StorageFileSyncHandle.ByLog(info, paramList); err != nil {
 				return err
 			}
 		} else if strings.HasPrefix(handleSql, "insertintodfs_file(") { //如果该sql语句是添加文件

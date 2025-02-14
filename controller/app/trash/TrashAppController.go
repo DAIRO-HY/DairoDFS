@@ -56,7 +56,7 @@ func GetList() []form.TrashForm {
 			Name:     it.Name,
 			Size:     it.Size,
 			Date:     deleteLastTime,
-			FileFlag: it.LocalId > 0,
+			FileFlag: it.StorageId > 0,
 			Thumb:    Bool.Is(it.HasThumb, "/app/files/thumb/"+String.ValueOf(it.Id), ""),
 		}
 		list = append(list, outForm)

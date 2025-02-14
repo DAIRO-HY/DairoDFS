@@ -2,7 +2,7 @@ package DfsFileService
 
 import (
 	"DairoDFS/dao/DfsFileDao"
-	"DairoDFS/dao/LocalFileDao"
+	"DairoDFS/dao/StorageFileDao"
 	"DairoDFS/dao/dto"
 	"DairoDFS/exception"
 	"DairoDFS/extension/Number"
@@ -23,7 +23,7 @@ import (
  * 添加一个文件或文件夹
  */
 func AddFile(fileDto dto.DfsFileDto, isOverWrite bool) error {
-	if fileDto.LocalId == 0 {
+	if fileDto.StorageId == 0 {
 		return exception.Biz("本地存储文件ID不能为空")
 	}
 	existDto, isExists := DfsFileDao.SelectByParentIdAndName(fileDto.UserId, fileDto.ParentId, fileDto.Name)
@@ -31,7 +31,7 @@ func AddFile(fileDto dto.DfsFileDto, isOverWrite bool) error {
 		if existDto.IsFolder() {
 			return exception.Biz("已存在同名文件夹:" + fileDto.Name)
 		}
-		if existDto.LocalId == fileDto.LocalId { //同一个文件,直接成功
+		if existDto.StorageId == fileDto.StorageId { //同一个文件,直接成功
 			return nil
 		}
 		if !isOverWrite { //文件已经存在,在不允许覆盖的情况下,直接报错义务错误
@@ -57,7 +57,7 @@ func AddFolder(folderDto dto.DfsFileDto) error {
 	if isExists {
 		return exception.BizCode(1001, "文件或文件夹已经存在")
 	}
-	folderDto.LocalId = 0
+	folderDto.StorageId = 0
 	folderDto.Date = time.Now().UnixMilli()
 	DfsFileDao.Add(folderDto)
 	return nil
@@ -139,7 +139,7 @@ func Copy(userId int64, sourcePaths []string, targetFolder string, isOverWrite b
 			createFileDto := dto.DfsFileDto{
 				ParentId:    folderId,
 				Name:        fileName,
-				LocalId:     fileDto.LocalId,
+				StorageId:   fileDto.StorageId,
 				Size:        fileDto.Size,
 				ContentType: fileDto.ContentType,
 				UserId:      fileDto.UserId,
@@ -485,7 +485,7 @@ func ShareSaveTo(shareUserId int64, userId int64, sourcePaths []string, targetFo
 			createFileDto := dto.DfsFileDto{
 				ParentId:    folderId,
 				Name:        fileName,
-				LocalId:     fileDto.LocalId,
+				StorageId:   fileDto.StorageId,
 				Size:        fileDto.Size,
 				ContentType: fileDto.ContentType,
 				UserId:      fileDto.UserId,
@@ -505,35 +505,35 @@ func ShareSaveTo(shareUserId int64, userId int64, sourcePaths []string, targetFo
  * @param md5 文件md5
  * @param iStream 文件流
  */
-func SaveToLocalFile(md5 string, reader io.Reader) (dto.LocalFileDto, error) {
-	exitsLocalFileDto, isExists := LocalFileDao.SelectByFileMd5(md5)
+func SaveToStorageFile(md5 string, reader io.Reader) (dto.StorageFileDto, error) {
+	exitsStorageFileDto, isExists := StorageFileDao.SelectByFileMd5(md5)
 	if isExists { //该文件已经存在,删除本次上传的文件并返回
-		return exitsLocalFileDto, nil
+		return exitsStorageFileDto, nil
 	}
 
 	//获取本地文件存储路径
 	localPath, err := DfsFileUtil.LocalPath()
 	if err != nil {
-		return dto.LocalFileDto{}, err
+		return dto.StorageFileDto{}, err
 	}
 
 	// 打开文件（如果不存在则创建）
 	file, err := os.Create(localPath) // 如果文件已存在，它将被覆盖
 	if err != nil {
-		return dto.LocalFileDto{}, err
+		return dto.StorageFileDto{}, err
 	}
 	defer file.Close()
 
 	//将文件保存到指定目录
 	_, err = io.Copy(file, reader)
 	if err != nil {
-		return dto.LocalFileDto{}, err
+		return dto.StorageFileDto{}, err
 	}
-	addLocalFileDto := dto.LocalFileDto{
+	addStorageFileDto := dto.StorageFileDto{
 		Path: localPath,
 		Md5:  md5,
 		Id:   Number.ID(),
 	}
-	LocalFileDao.Add(addLocalFileDto)
-	return addLocalFileDto, nil
+	StorageFileDao.Add(addStorageFileDto)
+	return addStorageFileDto, nil
 }

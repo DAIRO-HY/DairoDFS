@@ -108,7 +108,7 @@ func isFolder(userId int64, folder string, names []string) (bool, error) {
 		return false, exception.NO_FOLDER()
 	}
 	fileDto, _ := DfsFileDao.SelectOne(fileId)
-	if fileDto.LocalId == 0 { //这是一个文件夹
+	if fileDto.StorageId == 0 { //这是一个文件夹
 		return true, nil
 	}
 	return false, nil

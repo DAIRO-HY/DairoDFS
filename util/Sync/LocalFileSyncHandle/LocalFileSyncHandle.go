@@ -1,7 +1,7 @@
-package LocalFileSyncHandle
+package StorageFileSyncHandle
 
 import (
-	"DairoDFS/dao/LocalFileDao"
+	"DairoDFS/dao/StorageFileDao"
 	"DairoDFS/exception"
 	"DairoDFS/extension/File"
 	"DairoDFS/util/DfsFileUtil"
@@ -39,11 +39,11 @@ func ByLog(info *bean.SyncServerInfo, params []any) error {
 // 下载文件
 // info 主机信息
 // md5 文件md5
-// masterLocalFileId 主机存储文件Id
-func download(info *bean.SyncServerInfo, md5 string, masterLocalFileId int64) (string, error) {
+// masterStorageFileId 主机存储文件Id
+func download(info *bean.SyncServerInfo, md5 string, masterStorageFileId int64) (string, error) {
 
 	//从本地数据库查找该文件
-	existsLocalFile, isExists := LocalFileDao.SelectByFileMd5(md5)
+	existsStorageFile, isExists := StorageFileDao.SelectByFileMd5(md5)
 	if !isExists { //本地不存在该文件,则从主机下载
 		tmpFilePath, downloadErr := SyncDownloadUtil.Download(info, md5, 0)
 		if downloadErr != nil {
@@ -69,10 +69,10 @@ func download(info *bean.SyncServerInfo, md5 string, masterLocalFileId int64) (s
 	} else { //本机存在同样的文件,直接使用
 
 		//删除本地的数据
-		info.DbTx().Exec("delete from local_file where id = ?", existsLocalFile.Id)
+		info.DbTx().Exec("delete from storage_file where id = ?", existsStorageFile.Id)
 
 		//更换本机所有本地文件ID为主机上的ID
-		info.DbTx().Exec("update dfs_file set localId = ? where localId = ?", masterLocalFileId, existsLocalFile.Id)
-		return existsLocalFile.Path, nil
+		info.DbTx().Exec("update dfs_file set storageId = ? where storageId = ?", masterStorageFileId, existsStorageFile.Id)
+		return existsStorageFile.Path, nil
 	}
 }

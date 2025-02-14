@@ -30,7 +30,7 @@ func TestLoopSync(t *testing.T) {
 	info := &bean.SyncServerInfo{
 		Url: "http://localhost:" + String.ValueOf(application.Args.Port),
 	}
-	err := loopSync(info, "local_file", 0, aopId)
+	err := loopSync(info, "storage_file", 0, aopId)
 	if err != nil {
 		t.Fatal(err)
 		return

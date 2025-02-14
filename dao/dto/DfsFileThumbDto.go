@@ -38,7 +38,7 @@ type DfsFileThumbDto struct {
 	/**
 	 * 本地文件存储id(文件专用)
 	 */
-	LocalId int64
+	StorageId int64
 
 	/**
 	 * 创建日期

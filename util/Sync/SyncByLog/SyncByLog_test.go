@@ -19,7 +19,7 @@ func TestAddLog(t *testing.T) {
 		{
 			Id:    123,
 			Date:  time.Now().UnixMilli(),
-			Sql:   "insert into dfs_file(id, userId, parentId, name, size, contentType, localId, date, isExtra, property, state) values (?,?,?,?,?,?,?,?,?,?,?)",
+			Sql:   "insert into dfs_file(id, userId, parentId, name, size, contentType, storageId, date, isExtra, property, state) values (?,?,?,?,?,?,?,?,?,?,?)",
 			Param: `[1738809663240311,1738220388533791,1738220529397743,"tt",30046042,"application/octet-stream",1738231266932659,"213456948562",false,"",0]`,
 		},
 	})

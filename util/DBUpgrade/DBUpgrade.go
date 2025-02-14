@@ -27,7 +27,7 @@ func Upgrade(db *sql.DB) {
 }
 
 func create(db *sql.DB) {
-	sqlFiles := []string{"dfs_file.sql", "local_file.sql", "share.sql", "share_file.sql", "sql_log.sql", "user.sql", "user_token.sql"}
+	sqlFiles := []string{"dfs_file.sql", "storage_file.sql", "share.sql", "share_file.sql", "sql_log.sql", "user.sql", "user_token.sql"}
 	for _, fn := range sqlFiles {
 		createSql, _ := resources.SqlFolder.ReadFile("sql/create/" + fn)
 		db.Exec(string(createSql))

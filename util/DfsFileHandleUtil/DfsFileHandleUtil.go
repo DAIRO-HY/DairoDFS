@@ -3,7 +3,7 @@ package DfsFileHandleUtil
 import (
 	"DairoDFS/application"
 	"DairoDFS/dao/DfsFileDao"
-	"DairoDFS/dao/LocalFileDao"
+	"DairoDFS/dao/StorageFileDao"
 	"DairoDFS/dao/dto"
 	"DairoDFS/exception"
 	"DairoDFS/extension/Bool"
@@ -91,12 +91,12 @@ func start() {
  * 生成文件属性
  */
 func makeProperty(dfsFileDto dto.DfsFileDto) error {
-	exitsProperty := DfsFileDao.SelectPropertyByLocalId(dfsFileDto.LocalId)
+	exitsProperty := DfsFileDao.SelectPropertyByStorageId(dfsFileDto.StorageId)
 	if exitsProperty != "" { //属性已经存在
 		DfsFileDao.SetProperty(dfsFileDto.Id, exitsProperty)
 		return nil
 	}
-	localDto, isExists := LocalFileDao.SelectOne(dfsFileDto.LocalId)
+	localDto, isExists := StorageFileDao.SelectOne(dfsFileDto.StorageId)
 	if !isExists { //理论上没有不存在的文件
 		return nil
 	}
@@ -149,14 +149,14 @@ func makeProperty(dfsFileDto dto.DfsFileDto) error {
  * 生成附属文件，如标清视频，高清视频，raw预览图片
  */
 func makeExtra(dfsFileDto dto.DfsFileDto) error {
-	existsExtraList := DfsFileDao.SelectExtraFileByLocalId(dfsFileDto.LocalId)
+	existsExtraList := DfsFileDao.SelectExtraFileByStorageId(dfsFileDto.StorageId)
 	if len(existsExtraList) > 0 { //该文件已经存在了附属文件,直接使用
 		for _, it := range existsExtraList {
 			extraDto := dto.DfsFileDto{
 				Id:          Number.ID(),
 				Name:        it.Name,
 				Size:        it.Size,
-				LocalId:     it.LocalId,
+				StorageId:   it.StorageId,
 				IsExtra:     true,
 				ParentId:    dfsFileDto.Id,
 				UserId:      it.UserId,
@@ -174,9 +174,9 @@ func makeExtra(dfsFileDto dto.DfsFileDto) error {
 	if makeThumbErr != nil {
 		return makeThumbErr
 	}
-	localDto, isExistsLocalFile := LocalFileDao.SelectOne(dfsFileDto.LocalId)
-	if !isExistsLocalFile { //理论上没有不存在的本地文件
-		return exception.Biz("文件：" + String.ValueOf(dfsFileDto.LocalId) + "不存在")
+	localDto, isExistsStorageFile := StorageFileDao.SelectOne(dfsFileDto.StorageId)
+	if !isExistsStorageFile { //理论上没有不存在的本地文件
+		return exception.Biz("文件：" + String.ValueOf(dfsFileDto.StorageId) + "不存在")
 	}
 	path := localDto.Path
 	lowerName := strings.ToLower(dfsFileDto.Name)
@@ -213,7 +213,7 @@ func makeExtra(dfsFileDto dto.DfsFileDto) error {
 		md5 := File.ToMd5ByBytes(pngData)
 
 		//保存文件
-		localFileDto, err := DfsFileService.SaveToLocalFile(md5, bytes.NewReader(pngData))
+		storageFileDto, err := DfsFileService.SaveToStorageFile(md5, bytes.NewReader(pngData))
 		if err != nil {
 			return err
 		}
@@ -221,7 +221,7 @@ func makeExtra(dfsFileDto dto.DfsFileDto) error {
 			Id:          Number.ID(),
 			Name:        "preview",
 			Size:        int64(len(pngData)),
-			LocalId:     localFileDto.Id,
+			StorageId:   storageFileDto.Id,
 			IsExtra:     true,
 			ParentId:    dfsFileDto.Id,
 			UserId:      dfsFileDto.UserId,
@@ -303,7 +303,7 @@ func makeExtra(dfsFileDto dto.DfsFileDto) error {
 			targetFile, _ := os.Open(targetPath)
 
 			//保存到本地文件
-			localFileDto, saveFileErr := DfsFileService.SaveToLocalFile(md5, targetFile)
+			storageFileDto, saveFileErr := DfsFileService.SaveToStorageFile(md5, targetFile)
 			targetFile.Close()
 			os.Remove(targetPath)
 			if saveFileErr != nil {
@@ -314,7 +314,7 @@ func makeExtra(dfsFileDto dto.DfsFileDto) error {
 				Id:          Number.ID(),
 				Name:        String.ValueOf(targetSize),
 				Size:        targetFileInfo.Size(),
-				LocalId:     localFileDto.Id,
+				StorageId:   storageFileDto.Id,
 				IsExtra:     true,
 				ParentId:    dfsFileDto.Id,
 				UserId:      dfsFileDto.UserId,
@@ -338,7 +338,7 @@ func makeExtra(dfsFileDto dto.DfsFileDto) error {
 		md5 := File.ToMd5ByBytes(jpgData)
 
 		//保存文件
-		localFileDto, err := DfsFileService.SaveToLocalFile(md5, bytes.NewReader(jpgData))
+		storageFileDto, err := DfsFileService.SaveToStorageFile(md5, bytes.NewReader(jpgData))
 		if err != nil {
 			return err
 		}
@@ -346,7 +346,7 @@ func makeExtra(dfsFileDto dto.DfsFileDto) error {
 			Id:          Number.ID(),
 			Name:        "preview",
 			Size:        int64(len(jpgData)),
-			LocalId:     localFileDto.Id,
+			StorageId:   storageFileDto.Id,
 			IsExtra:     true,
 			ParentId:    dfsFileDto.Id,
 			UserId:      dfsFileDto.UserId,
@@ -364,9 +364,9 @@ func makeExtra(dfsFileDto dto.DfsFileDto) error {
  * 生成缩略图
  */
 func makeThumb(dfsFileDto dto.DfsFileDto) error {
-	localDto, isExists := LocalFileDao.SelectOne(dfsFileDto.LocalId)
+	localDto, isExists := StorageFileDao.SelectOne(dfsFileDto.StorageId)
 	if !isExists {
-		return exception.Biz("本地文件ID:" + String.ValueOf(dfsFileDto.LocalId) + "不存在")
+		return exception.Biz("本地文件ID:" + String.ValueOf(dfsFileDto.StorageId) + "不存在")
 	}
 	path := localDto.Path
 
@@ -423,7 +423,7 @@ func makeThumb(dfsFileDto dto.DfsFileDto) error {
 	md5 := File.ToMd5ByBytes(data)
 
 	//保存文件
-	localFileDto, saveErr := DfsFileService.SaveToLocalFile(md5, bytes.NewReader(data))
+	storageFileDto, saveErr := DfsFileService.SaveToStorageFile(md5, bytes.NewReader(data))
 	if saveErr != nil {
 		return saveErr
 	}
@@ -433,7 +433,7 @@ func makeThumb(dfsFileDto dto.DfsFileDto) error {
 		Id:          Number.ID(),
 		Name:        "thumb",
 		Size:        int64(len(data)),
-		LocalId:     localFileDto.Id,
+		StorageId:   storageFileDto.Id,
 		IsExtra:     true,
 		ParentId:    dfsFileDto.Id,
 		UserId:      dfsFileDto.UserId,

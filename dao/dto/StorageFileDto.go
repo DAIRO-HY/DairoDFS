@@ -1,6 +1,6 @@
 package dto
 
-type LocalFileDto struct {
+type StorageFileDto struct {
 
 	/**
 	 *  id

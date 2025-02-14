@@ -35,5 +35,5 @@ func SelectIdsByTimeout(time int64) []dto.DfsFileDto {
  * @param id 本地文件id
  */
 func IsFileUsing(id int64) bool {
-	return DBUtil.SelectSingleOneIgnoreError[bool]("select count(*) > 0 from dfs_file_delete where localId = ?", id)
+	return DBUtil.SelectSingleOneIgnoreError[bool]("select count(*) > 0 from dfs_file_delete where storageId = ?", id)
 }
