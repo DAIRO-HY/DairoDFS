@@ -56,7 +56,7 @@ func loopListen(info *bean.SyncServerInfo) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	info.CancelFunc = cancel
-	url := info.Url + "/distributed/listen?lastId=" + String.ValueOf(getLastId(info))
+	url := info.Url + "/distributed/listen?lastId=" + String.ValueOf(getLastId(info.Url))
 	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	transport := &http.Transport{
 		//MaxIdleConns:          1,
@@ -124,7 +124,7 @@ func requestSqlLog(info *bean.SyncServerInfo) {
 	}
 
 	//得到最后请求的id
-	lastId := getLastId(info)
+	lastId := getLastId(info.Url)
 	url := info.Url + "/distributed/get_log?lastId=" + String.ValueOf(lastId)
 	logData, err := SyncHttp.Request(url)
 	if err != nil {
@@ -138,6 +138,7 @@ func requestSqlLog(info *bean.SyncServerInfo) {
 		//执行日志sql
 		runSqlErr := runSql(info)
 		if runSqlErr != nil {
+			info.Rollback()
 			info.State = 2
 			info.Msg = runSqlErr.Error()
 			return
@@ -155,7 +156,7 @@ func requestSqlLog(info *bean.SyncServerInfo) {
 	json.Unmarshal(logData, &logList)
 
 	//将sql日志添加到数据库
-	insertLogErr := insertLog(info, logList)
+	insertLogErr := insertLog(info.Url, logList)
 	if insertLogErr != nil {
 		info.State = 2
 		info.Msg = insertLogErr.Error()
@@ -164,11 +165,12 @@ func requestSqlLog(info *bean.SyncServerInfo) {
 	lastLog := logList[len(logList)-1]
 
 	//执行成功之后立即将当前日志的日期保存到本地,降低sql被重复执行的BUG
-	SaveLastId(info, lastLog.Id)
+	SaveLastId(info.Url, lastLog.Id)
 
 	//执行日志sql
 	runSqlErr := runSql(info)
 	if runSqlErr != nil {
+		info.Rollback()
 		info.State = 2
 		info.Msg = runSqlErr.Error()
 		return
@@ -180,10 +182,12 @@ func requestSqlLog(info *bean.SyncServerInfo) {
 }
 
 // 从主机请求到的日志保存到本地日志
-func insertLog(info *bean.SyncServerInfo, dataList []dto.SqlLogDto) error {
-	for _, it := range dataList {
+// host 主机域名
+// dataList 日志数据列表
+func insertLog(host string, sqlLogList []dto.SqlLogDto) error {
+	for _, it := range sqlLogList {
 		_, insertErr := DBConnection.DBConn.Exec("insert into sql_log(id,date,sql,param,state,source) values(?,?,?,?,?,?)",
-			it.Id, it.Date, it.Sql, it.Param, 0, info.Url)
+			it.Id, it.Date, it.Sql, it.Param, 0, host)
 		if insertErr != nil {
 			if strings.Contains(insertErr.Error(), "UNIQUE constraint failed: sql_log.id") {
 				// 这条数据已经添加
@@ -222,10 +226,8 @@ func runSql(info *bean.SyncServerInfo) error {
 		//日志执行结束后执行sql
 		var afterSql string
 		if strings.HasPrefix(handleSql, "insertintolocal_file") { //如果当前sql语句是往本地文件表里添加一条数据
-			handleLocalFileErr := LocalFileSyncHandle.ByLog(info, paramList)
-			if handleLocalFileErr != nil {
-				DBConnection.DBConn.Exec("update sql_log set state = 2, err = ? where id = ?", handleLocalFileErr.Error(), it.Id)
-				return handleLocalFileErr
+			if err := LocalFileSyncHandle.ByLog(info, paramList); err != nil {
+				return err
 			}
 		} else if strings.HasPrefix(handleSql, "insertintodfs_file(") { //如果该sql语句是添加文件
 			sql, err := DfsFileSyncHandle.ByLog(info, paramList)
@@ -235,38 +237,45 @@ func runSql(info *bean.SyncServerInfo) error {
 			afterSql = sql
 		} else {
 		}
-		_, execSqlErr := DBConnection.DBConn.Exec(it.Sql, paramList...)
-		if execSqlErr != nil { //sql语句执行失败
-			DBConnection.DBConn.Exec("update sql_log set state = 2, err = ? where id = ?", execSqlErr.Error(), it.Id)
-			return execSqlErr
+		if _, err := info.DbTx().Exec(it.Sql, paramList...); err != nil { //sql语句执行失败
+			return err
 		}
 		if afterSql != "" {
-			DBConnection.DBConn.Exec(afterSql)
+			if _, err := info.DbTx().Exec(afterSql); err != nil {
+				return err
+			}
+		}
+
+		//最后一定要提交事务
+		if err := info.Commit(); err != nil {
+			return err
 		}
 		DBConnection.DBConn.Exec("update sql_log set state = 1 where id = ?", it.Id)
 	}
 
 	//记录当前同步的数据条数
 	info.SyncCount += len(notRunList)
-	//this.syncSocket.send(info)
 	return runSql(info)
 }
 
 // 保存最后一次请求的日志ID
-func SaveLastId(info *bean.SyncServerInfo, lastId int64) {
+// host 主机域名
+// lastId 最后获取到的ID
+func SaveLastId(host string, lastId int64) {
 
 	//记录最后一次请求到的日志ID文件
-	lastLogIdFile := syncLastIdFilePath + "." + String.ToMd5(info.Url)
+	lastLogIdFile := syncLastIdFilePath + "." + String.ToMd5(host)
 
 	//执行成功之后立即将当前日志的日期保存到本地,降低sql被重复执行的BUG
 	os.WriteFile(lastLogIdFile, []byte(String.ValueOf(lastId)), 0644)
 }
 
 // 保存最后一次请求的日志ID
-func getLastId(info *bean.SyncServerInfo) int64 {
+// host 主机域名
+func getLastId(host string) int64 {
 
 	//记录最后一次请求到的日志ID文件
-	lastLogIdFile := syncLastIdFilePath + "." + String.ToMd5(info.Url)
+	lastLogIdFile := syncLastIdFilePath + "." + String.ToMd5(host)
 	data, err := os.ReadFile(lastLogIdFile)
 	if err != nil {
 		return 0

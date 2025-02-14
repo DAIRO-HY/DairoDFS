@@ -4,7 +4,6 @@ import (
 	"DairoDFS/dao/LocalFileDao"
 	"DairoDFS/exception"
 	"DairoDFS/extension/File"
-	"DairoDFS/util/DBConnection"
 	"DairoDFS/util/DfsFileUtil"
 	"DairoDFS/util/Sync/SyncDownloadUtil"
 	"DairoDFS/util/Sync/bean"
@@ -70,10 +69,10 @@ func download(info *bean.SyncServerInfo, md5 string, masterLocalFileId int64) (s
 	} else { //本机存在同样的文件,直接使用
 
 		//删除本地的数据
-		DBConnection.DBConn.Exec("delete from local_file where id = ?", existsLocalFile.Id)
+		info.DbTx().Exec("delete from local_file where id = ?", existsLocalFile.Id)
 
 		//更换本机所有本地文件ID为主机上的ID
-		DBConnection.DBConn.Exec("update dfs_file set localId = ? where localId = ?", masterLocalFileId, existsLocalFile.Id)
+		info.DbTx().Exec("update dfs_file set localId = ? where localId = ?", masterLocalFileId, existsLocalFile.Id)
 		return existsLocalFile.Path, nil
 	}
 }

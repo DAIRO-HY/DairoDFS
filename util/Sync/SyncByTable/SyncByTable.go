@@ -59,7 +59,7 @@ func SyncAll() {
 		DBConnection.DBConn.Exec("delete from sql_log where source = ? and id < ?", info.Url, aopId)
 
 		//设置日志同步最后的ID
-		SyncByLog.SaveLastId(info, aopId)
+		SyncByLog.SaveLastId(info.Url, aopId)
 		info.State = 0
 		info.Msg = "全量同步完成"
 
@@ -110,6 +110,7 @@ func loopSync(info *bean.SyncServerInfo, tbName string, lastId int64, aopId int6
 	//插入数据
 	insertErr := insertData(info, tbName, dataMapList)
 	if insertErr != nil {
+		info.Rollback()
 		return insertErr
 	}
 
@@ -218,9 +219,12 @@ func insertData(info *bean.SyncServerInfo, tbName string, dataMapList []map[stri
 
 		//拼接sql语句
 		insertSql := "insert into " + tbName + " (" + insertKeys + ") values (" + insertValueReplaces + ")"
-		_, insertErr := DBConnection.DBConn.Exec(insertSql, insertValues...)
+		_, insertErr := info.DbTx().Exec(insertSql, insertValues...)
 		if insertErr != nil {
 			return insertErr
+		}
+		if commitErr := info.Commit(); commitErr != nil { //最后记得提交事务，将被数据反应到数据库
+			return commitErr
 		}
 	}
 	return nil

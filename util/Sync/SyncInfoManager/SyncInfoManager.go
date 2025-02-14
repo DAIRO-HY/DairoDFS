@@ -3,7 +3,6 @@ package SyncInfoManager
 import (
 	"DairoDFS/application/SystemConfig"
 	"DairoDFS/util/Sync/bean"
-	"time"
 )
 
 // 当前同步主机信息
@@ -17,10 +16,9 @@ func ReloadList() {
 	SyncInfoList = make([]*bean.SyncServerInfo, 0)
 	for i, it := range SystemConfig.Instance().SyncDomains {
 		info := &bean.SyncServerInfo{
-			Url:      it,
-			No:       i + 1,
-			TestTime: time.Now().UnixMicro(),
-			Msg:      "等待同步中",
+			Url: it,
+			No:  i + 1,
+			Msg: "等待同步中",
 		}
 		SyncInfoList = append(SyncInfoList, info)
 	}

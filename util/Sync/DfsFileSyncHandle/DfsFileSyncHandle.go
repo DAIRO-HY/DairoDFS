@@ -5,7 +5,6 @@ import (
 	"DairoDFS/dao/UserDao"
 	"DairoDFS/exception"
 	"DairoDFS/service/DfsFileService"
-	"DairoDFS/util/DBConnection"
 	"DairoDFS/util/Sync/bean"
 )
 
@@ -38,16 +37,16 @@ func ByTable(info *bean.SyncServerInfo, dataMap map[string]any) error {
 		// 如果都是文件夹，则保留主机端的文件夹，具体步骤如下
 		// 1、将本地的DFS文件夹下的所有文件及文件夹全部移动到主机端的文件夹下
 		// 2、删除本地文件夹（这可能会导致已经分享出去的连接失效）
-		if _, err := DBConnection.DBConn.Exec("update dfs_file set parentId = ? where parentId = ?", id, existsFile.Id); err != nil {
+		if _, err := info.DbTx().Exec("update dfs_file set parentId = ? where parentId = ?", id, existsFile.Id); err != nil {
 			return err
 		}
-		if _, err := DBConnection.DBConn.Exec("delete from dfs_file where id = ?", existsFile.Id); err != nil {
+		if _, err := info.DbTx().Exec("delete from dfs_file where id = ?", existsFile.Id); err != nil {
 			return err
 		}
 	} else if localId > 0 && existsFile.LocalId > 0 {
 		// 如果都是文件，则保留最新的一个文件，将日期比较老的文件加入到历史记录
 		if id > existsFile.Id { //当前主机端的文件比较新，则将本地的文件设置为历史文件
-			if _, err := DBConnection.DBConn.Exec("update dfs_file set isHistory = 1 where id = ?", existsFile.Id); err != nil {
+			if _, err := info.DbTx().Exec("update dfs_file set isHistory = 1 where id = ?", existsFile.Id); err != nil {
 				return err
 			}
 		} else { //本地的文件比较新，则将主机端的文件设置为历史文件
@@ -93,16 +92,16 @@ func ByLog(info *bean.SyncServerInfo, params []any) (string, error) {
 		// 如果都是文件夹，则保留主机端的文件夹，具体步骤如下
 		// 1、将本地的DFS文件夹下的所有文件及文件夹全部移动到主机端的文件夹下
 		// 2、删除本地文件夹（这可能会导致已经分享出去的连接失效）
-		if _, err := DBConnection.DBConn.Exec("update dfs_file set parentId = ? where parentId = ?", id, existsFile.Id); err != nil {
+		if _, err := info.DbTx().Exec("update dfs_file set parentId = ? where parentId = ?", id, existsFile.Id); err != nil {
 			return "", err
 		}
-		if _, err := DBConnection.DBConn.Exec("delete from dfs_file where id = ?", existsFile.Id); err != nil {
+		if _, err := info.DbTx().Exec("delete from dfs_file where id = ?", existsFile.Id); err != nil {
 			return "", err
 		}
 	} else if localId > 0 && existsFile.LocalId > 0 {
 		// 如果都是文件，则保留最新的一个文件，将日期比较老的文件加入到历史记录
 		if id > existsFile.Id { //当前主机端的文件比较新，则将本地的文件设置为历史文件
-			if _, err := DBConnection.DBConn.Exec("update dfs_file set isHistory = 1 where id = ?", existsFile.Id); err != nil {
+			if _, err := info.DbTx().Exec("update dfs_file set isHistory = 1 where id = ?", existsFile.Id); err != nil {
 				return "", err
 			}
 		} else { //本地的文件比较新，则将主机端的文件设置为历史文件
