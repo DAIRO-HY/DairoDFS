@@ -4,7 +4,7 @@ import (
 	"DairoDFS/application"
 	"DairoDFS/controller/distributed/DistributedPush"
 	"DairoDFS/dao/dto"
-	"DairoDFS/util/Sync/bean"
+	"DairoDFS/util/Sync"
 	"fmt"
 	"net"
 	"net/http"
@@ -27,7 +27,7 @@ func TestAddLog(t *testing.T) {
 
 func TestExecuteSqlLog(t *testing.T) {
 	application.Init()
-	runSql(&bean.SyncServerInfo{Url: "asdafsfsdfdsf"})
+	runSql(&Sync.SyncServerInfo{Url: "asdafsfsdfdsf"})
 }
 
 func TestSaveLastId(t *testing.T) {
@@ -43,14 +43,14 @@ func TestGetLastId(t *testing.T) {
 
 func TestListen(t *testing.T) {
 	application.Init()
-	listen(&bean.SyncServerInfo{
+	listen(&Sync.SyncServerInfo{
 		Url: "http://localhost:8031",
 	})
 }
 
 func TestRequestSqlLog(t *testing.T) {
 	application.Init()
-	requestSqlLog(&bean.SyncServerInfo{
+	requestSqlLog(&Sync.SyncServerInfo{
 		Url: "http://localhost:8031",
 	})
 }

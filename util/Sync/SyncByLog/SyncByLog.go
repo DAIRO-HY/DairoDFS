@@ -13,7 +13,6 @@ import (
 	"DairoDFS/util/Sync/StorageFileSyncHandle"
 	"DairoDFS/util/Sync/SyncHttp"
 	"DairoDFS/util/Sync/SyncInfoManager"
-	"DairoDFS/util/Sync/bean"
 	"context"
 	"encoding/json"
 	"io"
@@ -37,7 +36,7 @@ func ListenAll() {
 }
 
 // 监听服务端日志变化
-func listen(info *bean.SyncServerInfo) {
+func listen(info *Sync.SyncServerInfo) {
 	for {
 		if info.IsStop { // 如果被强行终止
 			break
@@ -49,7 +48,7 @@ func listen(info *bean.SyncServerInfo) {
 
 // 循环发起请求
 // return 是否停止循环
-func loopListen(info *bean.SyncServerInfo) {
+func loopListen(info *Sync.SyncServerInfo) {
 	if info.IsStop {
 		return
 	}
@@ -110,7 +109,7 @@ func loopListen(info *bean.SyncServerInfo) {
 
 // 循环取sql日志
 // @return 是否处理完成
-func requestSqlLog(info *bean.SyncServerInfo) {
+func requestSqlLog(info *Sync.SyncServerInfo) {
 
 	//单线程同步
 	Sync.SyncLock.Lock()
@@ -203,7 +202,7 @@ func insertLog(host string, sqlLogList []dto.SqlLogDto) error {
 /**
 * 执行日志里的sql语句
  */
-func runSql(info *bean.SyncServerInfo) error {
+func runSql(info *Sync.SyncServerInfo) error {
 
 	//获取还未执行的sql语句
 	notRunList := SqlLogDao.GetNotRunList()
