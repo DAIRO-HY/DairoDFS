@@ -3,17 +3,17 @@ package form
 type ShareForm struct{
 
     /** 名称 **/
-    name string
+    Name string
 
     /** 大小 **/
-    size int64
+    Size int64
 
     /** 是否文件 **/
-    fileFlag bool
+    FileFlag bool
 
     /** 创建日期 **/
-    date string
+    Date string
 
     /** 缩率图 **/
-    thumb string
+    Thumb string
 }

@@ -1,0 +1,268 @@
+﻿{{define "share_list"}}
+<div id="fileListDiv" class="mx-3 mt-3 p-2 rounded shadow bg-content"
+     style="min-height: 360px;padding-bottom: 60px!important;" onclick="uncheckAll();"></div>
+<script>
+
+    /**
+     * 数据操作上级URL
+     */
+    const dataUrl = "[[${dataUrl}]]"
+
+    /**
+     * 空文件夹时提示HTML
+     */
+    const NO_FILE_HTML = `<div class="text-center fs-4" style="margin-top: 150px;opacity: .2;">文件夹空空的</div>`
+
+    /**
+     * 获取文件列表部分的HTML
+     */
+    const fileItemHtml =
+        `<div class="d-flex align-items-center justify-content-between" data-index="{index}" file-item>
+                <div class="text-white" role="button">
+                    <div style="width: 50px;height: 50px;">
+                    {thumb}
+                    </div>
+                </div>
+                <div class="ms-2 {border} d-flex align-items-center" style="width:99999px;height: 60px;overflow: hidden" role="button">
+                    <div>
+                    <div class="text-nowrap">{name}</div>
+                    <div class="small"><span>{date}</span><i class="bi bi-dot"></i><span>{size}</span></div>
+                    </div>
+                </div>
+                <div class="{border} px-2" style="height: 60px;line-height: 60px;" check-icon>
+                </div>
+            </div>`
+
+    /**
+     * 当前显示的文件列表
+     */
+    let fileList = []
+
+    $(function () {
+        init()
+    })
+
+    function init() {
+
+        //绑定文件空白右键点击事件
+        bindEmptyRightClick()
+        reload()
+    }
+
+    function getFileList() {
+        return fileList
+    }
+
+    /**
+     * 重新加载列表
+     */
+    function reload() {
+        const folder = getCurrentFolderByUrl()
+        loadFileData(folder)
+    }
+
+    /**
+     * 绑定点击事件
+     */
+    function bindFileClick() {
+        $("div[file-item]").on("click", function (e) {
+            e.stopPropagation()
+            const index = parseInt($(this).data("index"))
+            if (dataUrl.startsWith("trash/")) {//当前为垃圾箱列表
+                contextMenuClick(index, e)
+                return
+            }
+            const file = fileList[index]
+            const currentFolder = getCurrentFolderByUrl()
+            if (file.fileFlag) {//如果是一个文件
+                window.open(location.pathname + "/download/" + file.name + "?folder=" + currentFolder)
+            } else {
+                const folder = currentFolder + "/" + file.name
+                loadFileData(folder)
+            }
+        })
+    }
+
+    /**
+     * 绑定右键点击事件
+     */
+    function bindFileRightClick() {
+        $("div[file-item]").on("contextmenu", function (e) {
+
+            //将当前点击的文件标记为选中张泰
+            const index = parseInt($(this).data("index"))
+            contextMenuClick(index, e)
+            return false
+        })
+    }
+
+    /**
+     * 执行右键点击事件
+     * @param e
+     */
+    function contextMenuClick(index, e) {
+        fileList.forEach((item, i) => {
+            item.checked = index === i
+        })
+
+        //更新选中状态
+        updateCheckedState()
+
+        //显示文件操作视图
+        showFileOption(e)
+    }
+
+    /**
+     * 绑定选中事件
+     */
+    function bindCheckIconClick() {
+        $("div[check-icon]").on("click", function (e) {
+            e.stopPropagation()
+            const index = parseInt($(this).parent().data("index"))
+            const file = fileList[index]
+            file.checked = !file.checked
+            updateCheckedState()
+        })
+    }
+
+    /**
+     * 绑定文件空白右键点击事件
+     */
+    function bindEmptyRightClick() {
+        $("#fileListDiv").on("contextmenu", function (e) {
+
+            //显示文件操作视图
+            showFileOption(e)
+            return false
+        })
+    }
+
+    /**
+     * 从URL中获取当前文件夹路径
+     */
+    function getCurrentFolderByUrl() {
+        let folderHash = location.hash
+        if (folderHash === "") {//没有路径时,默认跟目录
+            return ""
+        }
+        if (folderHash === "#") {//只有一个#也代表跟目录
+            return ""
+        }
+        let folder = folderHash.substring(1)//把前面的#去掉
+        folder = decodeURIComponent(folder)
+        return folder
+    }
+
+    /**
+     * 加载文件列表数据
+     */
+    function loadFileData(folder) {
+        $.ajaxByData(location.pathname + "/get_list?folder=" + folder).success(data => {
+            data.forEach(item => item.checked = false)
+            data = data.sort(item => item.fileFlag ? 1 : -1)
+
+            //开头的/替换成#,然后放到URL中
+            location.href = "#" + folder
+
+            //更新路径导航条
+            updatePathNavbar()
+            fillFileList(data)
+            bindFileClick()
+
+            //绑定右键点击事件
+            bindFileRightClick()
+
+            //绑定选中事件
+            bindCheckIconClick()
+
+            //更新选中状态
+            updateCheckedState()
+        }).post()
+    }
+
+    /**
+     * 填充文件列表
+     */
+    function fillFileList(data) {
+        fileList = data
+        const $fileListDiv = $("#fileListDiv")
+        $fileListDiv.empty()
+        if (data.length === 0) {//文件夹里没有任何文件和文件夹
+            $fileListDiv.append(NO_FILE_HTML)
+            return
+        }
+        const lastIndex = data.length - 1
+        data.forEach((item, index) => {
+            const border = index < lastIndex ? "border-bottom" : ""
+
+            let thumb
+            if (item.thumb) {
+                thumb = `<img src="${item.thumb}" class="rounded" style="width: 50px;height: 50px;">`
+            } else if (item.fileFlag) {
+                thumb = `<div class="d-flex align-items-center" style="width: 50px;height: 50px;"><i class="bi bi-file-earmark-fill" style="font-size: 50px;"></i></div>`
+            } else {
+                thumb = `<div class="d-flex align-items-center" style="width: 50px;height: 50px;"><i class="bi bi-folder-fill" style="font-size: 50px;color:#6FBEEA;"></i></div>`
+            }
+            $fileListDiv.append(
+                fileItemHtml
+                    .replace("{thumb}", thumb)
+                    .replace("{name}", item.name)
+                    .replace("{size}", item.size.toDataSize())
+                    .replace("{date}", item.date)
+                    .replace(/{border}/g, border)
+                    .replace(/{index}/g, index)
+            )
+        })
+    }
+
+    /**
+     * 选中所有
+     */
+    function checkAll() {
+        fileList.forEach(item => item.checked = true)
+        updateCheckedState()
+    }
+
+    /**
+     * 取消所有选中
+     */
+    function uncheckAll() {
+        fileList.forEach(item => item.checked = false)
+        updateCheckedState()
+    }
+
+    /**
+     * 刷新按钮点击事件
+     */
+    function onRefreshClick() {
+        reload()
+    }
+
+    /**
+     * 更新选中状态
+     */
+    function updateCheckedState() {
+        const $fileItems = $("#fileListDiv>div")
+        let hasChecked = false
+        fileList.forEach((item, index) => {
+            const checkIcon = $($fileItems[index]).find("div[check-icon]")
+            if (item.checked) {
+                hasChecked = true
+                checkIcon.html(`<i class="bi bi-check-circle text-primary fs-5"></i>`)
+            } else {
+                checkIcon.html(`<i class="bi bi-circle text-secondary"></i>`)
+            }
+        })
+        updateOptionBtn(hasChecked)
+    }
+
+    /**
+     * 获取选中的路径列表
+     */
+    function getCheckedList() {
+        const folder = getCurrentFolderByUrl()
+        return fileList.filter(item => item.checked)
+            .map(item => folder + "/" + item.name)
+    }
+</script>
+{{end}}

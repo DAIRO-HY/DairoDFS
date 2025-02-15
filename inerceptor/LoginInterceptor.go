@@ -11,11 +11,10 @@ import (
 
 // LoginValidate 管理员登录验证
 // @interceptor:before
-// @include:/**
+// @include:/app/**
 // @exclude:/app/login**,/app/install**,/distributed**
 // @order:1
 func LoginValidate(writer http.ResponseWriter, request *http.Request) bool {
-	//@TODO:未登录是数据库事务没有被释放的BUG还未解决
 
 	//获取APP登录票据
 	cookieToken, _ := request.Cookie("token")

@@ -27,6 +27,7 @@ import (
 	controllerappuser "DairoDFS/controller/app/user"
 	controllerappuserform "DairoDFS/controller/app/user/form"
 	controllerdistributed "DairoDFS/controller/distributed"
+	controllershare "DairoDFS/controller/share"
 	inerceptor "DairoDFS/inerceptor"
 
 	"embed"
@@ -85,23 +86,10 @@ func startWebServer(port int) {
 			writer.Write([]byte("Method Not Allowed"))
 			return
 		}
-		var body any = nil
 		if !inerceptor.StartTransaction(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.HtmlInterceptor(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
-		if !inerceptor.LoginValidate(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.HtmlInterceptor(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-			return
-		}
+		var body any = nil
 		controllerapp.Index()
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.HtmlInterceptor(writer, request, body)
@@ -114,23 +102,13 @@ func startWebServer(port int) {
 			writer.Write([]byte("Method Not Allowed"))
 			return
 		}
-		var body any = nil
 		if !inerceptor.StartTransaction(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.HtmlInterceptor(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
 		if !inerceptor.LoginValidate(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.HtmlInterceptor(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
+		var body any = nil
 		controllerappabout.Html()
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.HtmlInterceptor(writer, request, body)
@@ -143,19 +121,10 @@ func startWebServer(port int) {
 			writer.Write([]byte("Method Not Allowed"))
 			return
 		}
-		var body any = nil
 		if !inerceptor.StartTransaction(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
 		if !inerceptor.LoginValidate(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
 		requestFormData := getRequestFormData(request) //获取表单数据
@@ -169,6 +138,7 @@ func startWebServer(port int) {
 		if contentTypeArr != nil { // 如果参数存在
 			contentType = contentTypeArr[0]
 		}
+		var body any = nil
 		body = controllerappfileupload.Upload(request, folder, contentType)
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
@@ -180,28 +150,18 @@ func startWebServer(port int) {
 			writer.Write([]byte("Method Not Allowed"))
 			return
 		}
-		var body any = nil
 		if !inerceptor.StartTransaction(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.HtmlInterceptor(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
 		if !inerceptor.LoginValidate(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.HtmlInterceptor(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
+		var body any = nil
 		controllerappfiles.Html()
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.HtmlInterceptor(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-		writeToTemplate(writer, body, "resources/templates/app/files.html", "resources/templates/app/include/head.html", "resources/templates/app/include/files/files_toolbar.html", "resources/templates/app/include/share_detail_dialog.html", "resources/templates/app/include/files/files_right_option.html", "resources/templates/app/include/files/files_share.html", "resources/templates/app/include/file_property_dialog.html", "resources/templates/app/include/top-bar.html", "resources/templates/app/include/files/files_upload.html", "resources/templates/app/include/files_list.html")
+		writeToTemplate(writer, body, "resources/templates/app/files.html", "resources/templates/app/include/top-bar.html", "resources/templates/app/include/files/files_toolbar.html", "resources/templates/app/include/files/files_upload.html", "resources/templates/app/include/files/files_share.html", "resources/templates/app/include/file_property_dialog.html", "resources/templates/app/include/head.html", "resources/templates/app/include/files_list.html", "resources/templates/app/include/files/files_right_option.html", "resources/templates/app/include/share_detail_dialog.html")
 	})
 	http.HandleFunc("/app/files/get_list", func(writer http.ResponseWriter, request *http.Request) {
 		if request.Method != "POST" {
@@ -209,19 +169,10 @@ func startWebServer(port int) {
 			writer.Write([]byte("Method Not Allowed"))
 			return
 		}
-		var body any = nil
 		if !inerceptor.StartTransaction(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
 		if !inerceptor.LoginValidate(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
 		requestFormData := getRequestFormData(request) //获取表单数据
@@ -230,6 +181,7 @@ func startWebServer(port int) {
 		if folderArr != nil { // 如果参数存在
 			folder = folderArr[0]
 		}
+		var body any = nil
 		body = controllerappfiles.GetList(folder)
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
@@ -241,19 +193,10 @@ func startWebServer(port int) {
 			writer.Write([]byte("Method Not Allowed"))
 			return
 		}
-		var body any = nil
 		if !inerceptor.StartTransaction(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
 		if !inerceptor.LoginValidate(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
 		requestFormData := getRequestFormData(request) //获取表单数据
@@ -262,6 +205,7 @@ func startWebServer(port int) {
 		if folderArr != nil { // 如果参数存在
 			folder = folderArr[0]
 		}
+		var body any = nil
 		body = controllerappfiles.CreateFolder(folder)
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
@@ -273,19 +217,10 @@ func startWebServer(port int) {
 			writer.Write([]byte("Method Not Allowed"))
 			return
 		}
-		var body any = nil
 		if !inerceptor.StartTransaction(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
 		if !inerceptor.LoginValidate(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
 		requestFormData := getRequestFormData(request) //获取表单数据
@@ -294,6 +229,7 @@ func startWebServer(port int) {
 		if pathsArr != nil { // 如果参数存在
 			paths = pathsArr
 		}
+		var body any = nil
 		body = controllerappfiles.Delete(paths)
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
@@ -305,19 +241,10 @@ func startWebServer(port int) {
 			writer.Write([]byte("Method Not Allowed"))
 			return
 		}
-		var body any = nil
 		if !inerceptor.StartTransaction(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
 		if !inerceptor.LoginValidate(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
 		requestFormData := getRequestFormData(request) //获取表单数据
@@ -331,6 +258,7 @@ func startWebServer(port int) {
 		if nameArr != nil { // 如果参数存在
 			name = nameArr[0]
 		}
+		var body any = nil
 		body = controllerappfiles.Rename(sourcePath, name)
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
@@ -342,19 +270,10 @@ func startWebServer(port int) {
 			writer.Write([]byte("Method Not Allowed"))
 			return
 		}
-		var body any = nil
 		if !inerceptor.StartTransaction(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
 		if !inerceptor.LoginValidate(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
 		requestFormData := getRequestFormData(request) //获取表单数据
@@ -373,6 +292,7 @@ func startWebServer(port int) {
 		if isOverWriteArr != nil { // 如果参数存在
 			isOverWrite = isOverWriteArr[0]
 		}
+		var body any = nil
 		body = controllerappfiles.Copy(sourcePaths, targetFolder, isOverWrite)
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
@@ -384,19 +304,10 @@ func startWebServer(port int) {
 			writer.Write([]byte("Method Not Allowed"))
 			return
 		}
-		var body any = nil
 		if !inerceptor.StartTransaction(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
 		if !inerceptor.LoginValidate(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
 		requestFormData := getRequestFormData(request) //获取表单数据
@@ -415,6 +326,7 @@ func startWebServer(port int) {
 		if isOverWriteArr != nil { // 如果参数存在
 			isOverWrite = isOverWriteArr[0]
 		}
+		var body any = nil
 		body = controllerappfiles.Move(sourcePaths, targetFolder, isOverWrite)
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
@@ -426,19 +338,10 @@ func startWebServer(port int) {
 			writer.Write([]byte("Method Not Allowed"))
 			return
 		}
-		var body any = nil
 		if !inerceptor.StartTransaction(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
 		if !inerceptor.LoginValidate(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
 		requestFormData := getRequestFormData(request) //获取表单数据
@@ -482,6 +385,7 @@ func startWebServer(port int) {
 			writeFieldFormError(writer, inFormIsEndDateTimeMsg, "endDateTime")
 			return
 		}
+		var body any = nil
 		body = controllerappfiles.Share(inForm)
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
@@ -493,19 +397,10 @@ func startWebServer(port int) {
 			writer.Write([]byte("Method Not Allowed"))
 			return
 		}
-		var body any = nil
 		if !inerceptor.StartTransaction(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
 		if !inerceptor.LoginValidate(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
 		requestFormData := getRequestFormData(request) //获取表单数据
@@ -514,6 +409,7 @@ func startWebServer(port int) {
 		if pathsArr != nil { // 如果参数存在
 			paths = pathsArr
 		}
+		var body any = nil
 		body = controllerappfiles.GetProperty(paths)
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
@@ -525,19 +421,10 @@ func startWebServer(port int) {
 			writer.Write([]byte("Method Not Allowed"))
 			return
 		}
-		var body any = nil
 		if !inerceptor.StartTransaction(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
 		if !inerceptor.LoginValidate(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
 		requestFormData := getRequestFormData(request) //获取表单数据
@@ -551,6 +438,7 @@ func startWebServer(port int) {
 		if contentTypeArr != nil { // 如果参数存在
 			contentType = contentTypeArr[0]
 		}
+		var body any = nil
 		body = controllerappfiles.SetContentType(path, contentType)
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
@@ -562,19 +450,10 @@ func startWebServer(port int) {
 			writer.Write([]byte("Method Not Allowed"))
 			return
 		}
-		var body any = nil
 		if !inerceptor.StartTransaction(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
 		if !inerceptor.LoginValidate(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
 		requestFormData := getRequestFormData(request) //获取表单数据
@@ -583,6 +462,7 @@ func startWebServer(port int) {
 		if idArr != nil { // 如果参数存在
 			id = idArr[0]
 		}
+		var body any = nil
 		controllerappfiles.DownloadByHistory(writer, request, id)
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
@@ -594,19 +474,10 @@ func startWebServer(port int) {
 			writer.Write([]byte("Method Not Allowed"))
 			return
 		}
-		var body any = nil
 		if !inerceptor.StartTransaction(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
 		if !inerceptor.LoginValidate(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
 		requestFormData := getRequestFormData(request) //获取表单数据
@@ -642,6 +513,7 @@ func startWebServer(port int) {
 			return
 		}
 		name := pathVariables[1]
+		var body any = nil
 		controllerappfiles.Preview(writer, request, dfsId, name, extra)
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
@@ -653,40 +525,23 @@ func startWebServer(port int) {
 			writer.Write([]byte("Method Not Allowed"))
 			return
 		}
-		var body any = nil
 		if !inerceptor.StartTransaction(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
 		if !inerceptor.LoginValidate(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
+		var body any = nil
 		controllerappfiles.Download(writer, request)
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 		writeToResponse(writer, body)
 	})
 	http.HandleFunc("/app/files/thumb/", func(writer http.ResponseWriter, request *http.Request) {
-		var body any = nil
 		if !inerceptor.StartTransaction(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
 		if !inerceptor.LoginValidate(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
 
@@ -715,6 +570,7 @@ func startWebServer(port int) {
 			writer.Write([]byte("参数类型不匹配：“" + pathVariables[0] + "”无法转换为int64类型。"))
 			return
 		}
+		var body any = nil
 		controllerappfiles.Thumb(writer, request, id)
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
@@ -726,14 +582,10 @@ func startWebServer(port int) {
 			writer.Write([]byte("Method Not Allowed"))
 			return
 		}
-		var body any = nil
 		if !inerceptor.StartTransaction(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
+		var body any = nil
 		controllerappinstallcreateadmin.Init(writer, request)
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
@@ -745,12 +597,7 @@ func startWebServer(port int) {
 			writer.Write([]byte("Method Not Allowed"))
 			return
 		}
-		var body any = nil
 		if !inerceptor.StartTransaction(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
 		requestFormData := getRequestFormData(request) //获取表单数据
@@ -765,6 +612,7 @@ func startWebServer(port int) {
 			inForm.Pwd = inFormPwd[0]
 		}
 
+		var body any = nil
 		body = controllerappinstallcreateadmin.AddAdmin(inForm)
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
@@ -776,15 +624,10 @@ func startWebServer(port int) {
 			writer.Write([]byte("Method Not Allowed"))
 			return
 		}
-		var body any = nil
 		if !inerceptor.StartTransaction(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.HtmlInterceptor(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
+		var body any = nil
 		controllerappinstallffmpeg.Html()
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.HtmlInterceptor(writer, request, body)
@@ -797,14 +640,10 @@ func startWebServer(port int) {
 			writer.Write([]byte("Method Not Allowed"))
 			return
 		}
-		var body any = nil
 		if !inerceptor.StartTransaction(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
+		var body any = nil
 		controllerappinstallffmpeg.Recycle()
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
@@ -816,28 +655,20 @@ func startWebServer(port int) {
 			writer.Write([]byte("Method Not Allowed"))
 			return
 		}
-		var body any = nil
 		if !inerceptor.StartTransaction(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
+		var body any = nil
 		controllerappinstallffmpeg.Install()
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 		writeToResponse(writer, body)
 	})
 	http.HandleFunc("/app/install/ffmpeg/progress", func(writer http.ResponseWriter, request *http.Request) {
-		var body any = nil
 		if !inerceptor.StartTransaction(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
+		var body any = nil
 		controllerappinstallffmpeg.Progress(writer, request)
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
@@ -849,15 +680,10 @@ func startWebServer(port int) {
 			writer.Write([]byte("Method Not Allowed"))
 			return
 		}
-		var body any = nil
 		if !inerceptor.StartTransaction(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.HtmlInterceptor(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
+		var body any = nil
 		controllerappinstallffprobe.Html()
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.HtmlInterceptor(writer, request, body)
@@ -870,14 +696,10 @@ func startWebServer(port int) {
 			writer.Write([]byte("Method Not Allowed"))
 			return
 		}
-		var body any = nil
 		if !inerceptor.StartTransaction(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
+		var body any = nil
 		controllerappinstallffprobe.Recycle()
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
@@ -889,28 +711,20 @@ func startWebServer(port int) {
 			writer.Write([]byte("Method Not Allowed"))
 			return
 		}
-		var body any = nil
 		if !inerceptor.StartTransaction(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
+		var body any = nil
 		controllerappinstallffprobe.Install()
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 		writeToResponse(writer, body)
 	})
 	http.HandleFunc("/app/install/ffprobe/progress", func(writer http.ResponseWriter, request *http.Request) {
-		var body any = nil
 		if !inerceptor.StartTransaction(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
+		var body any = nil
 		controllerappinstallffprobe.Progress(writer, request)
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
@@ -922,15 +736,10 @@ func startWebServer(port int) {
 			writer.Write([]byte("Method Not Allowed"))
 			return
 		}
-		var body any = nil
 		if !inerceptor.StartTransaction(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.HtmlInterceptor(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
+		var body any = nil
 		controllerappinstalllibraw.Html()
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.HtmlInterceptor(writer, request, body)
@@ -943,14 +752,10 @@ func startWebServer(port int) {
 			writer.Write([]byte("Method Not Allowed"))
 			return
 		}
-		var body any = nil
 		if !inerceptor.StartTransaction(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
+		var body any = nil
 		controllerappinstalllibraw.Recycle()
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
@@ -962,28 +767,20 @@ func startWebServer(port int) {
 			writer.Write([]byte("Method Not Allowed"))
 			return
 		}
-		var body any = nil
 		if !inerceptor.StartTransaction(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
+		var body any = nil
 		controllerappinstalllibraw.Install()
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 		writeToResponse(writer, body)
 	})
 	http.HandleFunc("/app/install/libraw/progress", func(writer http.ResponseWriter, request *http.Request) {
-		var body any = nil
 		if !inerceptor.StartTransaction(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
+		var body any = nil
 		controllerappinstalllibraw.Progress(writer, request)
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
@@ -995,15 +792,10 @@ func startWebServer(port int) {
 			writer.Write([]byte("Method Not Allowed"))
 			return
 		}
-		var body any = nil
 		if !inerceptor.StartTransaction(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.HtmlInterceptor(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
+		var body any = nil
 		controllerapplogin.Init(writer, request)
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.HtmlInterceptor(writer, request, body)
@@ -1016,12 +808,7 @@ func startWebServer(port int) {
 			writer.Write([]byte("Method Not Allowed"))
 			return
 		}
-		var body any = nil
 		if !inerceptor.StartTransaction(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
 		requestFormData := getRequestFormData(request) //获取表单数据
@@ -1072,6 +859,7 @@ func startWebServer(port int) {
 		if _versionArr != nil { // 如果参数存在
 			_version = _versionArr[0]
 		}
+		var body any = nil
 		body = controllerapplogin.DoLogin(loginForm, _clientFlag, _version)
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
@@ -1083,14 +871,10 @@ func startWebServer(port int) {
 			writer.Write([]byte("Method Not Allowed"))
 			return
 		}
-		var body any = nil
 		if !inerceptor.StartTransaction(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
+		var body any = nil
 		controllerapplogin.Logout(request)
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
@@ -1102,23 +886,13 @@ func startWebServer(port int) {
 			writer.Write([]byte("Method Not Allowed"))
 			return
 		}
-		var body any = nil
 		if !inerceptor.StartTransaction(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.HtmlInterceptor(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
 		if !inerceptor.LoginValidate(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.HtmlInterceptor(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
+		var body any = nil
 		controllerappmodifypwd.Html()
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.HtmlInterceptor(writer, request, body)
@@ -1131,19 +905,10 @@ func startWebServer(port int) {
 			writer.Write([]byte("Method Not Allowed"))
 			return
 		}
-		var body any = nil
 		if !inerceptor.StartTransaction(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
 		if !inerceptor.LoginValidate(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
 		requestFormData := getRequestFormData(request) //获取表单数据
@@ -1177,6 +942,7 @@ func startWebServer(port int) {
 			writeFieldFormError(writer, inFormIsOldPwdMsg, "oldPwd")
 			return
 		}
+		var body any = nil
 		body = controllerappmodifypwd.Modify(inForm)
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
@@ -1188,28 +954,18 @@ func startWebServer(port int) {
 			writer.Write([]byte("Method Not Allowed"))
 			return
 		}
-		var body any = nil
 		if !inerceptor.StartTransaction(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.HtmlInterceptor(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
 		if !inerceptor.LoginValidate(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.HtmlInterceptor(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
+		var body any = nil
 		controllerappmyshare.Html()
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.HtmlInterceptor(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-		writeToTemplate(writer, body, "resources/templates/app/my_share.html", "resources/templates/app/include/head.html", "resources/templates/app/include/top-bar.html", "resources/templates/app/include/share_detail_dialog.html")
+		writeToTemplate(writer, body, "resources/templates/app/my_share.html", "resources/templates/app/include/share_detail_dialog.html", "resources/templates/app/include/head.html", "resources/templates/app/include/top-bar.html")
 	})
 	http.HandleFunc("/app/my_share/get_list", func(writer http.ResponseWriter, request *http.Request) {
 		if request.Method != "POST" {
@@ -1217,21 +973,13 @@ func startWebServer(port int) {
 			writer.Write([]byte("Method Not Allowed"))
 			return
 		}
-		var body any = nil
 		if !inerceptor.StartTransaction(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
 		if !inerceptor.LoginValidate(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
+		var body any = nil
 		body = controllerappmyshare.GetList()
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
@@ -1243,19 +991,10 @@ func startWebServer(port int) {
 			writer.Write([]byte("Method Not Allowed"))
 			return
 		}
-		var body any = nil
 		if !inerceptor.StartTransaction(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
 		if !inerceptor.LoginValidate(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
 		requestFormData := getRequestFormData(request) //获取表单数据
@@ -1264,6 +1003,7 @@ func startWebServer(port int) {
 		if idArr != nil { // 如果参数存在
 			id = idArr[0]
 		}
+		var body any = nil
 		body = controllerappmyshare.GetDetail(id)
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
@@ -1275,19 +1015,10 @@ func startWebServer(port int) {
 			writer.Write([]byte("Method Not Allowed"))
 			return
 		}
-		var body any = nil
 		if !inerceptor.StartTransaction(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
 		if !inerceptor.LoginValidate(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
 		requestFormData := getRequestFormData(request) //获取表单数据
@@ -1296,6 +1027,7 @@ func startWebServer(port int) {
 		if idsArr != nil { // 如果参数存在
 			ids = idsArr
 		}
+		var body any = nil
 		controllerappmyshare.Delete(ids)
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
@@ -1307,23 +1039,13 @@ func startWebServer(port int) {
 			writer.Write([]byte("Method Not Allowed"))
 			return
 		}
-		var body any = nil
 		if !inerceptor.StartTransaction(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.HtmlInterceptor(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
 		if !inerceptor.LoginValidate(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.HtmlInterceptor(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
+		var body any = nil
 		controllerappprofile.Html()
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.HtmlInterceptor(writer, request, body)
@@ -1336,21 +1058,13 @@ func startWebServer(port int) {
 			writer.Write([]byte("Method Not Allowed"))
 			return
 		}
-		var body any = nil
 		if !inerceptor.StartTransaction(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
 		if !inerceptor.LoginValidate(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
+		var body any = nil
 		body = controllerappprofile.Init()
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
@@ -1362,19 +1076,10 @@ func startWebServer(port int) {
 			writer.Write([]byte("Method Not Allowed"))
 			return
 		}
-		var body any = nil
 		if !inerceptor.StartTransaction(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
 		if !inerceptor.LoginValidate(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
 		requestFormData := getRequestFormData(request) //获取表单数据
@@ -1427,6 +1132,7 @@ func startWebServer(port int) {
 			writeFieldFormError(writer, formIsFoldersMsg, "folders")
 			return
 		}
+		var body any = nil
 		body = controllerappprofile.Update(form)
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
@@ -1438,21 +1144,13 @@ func startWebServer(port int) {
 			writer.Write([]byte("Method Not Allowed"))
 			return
 		}
-		var body any = nil
 		if !inerceptor.StartTransaction(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
 		if !inerceptor.LoginValidate(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
+		var body any = nil
 		controllerappprofile.MakeToken()
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
@@ -1464,28 +1162,18 @@ func startWebServer(port int) {
 			writer.Write([]byte("Method Not Allowed"))
 			return
 		}
-		var body any = nil
 		if !inerceptor.StartTransaction(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.HtmlInterceptor(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
 		if !inerceptor.LoginValidate(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.HtmlInterceptor(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
+		var body any = nil
 		controllerappselfset.Html()
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.HtmlInterceptor(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-		writeToTemplate(writer, body, "resources/templates/app/self_set.html", "resources/templates/app/include/top-bar.html", "resources/templates/app/include/head.html")
+		writeToTemplate(writer, body, "resources/templates/app/self_set.html", "resources/templates/app/include/head.html", "resources/templates/app/include/top-bar.html")
 	})
 	http.HandleFunc("/app/self_set/init", func(writer http.ResponseWriter, request *http.Request) {
 		if request.Method != "POST" {
@@ -1493,21 +1181,13 @@ func startWebServer(port int) {
 			writer.Write([]byte("Method Not Allowed"))
 			return
 		}
-		var body any = nil
 		if !inerceptor.StartTransaction(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
 		if !inerceptor.LoginValidate(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
+		var body any = nil
 		body = controllerappselfset.Init()
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
@@ -1519,19 +1199,10 @@ func startWebServer(port int) {
 			writer.Write([]byte("Method Not Allowed"))
 			return
 		}
-		var body any = nil
 		if !inerceptor.StartTransaction(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
 		if !inerceptor.LoginValidate(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
 		requestFormData := getRequestFormData(request) //获取表单数据
@@ -1540,6 +1211,7 @@ func startWebServer(port int) {
 		if flagArr != nil { // 如果参数存在
 			flag = flagArr[0]
 		}
+		var body any = nil
 		controllerappselfset.MakeApiToken(flag)
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
@@ -1551,19 +1223,10 @@ func startWebServer(port int) {
 			writer.Write([]byte("Method Not Allowed"))
 			return
 		}
-		var body any = nil
 		if !inerceptor.StartTransaction(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
 		if !inerceptor.LoginValidate(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
 		requestFormData := getRequestFormData(request) //获取表单数据
@@ -1572,6 +1235,7 @@ func startWebServer(port int) {
 		if flagArr != nil { // 如果参数存在
 			flag = flagArr[0]
 		}
+		var body any = nil
 		controllerappselfset.MakeUrlPath(flag)
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
@@ -1583,19 +1247,10 @@ func startWebServer(port int) {
 			writer.Write([]byte("Method Not Allowed"))
 			return
 		}
-		var body any = nil
 		if !inerceptor.StartTransaction(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
 		if !inerceptor.LoginValidate(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
 		requestFormData := getRequestFormData(request) //获取表单数据
@@ -1604,6 +1259,7 @@ func startWebServer(port int) {
 		if flagArr != nil { // 如果参数存在
 			flag = flagArr[0]
 		}
+		var body any = nil
 		controllerappselfset.MakeEncryption(flag)
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
@@ -1615,23 +1271,13 @@ func startWebServer(port int) {
 			writer.Write([]byte("Method Not Allowed"))
 			return
 		}
-		var body any = nil
 		if !inerceptor.StartTransaction(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.HtmlInterceptor(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
 		if !inerceptor.LoginValidate(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.HtmlInterceptor(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
+		var body any = nil
 		controllerappsync.Html()
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.HtmlInterceptor(writer, request, body)
@@ -1644,21 +1290,13 @@ func startWebServer(port int) {
 			writer.Write([]byte("Method Not Allowed"))
 			return
 		}
-		var body any = nil
 		if !inerceptor.StartTransaction(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
 		if !inerceptor.LoginValidate(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
+		var body any = nil
 		body = controllerappsync.InfoList()
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
@@ -1670,21 +1308,13 @@ func startWebServer(port int) {
 			writer.Write([]byte("Method Not Allowed"))
 			return
 		}
-		var body any = nil
 		if !inerceptor.StartTransaction(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
 		if !inerceptor.LoginValidate(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
+		var body any = nil
 		controllerappsync.BySync()
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
@@ -1696,42 +1326,26 @@ func startWebServer(port int) {
 			writer.Write([]byte("Method Not Allowed"))
 			return
 		}
-		var body any = nil
 		if !inerceptor.StartTransaction(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
 		if !inerceptor.LoginValidate(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
+		var body any = nil
 		controllerappsync.ByTable()
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 		writeToResponse(writer, body)
 	})
 	http.HandleFunc("/app/sync/info", func(writer http.ResponseWriter, request *http.Request) {
-		var body any = nil
 		if !inerceptor.StartTransaction(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
 		if !inerceptor.LoginValidate(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
+		var body any = nil
 		controllerappsync.Info(writer, request)
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
@@ -1743,28 +1357,18 @@ func startWebServer(port int) {
 			writer.Write([]byte("Method Not Allowed"))
 			return
 		}
-		var body any = nil
 		if !inerceptor.StartTransaction(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.HtmlInterceptor(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
 		if !inerceptor.LoginValidate(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.HtmlInterceptor(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
+		var body any = nil
 		controllerapptrash.Html()
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.HtmlInterceptor(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-		writeToTemplate(writer, body, "resources/templates/app/trash.html", "resources/templates/app/include/trash/trash_toolbar.html", "resources/templates/app/include/trash/trash_list.html", "resources/templates/app/include/trash/trash_right_option.html", "resources/templates/app/include/head.html", "resources/templates/app/include/top-bar.html")
+		writeToTemplate(writer, body, "resources/templates/app/trash.html", "resources/templates/app/include/trash/trash_right_option.html", "resources/templates/app/include/head.html", "resources/templates/app/include/top-bar.html", "resources/templates/app/include/trash/trash_toolbar.html", "resources/templates/app/include/trash/trash_list.html")
 	})
 	http.HandleFunc("/app/trash/get_list", func(writer http.ResponseWriter, request *http.Request) {
 		if request.Method != "POST" {
@@ -1772,21 +1376,13 @@ func startWebServer(port int) {
 			writer.Write([]byte("Method Not Allowed"))
 			return
 		}
-		var body any = nil
 		if !inerceptor.StartTransaction(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
 		if !inerceptor.LoginValidate(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
+		var body any = nil
 		body = controllerapptrash.GetList()
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
@@ -1798,19 +1394,10 @@ func startWebServer(port int) {
 			writer.Write([]byte("Method Not Allowed"))
 			return
 		}
-		var body any = nil
 		if !inerceptor.StartTransaction(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
 		if !inerceptor.LoginValidate(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
 		requestFormData := getRequestFormData(request) //获取表单数据
@@ -1819,6 +1406,7 @@ func startWebServer(port int) {
 		if idsArr != nil { // 如果参数存在
 			ids = idsArr
 		}
+		var body any = nil
 		body = controllerapptrash.LogicDelete(ids)
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
@@ -1830,19 +1418,10 @@ func startWebServer(port int) {
 			writer.Write([]byte("Method Not Allowed"))
 			return
 		}
-		var body any = nil
 		if !inerceptor.StartTransaction(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
 		if !inerceptor.LoginValidate(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
 		requestFormData := getRequestFormData(request) //获取表单数据
@@ -1851,6 +1430,7 @@ func startWebServer(port int) {
 		if idsArr != nil { // 如果参数存在
 			ids = idsArr
 		}
+		var body any = nil
 		body = controllerapptrash.TrashRecover(ids)
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
@@ -1862,21 +1442,13 @@ func startWebServer(port int) {
 			writer.Write([]byte("Method Not Allowed"))
 			return
 		}
-		var body any = nil
 		if !inerceptor.StartTransaction(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
 		if !inerceptor.LoginValidate(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
+		var body any = nil
 		controllerapptrash.RecycleStorage()
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
@@ -1888,23 +1460,13 @@ func startWebServer(port int) {
 			writer.Write([]byte("Method Not Allowed"))
 			return
 		}
-		var body any = nil
 		if !inerceptor.StartTransaction(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.HtmlInterceptor(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
 		if !inerceptor.LoginValidate(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.HtmlInterceptor(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
+		var body any = nil
 		controllerappuser.EditHtml()
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.HtmlInterceptor(writer, request, body)
@@ -1917,19 +1479,10 @@ func startWebServer(port int) {
 			writer.Write([]byte("Method Not Allowed"))
 			return
 		}
-		var body any = nil
 		if !inerceptor.StartTransaction(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
 		if !inerceptor.LoginValidate(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
 		requestFormData := getRequestFormData(request) //获取表单数据
@@ -1938,6 +1491,7 @@ func startWebServer(port int) {
 		if idArr != nil { // 如果参数存在
 			id = idArr[0]
 		}
+		var body any = nil
 		body = controllerappuser.EditInit(id)
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
@@ -1949,19 +1503,10 @@ func startWebServer(port int) {
 			writer.Write([]byte("Method Not Allowed"))
 			return
 		}
-		var body any = nil
 		if !inerceptor.StartTransaction(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
 		if !inerceptor.LoginValidate(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
 		requestFormData := getRequestFormData(request) //获取表单数据
@@ -2024,6 +1569,7 @@ func startWebServer(port int) {
 			writeFieldFormError(writer, inFormIsEmailMsg, "email")
 			return
 		}
+		var body any = nil
 		controllerappuser.Edit(inForm)
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
@@ -2035,23 +1581,13 @@ func startWebServer(port int) {
 			writer.Write([]byte("Method Not Allowed"))
 			return
 		}
-		var body any = nil
 		if !inerceptor.StartTransaction(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.HtmlInterceptor(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
 		if !inerceptor.LoginValidate(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.HtmlInterceptor(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
+		var body any = nil
 		controllerappuser.ListHtml()
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.HtmlInterceptor(writer, request, body)
@@ -2064,21 +1600,13 @@ func startWebServer(port int) {
 			writer.Write([]byte("Method Not Allowed"))
 			return
 		}
-		var body any = nil
 		if !inerceptor.StartTransaction(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
 		if !inerceptor.LoginValidate(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
+		var body any = nil
 		body = controllerappuser.ListInit()
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
@@ -2090,12 +1618,7 @@ func startWebServer(port int) {
 			writer.Write([]byte("Method Not Allowed"))
 			return
 		}
-		var body any = nil
 		if !inerceptor.StartTransaction(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
 		requestFormData := getRequestFormData(request) //获取表单数据
@@ -2125,18 +1648,14 @@ func startWebServer(port int) {
 			}
 		}
 		clientToken := pathVariables[0]
+		var body any = nil
 		controllerdistributed.Listen(writer, clientToken, lastId)
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 		writeToResponse(writer, body)
 	})
 	http.HandleFunc("/distributed/get_log", func(writer http.ResponseWriter, request *http.Request) {
-		var body any = nil
 		if !inerceptor.StartTransaction(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
 		requestFormData := getRequestFormData(request) //获取表单数据
@@ -2145,32 +1664,24 @@ func startWebServer(port int) {
 		if lastIdArr != nil { // 如果参数存在
 			lastId = lastIdArr[0]
 		}
+		var body any = nil
 		body = controllerdistributed.GetLog(lastId)
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 		writeToResponse(writer, body)
 	})
 	http.HandleFunc("/distributed/get_aop_id", func(writer http.ResponseWriter, request *http.Request) {
-		var body any = nil
 		if !inerceptor.StartTransaction(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
+		var body any = nil
 		body = controllerdistributed.GetAopId()
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 		writeToResponse(writer, body)
 	})
 	http.HandleFunc("/distributed/get_table_id", func(writer http.ResponseWriter, request *http.Request) {
-		var body any = nil
 		if !inerceptor.StartTransaction(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
 		requestFormData := getRequestFormData(request) //获取表单数据
@@ -2189,18 +1700,14 @@ func startWebServer(port int) {
 		if aopIdArr != nil { // 如果参数存在
 			aopId = aopIdArr[0]
 		}
+		var body any = nil
 		body = controllerdistributed.GetTableId(tbName, lastId, aopId)
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 		writeToResponse(writer, body)
 	})
 	http.HandleFunc("/distributed/get_table_data", func(writer http.ResponseWriter, request *http.Request) {
-		var body any = nil
 		if !inerceptor.StartTransaction(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
 		requestFormData := getRequestFormData(request) //获取表单数据
@@ -2214,18 +1721,14 @@ func startWebServer(port int) {
 		if idsArr != nil { // 如果参数存在
 			ids = idsArr[0]
 		}
+		var body any = nil
 		body = controllerdistributed.GetTableData(tbName, ids)
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 		writeToResponse(writer, body)
 	})
 	http.HandleFunc("/distributed/download/", func(writer http.ResponseWriter, request *http.Request) {
-		var body any = nil
 		if !inerceptor.StartTransaction(writer, request) {
-
-			// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			return
 		}
 
@@ -2249,7 +1752,116 @@ func startWebServer(port int) {
 			}
 		}
 		md5 := pathVariables[0]
+		var body any = nil
 		controllerdistributed.Download(writer, request, md5)
+		body = inerceptor.Commit(writer, request, body)
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+		writeToResponse(writer, body)
+	})
+	http.HandleFunc("/share/", func(writer http.ResponseWriter, request *http.Request) {
+		if request.Method != "GET" {
+			writer.WriteHeader(http.StatusMethodNotAllowed) // 设置状态码
+			writer.Write([]byte("Method Not Allowed"))
+			return
+		}
+		if !inerceptor.StartTransaction(writer, request) {
+			return
+		}
+
+		pathVariables := make([]string, 0)
+		varPath := request.URL.Path[7:]
+		pathVariableSplitArr := []string{"", ""}
+		
+		
+		for i := 0; i < len(pathVariableSplitArr)-1; i++ {
+			varPath = varPath[len(pathVariableSplitArr[i]):]
+			if pathVariableSplitArr[i+1] == "" { //这已经是最后一个参数了
+				pathVariables = append(pathVariables, varPath)
+			} else {
+				nextIndex := strings.Index(varPath, pathVariableSplitArr[i+1])
+				if nextIndex == -1 {
+					writer.WriteHeader(http.StatusNotFound)
+					return
+				}
+				pathVariables = append(pathVariables, varPath[:nextIndex])
+				varPath = varPath[nextIndex:]
+			}
+		}
+		id,idErr := strconv.ParseInt(pathVariables[0],10,64)
+		if idErr != nil { //参数类型不匹配
+			writer.WriteHeader(http.StatusUnprocessableEntity)
+			writer.Write([]byte("参数类型不匹配：“" + pathVariables[0] + "”无法转换为int64类型。"))
+			return
+		}
+		var body any = nil
+		controllershare.Html(writer, request, id)
+		body = inerceptor.Commit(writer, request, body)
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+		writeToTemplate(writer, body, "resources/templates/share/share.html", "resources/templates/app/include/head.html", "resources/templates/app/include/top-bar.html", "resources/templates/share/include/share/share_toolbar.html", "resources/templates/share/include/share/share_list.html", "resources/templates/share/include/share/share_right_option.html", "resources/templates/app/include/folder_selector.html")
+	})
+	http.HandleFunc("/share/pwd/", func(writer http.ResponseWriter, request *http.Request) {
+		if request.Method != "GET" {
+			writer.WriteHeader(http.StatusMethodNotAllowed) // 设置状态码
+			writer.Write([]byte("Method Not Allowed"))
+			return
+		}
+		if !inerceptor.StartTransaction(writer, request) {
+			return
+		}
+
+		pathVariables := make([]string, 0)
+		varPath := request.URL.Path[11:]
+		pathVariableSplitArr := []string{"", ""}
+		
+		
+		for i := 0; i < len(pathVariableSplitArr)-1; i++ {
+			varPath = varPath[len(pathVariableSplitArr[i]):]
+			if pathVariableSplitArr[i+1] == "" { //这已经是最后一个参数了
+				pathVariables = append(pathVariables, varPath)
+			} else {
+				nextIndex := strings.Index(varPath, pathVariableSplitArr[i+1])
+				if nextIndex == -1 {
+					writer.WriteHeader(http.StatusNotFound)
+					return
+				}
+				pathVariables = append(pathVariables, varPath[:nextIndex])
+				varPath = varPath[nextIndex:]
+			}
+		}
+		id,idErr := strconv.ParseInt(pathVariables[0],10,64)
+		if idErr != nil { //参数类型不匹配
+			writer.WriteHeader(http.StatusUnprocessableEntity)
+			writer.Write([]byte("参数类型不匹配：“" + pathVariables[0] + "”无法转换为int64类型。"))
+			return
+		}
+		var body any = nil
+		controllershare.InputPwd(id)
+		body = inerceptor.Commit(writer, request, body)
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+		writeToTemplate(writer, body, "resources/templates/share/share_pwd.html", "resources/templates/app/include/head.html")
+	})
+	http.HandleFunc("/share/valid_pwd", func(writer http.ResponseWriter, request *http.Request) {
+		if request.Method != "POST" {
+			writer.WriteHeader(http.StatusMethodNotAllowed) // 设置状态码
+			writer.Write([]byte("Method Not Allowed"))
+			return
+		}
+		if !inerceptor.StartTransaction(writer, request) {
+			return
+		}
+		requestFormData := getRequestFormData(request) //获取表单数据
+		var id int64 // 初始化变量
+		idArr := getInt64Array(requestFormData, "id")
+		if idArr != nil { // 如果参数存在
+			id = idArr[0]
+		}
+		var pwd string // 初始化变量
+		pwdArr := getStringArray(requestFormData, "pwd")
+		if pwdArr != nil { // 如果参数存在
+			pwd = pwdArr[0]
+		}
+		var body any = nil
+		body = controllershare.ValidPwd(writer, request, id, pwd)
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 		writeToResponse(writer, body)

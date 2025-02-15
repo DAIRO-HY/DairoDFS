@@ -1,6 +1,7 @@
 ﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
+    {{template "head" .}}
     <title>提取文件</title>
 </head>
 <body class="bg-login">
@@ -26,8 +27,9 @@
             alert("请输入提取密码")
             return
         }
-        $.ajaxByData(location.pathname + "/valid_pwd").add("pwd", pwd).success(() => {
-            history.go(0)
+        $.ajaxByData("/share/valid_pwd").add("id", 1739627432163).add("pwd", pwd).success(encodePwd => {
+            document.cookie = "share_code=" + encodePwd + "; max-age=3153600000; path=/";
+            location.href = "/share/1739627432163"
         }).post()
     }
 </script>
