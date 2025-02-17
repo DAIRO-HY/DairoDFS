@@ -75,7 +75,7 @@
             const file = fileList[index]
             const currentFolder = getCurrentFolderByUrl()
             if (file.fileFlag) {//如果是一个文件
-                window.open(location.pathname + "/download/" + file.name + "?folder=" + currentFolder)
+                window.open("download/" + file.name + "?folder=" + currentFolder)
             } else {
                 const folder = currentFolder + "/" + file.name
                 loadFileData(folder)
@@ -157,7 +157,7 @@
      * 加载文件列表数据
      */
     function loadFileData(folder) {
-        $.ajaxByData(location.pathname + "/get_list?folder=" + folder).success(data => {
+        $.ajaxByData("get_list?folder=" + folder).success(data => {
             data.forEach(item => item.checked = false)
             data = data.sort(item => item.fileFlag ? 1 : -1)
 

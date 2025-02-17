@@ -103,7 +103,7 @@
     function saveTo(path) {
         const folder = getCurrentFolderByUrl()
         const names = fileList.filter(item => item.checked).map(item => item.name)
-        $.ajaxByData(location.pathname + "/save_to").addAll({
+        $.ajaxByData("save_to").addAll({
             folder: folder,
             names: names,
             target: path

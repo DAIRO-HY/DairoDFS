@@ -83,7 +83,7 @@ func GetDetail(id int64) any {
 	}
 
 	//分享链接
-	url := "/app/share/" + String.ValueOf(shareDto.Id)
+	url := "/share/" + String.ValueOf(shareDto.Id)
 
 	outForm := form.MyShareDetailForm{
 		Id:      shareDto.Id,

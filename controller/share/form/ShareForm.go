@@ -1,19 +1,19 @@
 package form
 
-type ShareForm struct{
+type ShareForm struct {
 
-    /** 名称 **/
-    Name string
+	/** 名称 **/
+	Name string `json:"name"`
 
-    /** 大小 **/
-    Size int64
+	/** 大小 **/
+	Size int64 `json:"size"`
 
-    /** 是否文件 **/
-    FileFlag bool
+	/** 是否文件 **/
+	FileFlag bool `json:"fileFlag"`
 
-    /** 创建日期 **/
-    Date string
+	/** 创建日期 **/
+	Date string `json:"date"`
 
-    /** 缩率图 **/
-    Thumb string
+	/** 缩率图 **/
+	Thumb string `json:"thumb,omitempty"`
 }
