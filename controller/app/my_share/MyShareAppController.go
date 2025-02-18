@@ -7,6 +7,7 @@ import (
 	"DairoDFS/extension/Bool"
 	"DairoDFS/extension/Date"
 	"DairoDFS/extension/String"
+	"DairoDFS/util/AESUtil"
 	"DairoDFS/util/LoginState"
 	"time"
 )
@@ -83,7 +84,7 @@ func GetDetail(id int64) any {
 	}
 
 	//分享链接
-	url := "/share/" + String.ValueOf(shareDto.Id)
+	url := "/share/" + AESUtil.Encrypt(String.ValueOf(shareDto.Id)) + "/init"
 
 	outForm := form.MyShareDetailForm{
 		Id:      shareDto.Id,

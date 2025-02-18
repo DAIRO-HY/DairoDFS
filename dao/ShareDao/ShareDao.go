@@ -34,5 +34,5 @@ func SelectByUser(userId int64) []dto.ShareDto {
  * @param ids 要删除的分享id列表
  */
 func Delete(userId int64, ids string) {
-	DBUtil.ExecIgnoreError(`delete from share where userId = ? and id in (?)`, userId, ids)
+	DBUtil.ExecIgnoreError("delete from share where userId = ? and id in ("+ids+")", userId)
 }

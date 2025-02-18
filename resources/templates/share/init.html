@@ -5,7 +5,6 @@
     <title>提取文件</title>
 </head>
 <body>
-
 {{template "top-bar" .}}
 
 <!--文件操作导航视图-->
@@ -21,6 +20,12 @@
 {{template "folder_selector" .}}
 
 <script>
+    $(function(){
+        sessionStorage.removeItem("valid_pwd")
+        if (getCookie("token") == null){
+            $(".navbar").hide()
+        }
+    })
 </script>
 </body>
 </html>

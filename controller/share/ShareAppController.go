@@ -11,63 +11,47 @@ import (
 	"DairoDFS/extension/Date"
 	"DairoDFS/extension/String"
 	"DairoDFS/service/DfsFileService"
+	"DairoDFS/util/AESUtil"
 	"DairoDFS/util/DfsFileHandleUtil"
 	"DairoDFS/util/DfsFileUtil"
+	"DairoDFS/util/RequestUtil"
 	"errors"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 )
 
 // 提取分享的文件
-//@Group:/share/{id}
+//@Group:/share/{eid}
 
 // 页面初始化
-// @Get:/init.html
-// @Html:share/share.html
-func Html(writer http.ResponseWriter, request *http.Request, id int64) {
-	_, err := getShare(writer, request, id)
+// @Get:/init
+// @Html:share/init.html
+func Init(writer http.ResponseWriter, request *http.Request, eid string) {
+	_, err := validateAndGetShare(request, eid)
 	if err == nil {
 		return
 	}
 	var bizErr *exception.BusinessException
 	errors.As(err, &bizErr)
 	if bizErr.Code == exception.SHARE_NEED_PWD().Code { // 跳转输入密码页面
-		http.Redirect(writer, request, "/share/"+String.ValueOf(id)+"/input_pwd", http.StatusFound)
-	} else {
-
+		http.Redirect(writer, request, "/share/"+eid+"/pwd", http.StatusFound)
 	}
-	//} catch (e: BusinessException) {
-	//    return when (e.code) {
-	//        ErrorCode.SHARE_NEED_PWD.code -> "app/share_pwd"
-	//        else -> {
-	//            model.addAttribute("error", e.message)
-	//            "app/share_error"
-	//        }
-	//    }
-	//}
 }
 
 // 输入密码
-// @Get:/input_pwd
-// @Html:share/share_pwd.html
-func InputPwd(id int64) {
-
-}
+// @Get:/pwd
+// @Html:share/pwd.html
+func Pwd() {}
 
 // 验证密码
 // id 分享ID
 // @Post:/valid_pwd
-func ValidPwd(writer http.ResponseWriter, request *http.Request, id int64, pwd string) any {
-	shareDto, isExists := ShareDao.SelectOne(id)
-	if !isExists { //分享不存在
-		return exception.SHARE_NOT_FOUND()
-	}
-	if pwd == shareDto.Pwd { //密码验证成功,返回加密密码
-		return makeEncodePwd(writer, request, pwd)
-	} else {
-		return exception.Biz("密码不正确")
-	}
+func ValidPwd(request *http.Request, pwd string) any {
+
+	//密码验证成功,返回加密密码
+	return makeEncodePwd(request, pwd)
 }
 
 /**
@@ -78,27 +62,27 @@ func ValidPwd(writer http.ResponseWriter, request *http.Request, id int64, pwd s
  * @param target 要转存的目标文件夹
  */
 //@Post:/save_to
-func SaveTo(writer http.ResponseWriter, request *http.Request, id int64, folder string, names []string, target string) error {
+func SaveTo(request *http.Request, eid string, folder string, names []string, target string) error {
 
 	//获取APP登录票据
 	cookieToken, _ := request.Cookie("token")
 	if cookieToken == nil {
-		return nil
+		return exception.NO_LOGIN()
 	}
 	token := cookieToken.Value
 	if len(token) == 0 {
-		return nil
+		return exception.NO_LOGIN()
 	}
 	userId := UserTokenDao.GetByUserIdByToken(token)
 	if userId == 0 { //用户未登录
-		return nil
+		return exception.NO_LOGIN()
 	}
 
 	sharePaths := make([]string, 0)
 	for _, it := range names {
 		sharePaths = append(sharePaths, folder+"/"+it)
 	}
-	shareDto, validateErr := validateShare(writer, request, id, sharePaths...)
+	shareDto, validateErr := validatePath(request, eid, sharePaths...)
 	if validateErr != nil {
 		return validateErr
 	}
@@ -121,8 +105,8 @@ func SaveTo(writer http.ResponseWriter, request *http.Request, id int64, folder 
 // id 分享ID
 // folder 分享的文件夹路径
 // @Post:/get_list
-func GetList(writer http.ResponseWriter, request *http.Request, id int64, folder string) any {
-	shareDto, validateErr := validateShare(writer, request, id, folder)
+func GetList(request *http.Request, eid string, folder string) any {
+	shareDto, validateErr := validatePath(request, eid, folder)
 	if validateErr != nil {
 		return validateErr
 	}
@@ -163,7 +147,6 @@ func GetList(writer http.ResponseWriter, request *http.Request, id int64, folder
 		if folderIdErr != nil {
 			return folderIdErr
 		}
-		//?: throw ErrorCode.NO_FOLDER
 		fileList = DfsFileDao.SelectSubFile(userId, folderId)
 	}
 	formList := make([]form.ShareForm, 0)
@@ -187,9 +170,9 @@ func GetList(writer http.ResponseWriter, request *http.Request, id int64, folder
 // name 文件名
 // folder 所在文件夹
 // @Get:/download/{name}
-func Download(writer http.ResponseWriter, request *http.Request, id int64, folder string, name string) error {
+func Download(writer http.ResponseWriter, request *http.Request, eid string, folder string, name string) error {
 	path := folder + "/" + name
-	shareDto, validateErr := validateShare(writer, request, id, path)
+	shareDto, validateErr := validatePath(request, eid, path)
 	if validateErr != nil {
 		return validateErr
 	}
@@ -208,13 +191,33 @@ func Download(writer http.ResponseWriter, request *http.Request, id int64, folde
 	return nil
 }
 
+// 缩略图
+// request 客户端请求
+// response 往客户端返回内容
+// id 文件ID
+// @Get:/thumb
+func Thumb(writer http.ResponseWriter, request *http.Request, fid int64) {
+	//shareDto, _ := getShare(writer, request, id)
+	//val dfsId = AESUtil.decrypt(tag.replace(" ", "+"), id.toString())
+	//dfsDto = DfsFileDao.SelectOne(dfsId!!.toLong())
+	dfsDto, isExists := DfsFileDao.SelectOne(fid)
+	if !isExists { //文件不存在
+		writer.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	//获取缩率图附属文件
+	thumb, _ := DfsFileDao.SelectExtra(dfsDto.Id, "thumb")
+	DfsFileUtil.DownloadDfs(thumb, writer, request)
+}
+
 /**
  * 分享的文件路径验证，避免暴露未分享的文件
  * @param id 分享ID
  * @param path 分享的路径数组
  */
-func validateShare(writer http.ResponseWriter, request *http.Request, id int64, paths ...string) (dto.ShareDto, error) {
-	shareDto, getErr := getShare(writer, request, id)
+func validatePath(request *http.Request, eid string, paths ...string) (dto.ShareDto, error) {
+	shareDto, getErr := validateAndGetShare(request, eid)
 	if getErr != nil {
 		return dto.ShareDto{}, getErr
 	}
@@ -224,7 +227,6 @@ func validateShare(writer http.ResponseWriter, request *http.Request, id int64, 
 	if folderErr != nil {
 		return dto.ShareDto{}, exception.NO_FOLDER()
 	}
-
 	if shareFolderId > 0 { //非根目录时,要验证是否存在文件夹
 		dfsFile, isExists := DfsFileDao.SelectOne(shareFolderId)
 		if !isExists {
@@ -255,30 +257,15 @@ func validateShare(writer http.ResponseWriter, request *http.Request, id int64, 
 	return shareDto, nil
 }
 
-// 缩略图
-// request 客户端请求
-// response 往客户端返回内容
-// id 文件ID
-// @Get:/thumb
-func Thumb(writer http.ResponseWriter, request *http.Request, fid int64) {
-	//shareDto, _ := getShare(writer, request, id)
-	//val dfsId = AESUtil.decrypt(tag.replace(" ", "+"), id.toString())
-	//dfsDto = DfsFileDao.SelectOne(dfsId!!.toLong())
-	dfsDto, isExists := DfsFileDao.SelectOne(fid)
-	if !isExists { //文件不存在
-		writer.WriteHeader(http.StatusNotFound)
-		return
-	}
-
-	//获取缩率图附属文件
-	thumb, _ := DfsFileDao.SelectExtra(dfsDto.Id, "thumb")
-	DfsFileUtil.DownloadDfs(thumb, writer, request)
-}
-
-// 获取分享的信息
+// 验证并获取分享的信息
 // id 分享ID
 // return 分享信息
-func getShare(writer http.ResponseWriter, request *http.Request, id int64) (dto.ShareDto, error) {
+func validateAndGetShare(request *http.Request, eid string) (dto.ShareDto, error) {
+	idStr, idErr := AESUtil.Decrypt(eid)
+	if idErr != nil { //解密失败
+		return dto.ShareDto{}, exception.SHARE_NOT_FOUND()
+	}
+	id, _ := strconv.ParseInt(idStr, 10, 64)
 	shareDto, isExists := ShareDao.SelectOne(id)
 	if !isExists { //分享链接不存在
 		return dto.ShareDto{}, exception.SHARE_NOT_FOUND()
@@ -293,18 +280,20 @@ func getShare(writer http.ResponseWriter, request *http.Request, id int64) (dto.
 	}
 
 	//从cookie中获取加密提取码
-	cookieEncodePwd, _ := request.Cookie("share_code")
+	cookieEncodePwd, _ := request.Cookie("share_pwd")
 	if cookieEncodePwd == nil {
 		return dto.ShareDto{}, exception.SHARE_NEED_PWD()
 	}
 	encodePwd := cookieEncodePwd.Value
-	if encodePwd != makeEncodePwd(writer, request, shareDto.Pwd) {
+	if encodePwd != makeEncodePwd(request, shareDto.Pwd) {
 		return dto.ShareDto{}, exception.SHARE_NEED_PWD()
 	}
 	return shareDto, nil
 }
 
 // 生成加密提取码
-func makeEncodePwd(writer http.ResponseWriter, request *http.Request, pwd string) string {
-	return pwd
+func makeEncodePwd(request *http.Request, pwd string) string {
+	ip := RequestUtil.GetIp(request)
+	ua := request.Header.Get("User-Agent")
+	return String.ToMd5(ua + ip + pwd)
 }

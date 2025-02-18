@@ -113,3 +113,22 @@ function getParam(key) {
     }
     return value
 }
+
+function getCookie(name) {
+    // 将 cookie 字符串拆分为数组
+    const cookieArray = document.cookie.split('; ');
+
+    // 遍历数组查找指定名称的 cookie
+    for (let i = 0; i < cookieArray.length; i++) {
+        const cookie = cookieArray[i];
+        const [cookieName, cookieValue] = cookie.split('=');
+
+        // 如果找到匹配的 cookie 名称，返回其值
+        if (cookieName === name) {
+            return decodeURIComponent(cookieValue);
+        }
+    }
+
+    // 如果没有找到，返回 null
+    return null;
+}

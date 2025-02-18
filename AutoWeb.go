@@ -81,7 +81,7 @@ func startWebServer(port int) {
 	// 使用 http.FileServer 提供文件服务
 	http.Handle("/static/", cacheHeaders(http.StripPrefix("/static/", http.FileServer(http.FS(staticFS)))))
 
-	http.HandleFunc("/app/install/ffprobe/recycle", func(writer http.ResponseWriter, request *http.Request) {
+	http.HandleFunc("/app/files/rename", func(writer http.ResponseWriter, request *http.Request) {
 			if request.Method == "POST" {
 			var body any = nil
 			if !inerceptor.StartTransaction(writer, request) {
@@ -91,25 +91,25 @@ func startWebServer(port int) {
 			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 				return
 			}
-			controllerappinstallffprobe.Recycle()
-		body = inerceptor.Commit(writer, request, body)
-		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-			writeToResponse(writer, body)
-			return
-		}
-		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
-	})
-	http.HandleFunc("/app/install/libraw/recycle", func(writer http.ResponseWriter, request *http.Request) {
-			if request.Method == "POST" {
-			var body any = nil
-			if !inerceptor.StartTransaction(writer, request) {
+			if !inerceptor.LoginValidate(writer, request) {
 
 				// 始终都要执行后的操作
 			body = inerceptor.Commit(writer, request, body)
 			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 				return
 			}
-			controllerappinstalllibraw.Recycle()
+			requestFormData := getRequestFormData(request) //获取表单数据
+		var sourcePath string // 初始化变量
+		sourcePathArr := getStringArray(requestFormData, "sourcePath")
+		if sourcePathArr != nil { // 如果参数存在
+			sourcePath = sourcePathArr[0]
+		}
+		var name string // 初始化变量
+		nameArr := getStringArray(requestFormData, "name")
+		if nameArr != nil { // 如果参数存在
+			name = nameArr[0]
+		}
+			body = controllerappfiles.Rename(sourcePath, name)
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			writeToResponse(writer, body)
@@ -117,7 +117,7 @@ func startWebServer(port int) {
 		}
 		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
 	})
-	http.HandleFunc("/app/user_edit.html", func(writer http.ResponseWriter, request *http.Request) {
+	http.HandleFunc("/app/modify_pwd.html", func(writer http.ResponseWriter, request *http.Request) {
 			if request.Method == "GET" {
 			var body any = nil
 			if !inerceptor.StartTransaction(writer, request) {
@@ -136,16 +136,16 @@ func startWebServer(port int) {
 			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 				return
 			}
-			controllerappuser.EditHtml()
+			controllerappmodifypwd.Html()
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.HtmlInterceptor(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-			writeToTemplate(writer, body, "resources/templates/app/user_edit.html", "resources/templates/app/include/head.html", "resources/templates/app/include/top-bar.html")
+			writeToTemplate(writer, body, "resources/templates/app/modify_pwd.html", "resources/templates/app/include/head.html")
 			return
 		}
 		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
 	})
-	http.HandleFunc("/app/install/ffmpeg/install_ffmpeg.html", func(writer http.ResponseWriter, request *http.Request) {
+	http.HandleFunc("/app/my_share.html", func(writer http.ResponseWriter, request *http.Request) {
 			if request.Method == "GET" {
 			var body any = nil
 			if !inerceptor.StartTransaction(writer, request) {
@@ -156,11 +156,80 @@ func startWebServer(port int) {
 			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 				return
 			}
-			controllerappinstallffmpeg.Html()
+			if !inerceptor.LoginValidate(writer, request) {
+
+				// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.HtmlInterceptor(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+				return
+			}
+			controllerappmyshare.Html()
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.HtmlInterceptor(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-			writeToTemplate(writer, body, "resources/templates/app/install/install_ffmpeg.html", "resources/templates/app/include/head.html")
+			writeToTemplate(writer, body, "resources/templates/app/my_share.html", "resources/templates/app/include/top-bar.html", "resources/templates/app/include/share_detail_dialog.html", "resources/templates/app/include/head.html")
+			return
+		}
+		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
+	})
+	http.HandleFunc("/app/files/delete", func(writer http.ResponseWriter, request *http.Request) {
+			if request.Method == "POST" {
+			var body any = nil
+			if !inerceptor.StartTransaction(writer, request) {
+
+				// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+				return
+			}
+			if !inerceptor.LoginValidate(writer, request) {
+
+				// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+				return
+			}
+			requestFormData := getRequestFormData(request) //获取表单数据
+		var paths []string // 初始化变量
+		pathsArr := getStringArray(requestFormData, "paths")
+		if pathsArr != nil { // 如果参数存在
+			paths = pathsArr
+		}
+			body = controllerappfiles.Delete(paths)
+		body = inerceptor.Commit(writer, request, body)
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			writeToResponse(writer, body)
+			return
+		}
+		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
+	})
+	http.HandleFunc("/app/install/create_admin/add_admin", func(writer http.ResponseWriter, request *http.Request) {
+			if request.Method == "POST" {
+			var body any = nil
+			if !inerceptor.StartTransaction(writer, request) {
+
+				// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+				return
+			}
+			requestFormData := getRequestFormData(request) //获取表单数据
+		inForm:=controllerappinstallcreateadminform.CreateAdminForm{}
+		inFormName := getStringArray(requestFormData, "name")
+		if inFormName != nil {// 如果参数存在
+			inForm.Name = inFormName[0]
+		}
+
+		inFormPwd := getStringArray(requestFormData, "pwd")
+		if inFormPwd != nil {// 如果参数存在
+			inForm.Pwd = inFormPwd[0]
+		}
+
+			body = controllerappinstallcreateadmin.AddAdmin(inForm)
+		body = inerceptor.Commit(writer, request, body)
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			writeToResponse(writer, body)
 			return
 		}
 		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
@@ -183,9 +252,17 @@ func startWebServer(port int) {
 		}
 		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
 	})
-	http.HandleFunc("/distributed/get_table_data", func(writer http.ResponseWriter, request *http.Request) {
+	http.HandleFunc("/app/self_set/make_url_path", func(writer http.ResponseWriter, request *http.Request) {
+			if request.Method == "POST" {
 			var body any = nil
 			if !inerceptor.StartTransaction(writer, request) {
+
+				// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+				return
+			}
+			if !inerceptor.LoginValidate(writer, request) {
 
 				// 始终都要执行后的操作
 			body = inerceptor.Commit(writer, request, body)
@@ -193,204 +270,21 @@ func startWebServer(port int) {
 				return
 			}
 			requestFormData := getRequestFormData(request) //获取表单数据
-		var tbName string // 初始化变量
-		tbNameArr := getStringArray(requestFormData, "tbName")
-		if tbNameArr != nil { // 如果参数存在
-			tbName = tbNameArr[0]
+		var flag int // 初始化变量
+		flagArr := getIntArray(requestFormData, "flag")
+		if flagArr != nil { // 如果参数存在
+			flag = flagArr[0]
 		}
-		var ids string // 初始化变量
-		idsArr := getStringArray(requestFormData, "ids")
-		if idsArr != nil { // 如果参数存在
-			ids = idsArr[0]
-		}
-			body = controllerdistributed.GetTableData(tbName, ids)
+			controllerappselfset.MakeUrlPath(flag)
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			writeToResponse(writer, body)
 			return
+		}
 		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
 	})
-	http.HandleFunc("/app/install/ffmpeg/recycle", func(writer http.ResponseWriter, request *http.Request) {
-			if request.Method == "POST" {
+	http.HandleFunc("/distributed/get_log", func(writer http.ResponseWriter, request *http.Request) {
 			var body any = nil
-			if !inerceptor.StartTransaction(writer, request) {
-
-				// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-				return
-			}
-			controllerappinstallffmpeg.Recycle()
-		body = inerceptor.Commit(writer, request, body)
-		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-			writeToResponse(writer, body)
-			return
-		}
-		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
-	})
-	http.HandleFunc("/app/install/libraw/progress", func(writer http.ResponseWriter, request *http.Request) {
-			var body any = nil
-			if !inerceptor.StartTransaction(writer, request) {
-
-				// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-				return
-			}
-			controllerappinstalllibraw.Progress(writer, request)
-		body = inerceptor.Commit(writer, request, body)
-		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-			writeToResponse(writer, body)
-			return
-		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
-	})
-	http.HandleFunc("/app/sync/by_log", func(writer http.ResponseWriter, request *http.Request) {
-			if request.Method == "POST" {
-			var body any = nil
-			if !inerceptor.StartTransaction(writer, request) {
-
-				// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-				return
-			}
-			if !inerceptor.LoginValidate(writer, request) {
-
-				// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-				return
-			}
-			controllerappsync.BySync()
-		body = inerceptor.Commit(writer, request, body)
-		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-			writeToResponse(writer, body)
-			return
-		}
-		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
-	})
-	http.HandleFunc("/distributed/download/", func(writer http.ResponseWriter, request *http.Request) {
-
-		pathVariableSplitArr := []string{"", ""}
-		varPath := request.URL.Path[22:]
-		if isPathVariable(varPath, pathVariableSplitArr){// 判断是否满足定义的路由参数规则
-						var body any = nil
-			if !inerceptor.StartTransaction(writer, request) {
-
-				// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-				return
-			}
-
-		pathVariables := make([]string, 0)
-		for i := 0; i < len(pathVariableSplitArr)-1; i++ {
-			varPath = varPath[len(pathVariableSplitArr[i]):]
-			if pathVariableSplitArr[i+1] == "" { //这已经是最后一个参数了
-				pathVariables = append(pathVariables, varPath)
-			} else {
-				nextIndex := strings.Index(varPath, pathVariableSplitArr[i+1])
-				if nextIndex == -1 {
-					writer.WriteHeader(http.StatusNotFound)
-					return
-				}
-				pathVariables = append(pathVariables, varPath[:nextIndex])
-				varPath = varPath[nextIndex:]
-			}
-		}
-		md5 := pathVariables[0]
-			controllerdistributed.Download(writer, request, md5)
-		body = inerceptor.Commit(writer, request, body)
-		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-			writeToResponse(writer, body)
-			return
-
-		}
-		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
-	})
-	http.HandleFunc("/app/files.html", func(writer http.ResponseWriter, request *http.Request) {
-			if request.Method == "GET" {
-			var body any = nil
-			if !inerceptor.StartTransaction(writer, request) {
-
-				// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.HtmlInterceptor(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-				return
-			}
-			if !inerceptor.LoginValidate(writer, request) {
-
-				// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.HtmlInterceptor(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-				return
-			}
-			controllerappfiles.Html()
-		body = inerceptor.Commit(writer, request, body)
-		body = inerceptor.HtmlInterceptor(writer, request, body)
-		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-			writeToTemplate(writer, body, "resources/templates/app/files.html", "resources/templates/app/include/top-bar.html", "resources/templates/app/include/files/files_right_option.html", "resources/templates/app/include/file_property_dialog.html", "resources/templates/app/include/head.html", "resources/templates/app/include/files/files_toolbar.html", "resources/templates/app/include/files/files_upload.html", "resources/templates/app/include/files_list.html", "resources/templates/app/include/files/files_share.html", "resources/templates/app/include/share_detail_dialog.html")
-			return
-		}
-		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
-	})
-	http.HandleFunc("/app/sync/info", func(writer http.ResponseWriter, request *http.Request) {
-			var body any = nil
-			if !inerceptor.StartTransaction(writer, request) {
-
-				// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-				return
-			}
-			if !inerceptor.LoginValidate(writer, request) {
-
-				// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-				return
-			}
-			controllerappsync.Info(writer, request)
-		body = inerceptor.Commit(writer, request, body)
-		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-			writeToResponse(writer, body)
-			return
-		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
-	})
-	http.HandleFunc("/app/my_share/get_list", func(writer http.ResponseWriter, request *http.Request) {
-			if request.Method == "POST" {
-			var body any = nil
-			if !inerceptor.StartTransaction(writer, request) {
-
-				// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-				return
-			}
-			if !inerceptor.LoginValidate(writer, request) {
-
-				// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-				return
-			}
-			body = controllerappmyshare.GetList()
-		body = inerceptor.Commit(writer, request, body)
-		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-			writeToResponse(writer, body)
-			return
-		}
-		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
-	})
-	http.HandleFunc("/distributed/listen/", func(writer http.ResponseWriter, request *http.Request) {
-			if request.Method == "GET" {
-
-		pathVariableSplitArr := []string{"", ""}
-		varPath := request.URL.Path[20:]
-		if isPathVariable(varPath, pathVariableSplitArr){// 判断是否满足定义的路由参数规则
-						var body any = nil
 			if !inerceptor.StartTransaction(writer, request) {
 
 				// 始终都要执行后的操作
@@ -404,250 +298,11 @@ func startWebServer(port int) {
 		if lastIdArr != nil { // 如果参数存在
 			lastId = lastIdArr[0]
 		}
-
-		pathVariables := make([]string, 0)
-		for i := 0; i < len(pathVariableSplitArr)-1; i++ {
-			varPath = varPath[len(pathVariableSplitArr[i]):]
-			if pathVariableSplitArr[i+1] == "" { //这已经是最后一个参数了
-				pathVariables = append(pathVariables, varPath)
-			} else {
-				nextIndex := strings.Index(varPath, pathVariableSplitArr[i+1])
-				if nextIndex == -1 {
-					writer.WriteHeader(http.StatusNotFound)
-					return
-				}
-				pathVariables = append(pathVariables, varPath[:nextIndex])
-				varPath = varPath[nextIndex:]
-			}
-		}
-		clientToken := pathVariables[0]
-			controllerdistributed.Listen(writer, clientToken, lastId)
+			body = controllerdistributed.GetLog(lastId)
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			writeToResponse(writer, body)
 			return
-
-		}
-		}
-		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
-	})
-	http.HandleFunc("/distributed/get_aop_id", func(writer http.ResponseWriter, request *http.Request) {
-			var body any = nil
-			if !inerceptor.StartTransaction(writer, request) {
-
-				// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-				return
-			}
-			body = controllerdistributed.GetAopId()
-		body = inerceptor.Commit(writer, request, body)
-		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-			writeToResponse(writer, body)
-			return
-		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
-	})
-	http.HandleFunc("/app/install/ffprobe/progress", func(writer http.ResponseWriter, request *http.Request) {
-			var body any = nil
-			if !inerceptor.StartTransaction(writer, request) {
-
-				// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-				return
-			}
-			controllerappinstallffprobe.Progress(writer, request)
-		body = inerceptor.Commit(writer, request, body)
-		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-			writeToResponse(writer, body)
-			return
-		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
-	})
-	http.HandleFunc("/app/files/thumb/", func(writer http.ResponseWriter, request *http.Request) {
-
-		pathVariableSplitArr := []string{"", ""}
-		varPath := request.URL.Path[17:]
-		if isPathVariable(varPath, pathVariableSplitArr){// 判断是否满足定义的路由参数规则
-						var body any = nil
-			if !inerceptor.StartTransaction(writer, request) {
-
-				// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-				return
-			}
-			if !inerceptor.LoginValidate(writer, request) {
-
-				// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-				return
-			}
-
-		pathVariables := make([]string, 0)
-		for i := 0; i < len(pathVariableSplitArr)-1; i++ {
-			varPath = varPath[len(pathVariableSplitArr[i]):]
-			if pathVariableSplitArr[i+1] == "" { //这已经是最后一个参数了
-				pathVariables = append(pathVariables, varPath)
-			} else {
-				nextIndex := strings.Index(varPath, pathVariableSplitArr[i+1])
-				if nextIndex == -1 {
-					writer.WriteHeader(http.StatusNotFound)
-					return
-				}
-				pathVariables = append(pathVariables, varPath[:nextIndex])
-				varPath = varPath[nextIndex:]
-			}
-		}
-		id,idErr := strconv.ParseInt(pathVariables[0],10,64)
-		if idErr != nil { //参数类型不匹配
-			writer.WriteHeader(http.StatusUnprocessableEntity)
-			writer.Write([]byte("参数类型不匹配：“" + pathVariables[0] + "”无法转换为int64类型。"))
-			return
-		}
-			controllerappfiles.Thumb(writer, request, id)
-		body = inerceptor.Commit(writer, request, body)
-		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-			writeToResponse(writer, body)
-			return
-
-		}
-		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
-	})
-	http.HandleFunc("/app/install/ffmpeg/install", func(writer http.ResponseWriter, request *http.Request) {
-			if request.Method == "POST" {
-			var body any = nil
-			if !inerceptor.StartTransaction(writer, request) {
-
-				// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-				return
-			}
-			controllerappinstallffmpeg.Install()
-		body = inerceptor.Commit(writer, request, body)
-		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-			writeToResponse(writer, body)
-			return
-		}
-		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
-	})
-	http.HandleFunc("/app/my_share/delete", func(writer http.ResponseWriter, request *http.Request) {
-			if request.Method == "POST" {
-			var body any = nil
-			if !inerceptor.StartTransaction(writer, request) {
-
-				// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-				return
-			}
-			if !inerceptor.LoginValidate(writer, request) {
-
-				// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-				return
-			}
-			requestFormData := getRequestFormData(request) //获取表单数据
-		var ids []int64 // 初始化变量
-		idsArr := getInt64Array(requestFormData, "ids")
-		if idsArr != nil { // 如果参数存在
-			ids = idsArr
-		}
-			controllerappmyshare.Delete(ids)
-		body = inerceptor.Commit(writer, request, body)
-		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-			writeToResponse(writer, body)
-			return
-		}
-		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
-	})
-	http.HandleFunc("/app/profile.html", func(writer http.ResponseWriter, request *http.Request) {
-			if request.Method == "GET" {
-			var body any = nil
-			if !inerceptor.StartTransaction(writer, request) {
-
-				// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.HtmlInterceptor(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-				return
-			}
-			if !inerceptor.LoginValidate(writer, request) {
-
-				// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.HtmlInterceptor(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-				return
-			}
-			controllerappprofile.Html()
-		body = inerceptor.Commit(writer, request, body)
-		body = inerceptor.HtmlInterceptor(writer, request, body)
-		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-			writeToTemplate(writer, body, "resources/templates/app/profile.html", "resources/templates/app/include/head.html", "resources/templates/app/include/top-bar.html")
-			return
-		}
-		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
-	})
-	http.HandleFunc("/app/sync.html", func(writer http.ResponseWriter, request *http.Request) {
-			if request.Method == "GET" {
-			var body any = nil
-			if !inerceptor.StartTransaction(writer, request) {
-
-				// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.HtmlInterceptor(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-				return
-			}
-			if !inerceptor.LoginValidate(writer, request) {
-
-				// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.HtmlInterceptor(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-				return
-			}
-			controllerappsync.Html()
-		body = inerceptor.Commit(writer, request, body)
-		body = inerceptor.HtmlInterceptor(writer, request, body)
-		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-			writeToTemplate(writer, body, "resources/templates/app/sync.html", "resources/templates/app/include/top-bar.html", "resources/templates/app/include/head.html")
-			return
-		}
-		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
-	})
-	http.HandleFunc("/app/files/create_folder", func(writer http.ResponseWriter, request *http.Request) {
-			if request.Method == "POST" {
-			var body any = nil
-			if !inerceptor.StartTransaction(writer, request) {
-
-				// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-				return
-			}
-			if !inerceptor.LoginValidate(writer, request) {
-
-				// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-				return
-			}
-			requestFormData := getRequestFormData(request) //获取表单数据
-		var folder string // 初始化变量
-		folderArr := getStringArray(requestFormData, "folder")
-		if folderArr != nil { // 如果参数存在
-			folder = folderArr[0]
-		}
-			body = controllerappfiles.CreateFolder(folder)
-		body = inerceptor.Commit(writer, request, body)
-		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-			writeToResponse(writer, body)
-			return
-		}
 		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
 	})
 	http.HandleFunc("/app/files/preview/", func(writer http.ResponseWriter, request *http.Request) {
@@ -710,7 +365,8 @@ func startWebServer(port int) {
 		}
 		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
 	})
-	http.HandleFunc("/distributed/get_log", func(writer http.ResponseWriter, request *http.Request) {
+	http.HandleFunc("/app/profile/update", func(writer http.ResponseWriter, request *http.Request) {
+			if request.Method == "POST" {
 			var body any = nil
 			if !inerceptor.StartTransaction(writer, request) {
 
@@ -719,17 +375,221 @@ func startWebServer(port int) {
 			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 				return
 			}
+			if !inerceptor.LoginValidate(writer, request) {
+
+				// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+				return
+			}
 			requestFormData := getRequestFormData(request) //获取表单数据
-		var lastId int64 // 初始化变量
-		lastIdArr := getInt64Array(requestFormData, "lastId")
-		if lastIdArr != nil { // 如果参数存在
-			lastId = lastIdArr[0]
+
+		// 记录表单验证错误信息
+		filedError := map[string][]string{}
+		validUploadMaxSize := getStringArray(requestFormData, "uploadMaxSize")
+		isDigits(filedError, "uploadMaxSize", validUploadMaxSize, 11, 0)// 数值值区间验证
+		isNotBlank(filedError, "uploadMaxSize", validUploadMaxSize) // 非空白验证
+		validFolders := getStringArray(requestFormData, "folders")
+		isNotBlank(filedError, "folders", validFolders) // 非空白验证
+		if len(filedError) > 0{ // 有表单验证错误信息
+			writeFieldError(writer, filedError)
+			return
 		}
-			body = controllerdistributed.GetLog(lastId)
+
+		form:=controllerappprofileform.ProfileForm{}
+		formOpenSqlLog := getBoolArray(requestFormData, "openSqlLog")
+		if formOpenSqlLog != nil {// 如果参数存在
+			form.OpenSqlLog = formOpenSqlLog[0]
+		}
+
+		formHasReadOnly := getBoolArray(requestFormData, "hasReadOnly")
+		if formHasReadOnly != nil {// 如果参数存在
+			form.HasReadOnly = formHasReadOnly[0]
+		}
+
+		formUploadMaxSize := getInt64Array(requestFormData, "uploadMaxSize")
+		if formUploadMaxSize != nil {// 如果参数存在
+			form.UploadMaxSize = formUploadMaxSize[0]
+		}
+
+		formFolders := getStringArray(requestFormData, "folders")
+		if formFolders != nil {// 如果参数存在
+			form.Folders = formFolders[0]
+		}
+
+		formSyncDomains := getStringArray(requestFormData, "syncDomains")
+		if formSyncDomains != nil {// 如果参数存在
+			form.SyncDomains = formSyncDomains[0]
+		}
+
+		formToken := getStringArray(requestFormData, "token")
+		if formToken != nil {// 如果参数存在
+			form.Token = formToken[0]
+		}
+
+		formIsFoldersMsg := form.IsFolders()
+		if formIsFoldersMsg != "" { // 表单相关验证失败
+			writeFieldFormError(writer, formIsFoldersMsg, "folders")
+			return
+		}
+			body = controllerappprofile.Update(form)
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			writeToResponse(writer, body)
 			return
+		}
+		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
+	})
+	http.HandleFunc("/app/self_set/make_encryption", func(writer http.ResponseWriter, request *http.Request) {
+			if request.Method == "POST" {
+			var body any = nil
+			if !inerceptor.StartTransaction(writer, request) {
+
+				// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+				return
+			}
+			if !inerceptor.LoginValidate(writer, request) {
+
+				// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+				return
+			}
+			requestFormData := getRequestFormData(request) //获取表单数据
+		var flag int // 初始化变量
+		flagArr := getIntArray(requestFormData, "flag")
+		if flagArr != nil { // 如果参数存在
+			flag = flagArr[0]
+		}
+			controllerappselfset.MakeEncryption(flag)
+		body = inerceptor.Commit(writer, request, body)
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			writeToResponse(writer, body)
+			return
+		}
+		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
+	})
+	http.HandleFunc("/app/user_edit.html", func(writer http.ResponseWriter, request *http.Request) {
+			if request.Method == "GET" {
+			var body any = nil
+			if !inerceptor.StartTransaction(writer, request) {
+
+				// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.HtmlInterceptor(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+				return
+			}
+			if !inerceptor.LoginValidate(writer, request) {
+
+				// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.HtmlInterceptor(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+				return
+			}
+			controllerappuser.EditHtml()
+		body = inerceptor.Commit(writer, request, body)
+		body = inerceptor.HtmlInterceptor(writer, request, body)
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			writeToTemplate(writer, body, "resources/templates/app/user_edit.html", "resources/templates/app/include/head.html", "resources/templates/app/include/top-bar.html")
+			return
+		}
+		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
+	})
+	http.HandleFunc("/app/self_set/make_api_token", func(writer http.ResponseWriter, request *http.Request) {
+			if request.Method == "POST" {
+			var body any = nil
+			if !inerceptor.StartTransaction(writer, request) {
+
+				// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+				return
+			}
+			if !inerceptor.LoginValidate(writer, request) {
+
+				// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+				return
+			}
+			requestFormData := getRequestFormData(request) //获取表单数据
+		var flag int // 初始化变量
+		flagArr := getIntArray(requestFormData, "flag")
+		if flagArr != nil { // 如果参数存在
+			flag = flagArr[0]
+		}
+			controllerappselfset.MakeApiToken(flag)
+		body = inerceptor.Commit(writer, request, body)
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			writeToResponse(writer, body)
+			return
+		}
+		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
+	})
+	http.HandleFunc("/app/sync/info", func(writer http.ResponseWriter, request *http.Request) {
+			var body any = nil
+			if !inerceptor.StartTransaction(writer, request) {
+
+				// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+				return
+			}
+			if !inerceptor.LoginValidate(writer, request) {
+
+				// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+				return
+			}
+			controllerappsync.Info(writer, request)
+		body = inerceptor.Commit(writer, request, body)
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			writeToResponse(writer, body)
+			return
+		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
+	})
+	http.HandleFunc("/distributed/download/", func(writer http.ResponseWriter, request *http.Request) {
+
+		pathVariableSplitArr := []string{"", ""}
+		varPath := request.URL.Path[22:]
+		if isPathVariable(varPath, pathVariableSplitArr){// 判断是否满足定义的路由参数规则
+						var body any = nil
+			if !inerceptor.StartTransaction(writer, request) {
+
+				// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+				return
+			}
+
+		pathVariables := make([]string, 0)
+		for i := 0; i < len(pathVariableSplitArr)-1; i++ {
+			varPath = varPath[len(pathVariableSplitArr[i]):]
+			if pathVariableSplitArr[i+1] == "" { //这已经是最后一个参数了
+				pathVariables = append(pathVariables, varPath)
+			} else {
+				nextIndex := strings.Index(varPath, pathVariableSplitArr[i+1])
+				if nextIndex == -1 {
+					writer.WriteHeader(http.StatusNotFound)
+					return
+				}
+				pathVariables = append(pathVariables, varPath[:nextIndex])
+				varPath = varPath[nextIndex:]
+			}
+		}
+		md5 := pathVariables[0]
+			controllerdistributed.Download(writer, request, md5)
+		body = inerceptor.Commit(writer, request, body)
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			writeToResponse(writer, body)
+			return
+
+		}
 		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
 	})
 	http.HandleFunc("/app/files/copy", func(writer http.ResponseWriter, request *http.Request) {
@@ -809,74 +669,8 @@ func startWebServer(port int) {
 		}
 		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
 	})
-	http.HandleFunc("/app/login/do-login", func(writer http.ResponseWriter, request *http.Request) {
-			if request.Method == "POST" {
-			var body any = nil
-			if !inerceptor.StartTransaction(writer, request) {
-
-				// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-				return
-			}
-			requestFormData := getRequestFormData(request) //获取表单数据
-
-		// 记录表单验证错误信息
-		filedError := map[string][]string{}
-		validName := getStringArray(requestFormData, "name")
-		isNotEmpty(filedError, "name", validName) // 非空验证
-		isLength(filedError, "name", validName, 2, 32)// 输入长度验证
-		validPwd := getStringArray(requestFormData, "pwd")
-		isNotEmpty(filedError, "pwd", validPwd) // 非空验证
-		isLength(filedError, "pwd", validPwd, 2, 32)// 输入长度验证
-		validDeviceId := getStringArray(requestFormData, "deviceId")
-		isNotEmpty(filedError, "deviceId", validDeviceId) // 非空验证
-		if len(filedError) > 0{ // 有表单验证错误信息
-			writeFieldError(writer, filedError)
-			return
-		}
-
-		loginForm:=controllerapploginform.LoginAppInForm{}
-		loginFormName := getStringArray(requestFormData, "name")
-		if loginFormName != nil {// 如果参数存在
-			loginForm.Name = loginFormName[0]
-		}
-
-		loginFormPwd := getStringArray(requestFormData, "pwd")
-		if loginFormPwd != nil {// 如果参数存在
-			loginForm.Pwd = loginFormPwd[0]
-		}
-
-		loginFormDeviceId := getStringArray(requestFormData, "deviceId")
-		if loginFormDeviceId != nil {// 如果参数存在
-			loginForm.DeviceId = loginFormDeviceId[0]
-		}
-
-		loginFormIsNameAndPwdMsg := loginForm.IsNameAndPwd()
-		if loginFormIsNameAndPwdMsg != "" { // 表单相关验证失败
-			writeFieldFormError(writer, loginFormIsNameAndPwdMsg, "name", "pwd")
-			return
-		}
-		var _clientFlag int // 初始化变量
-		_clientFlagArr := getIntArray(requestFormData, "_clientFlag")
-		if _clientFlagArr != nil { // 如果参数存在
-			_clientFlag = _clientFlagArr[0]
-		}
-		var _version int // 初始化变量
-		_versionArr := getIntArray(requestFormData, "_version")
-		if _versionArr != nil { // 如果参数存在
-			_version = _versionArr[0]
-		}
-			body = controllerapplogin.DoLogin(loginForm, _clientFlag, _version)
-		body = inerceptor.Commit(writer, request, body)
-		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-			writeToResponse(writer, body)
-			return
-		}
-		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
-	})
-	http.HandleFunc("/app/file_upload", func(writer http.ResponseWriter, request *http.Request) {
-			if request.Method == "POST" {
+	http.HandleFunc("/app/files/download/", func(writer http.ResponseWriter, request *http.Request) {
+			if request.Method == "GET" {
 			var body any = nil
 			if !inerceptor.StartTransaction(writer, request) {
 
@@ -892,18 +686,7 @@ func startWebServer(port int) {
 			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 				return
 			}
-			requestFormData := getRequestFormData(request) //获取表单数据
-		var folder string // 初始化变量
-		folderArr := getStringArray(requestFormData, "folder")
-		if folderArr != nil { // 如果参数存在
-			folder = folderArr[0]
-		}
-		var contentType string // 初始化变量
-		contentTypeArr := getStringArray(requestFormData, "contentType")
-		if contentTypeArr != nil { // 如果参数存在
-			contentType = contentTypeArr[0]
-		}
-			body = controllerappfileupload.Upload(request, folder, contentType)
+			controllerappfiles.Download(writer, request)
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			writeToResponse(writer, body)
@@ -911,7 +694,7 @@ func startWebServer(port int) {
 		}
 		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
 	})
-	http.HandleFunc("/app/login.html", func(writer http.ResponseWriter, request *http.Request) {
+	http.HandleFunc("/app/user_list.html", func(writer http.ResponseWriter, request *http.Request) {
 			if request.Method == "GET" {
 			var body any = nil
 			if !inerceptor.StartTransaction(writer, request) {
@@ -922,16 +705,52 @@ func startWebServer(port int) {
 			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 				return
 			}
-			controllerapplogin.Init(writer, request)
+			if !inerceptor.LoginValidate(writer, request) {
+
+				// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.HtmlInterceptor(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+				return
+			}
+			controllerappuser.ListHtml()
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.HtmlInterceptor(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-			writeToTemplate(writer, body, "resources/templates/app/login.html", "resources/templates/app/include/head.html")
+			writeToTemplate(writer, body, "resources/templates/app/user_list.html", "resources/templates/app/include/head.html", "resources/templates/app/include/top-bar.html")
 			return
 		}
 		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
 	})
-	http.HandleFunc("/app/sync/info_list", func(writer http.ResponseWriter, request *http.Request) {
+	http.HandleFunc("/app/self_set.html", func(writer http.ResponseWriter, request *http.Request) {
+			if request.Method == "GET" {
+			var body any = nil
+			if !inerceptor.StartTransaction(writer, request) {
+
+				// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.HtmlInterceptor(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+				return
+			}
+			if !inerceptor.LoginValidate(writer, request) {
+
+				// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.HtmlInterceptor(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+				return
+			}
+			controllerappselfset.Html()
+		body = inerceptor.Commit(writer, request, body)
+		body = inerceptor.HtmlInterceptor(writer, request, body)
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			writeToTemplate(writer, body, "resources/templates/app/self_set.html", "resources/templates/app/include/top-bar.html", "resources/templates/app/include/head.html")
+			return
+		}
+		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
+	})
+	http.HandleFunc("/app/sync/by_log", func(writer http.ResponseWriter, request *http.Request) {
 			if request.Method == "POST" {
 			var body any = nil
 			if !inerceptor.StartTransaction(writer, request) {
@@ -948,10 +767,535 @@ func startWebServer(port int) {
 			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 				return
 			}
-			body = controllerappsync.InfoList()
+			controllerappsync.BySync()
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			writeToResponse(writer, body)
+			return
+		}
+		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
+	})
+	http.HandleFunc("/app/user_edit/init", func(writer http.ResponseWriter, request *http.Request) {
+			if request.Method == "POST" {
+			var body any = nil
+			if !inerceptor.StartTransaction(writer, request) {
+
+				// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+				return
+			}
+			if !inerceptor.LoginValidate(writer, request) {
+
+				// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+				return
+			}
+			requestFormData := getRequestFormData(request) //获取表单数据
+		var id int64 // 初始化变量
+		idArr := getInt64Array(requestFormData, "id")
+		if idArr != nil { // 如果参数存在
+			id = idArr[0]
+		}
+			body = controllerappuser.EditInit(id)
+		body = inerceptor.Commit(writer, request, body)
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			writeToResponse(writer, body)
+			return
+		}
+		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
+	})
+	http.HandleFunc("/app/about.html", func(writer http.ResponseWriter, request *http.Request) {
+			if request.Method == "GET" {
+			var body any = nil
+			if !inerceptor.StartTransaction(writer, request) {
+
+				// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.HtmlInterceptor(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+				return
+			}
+			if !inerceptor.LoginValidate(writer, request) {
+
+				// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.HtmlInterceptor(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+				return
+			}
+			controllerappabout.Html()
+		body = inerceptor.Commit(writer, request, body)
+		body = inerceptor.HtmlInterceptor(writer, request, body)
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			writeToTemplate(writer, body, "resources/templates/app/about.html", "resources/templates/app/include/head.html", "resources/templates/app/include/top-bar.html")
+			return
+		}
+		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
+	})
+	http.HandleFunc("/app/files.html", func(writer http.ResponseWriter, request *http.Request) {
+			if request.Method == "GET" {
+			var body any = nil
+			if !inerceptor.StartTransaction(writer, request) {
+
+				// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.HtmlInterceptor(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+				return
+			}
+			if !inerceptor.LoginValidate(writer, request) {
+
+				// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.HtmlInterceptor(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+				return
+			}
+			controllerappfiles.Html()
+		body = inerceptor.Commit(writer, request, body)
+		body = inerceptor.HtmlInterceptor(writer, request, body)
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			writeToTemplate(writer, body, "resources/templates/app/files.html", "resources/templates/app/include/files/files_toolbar.html", "resources/templates/app/include/files/files_upload.html", "resources/templates/app/include/files/files_share.html", "resources/templates/app/include/share_detail_dialog.html", "resources/templates/app/include/file_property_dialog.html", "resources/templates/app/include/head.html", "resources/templates/app/include/top-bar.html", "resources/templates/app/include/files_list.html", "resources/templates/app/include/files/files_right_option.html")
+			return
+		}
+		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
+	})
+	http.HandleFunc("/app/files/thumb/", func(writer http.ResponseWriter, request *http.Request) {
+
+		pathVariableSplitArr := []string{"", ""}
+		varPath := request.URL.Path[17:]
+		if isPathVariable(varPath, pathVariableSplitArr){// 判断是否满足定义的路由参数规则
+						var body any = nil
+			if !inerceptor.StartTransaction(writer, request) {
+
+				// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+				return
+			}
+			if !inerceptor.LoginValidate(writer, request) {
+
+				// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+				return
+			}
+
+		pathVariables := make([]string, 0)
+		for i := 0; i < len(pathVariableSplitArr)-1; i++ {
+			varPath = varPath[len(pathVariableSplitArr[i]):]
+			if pathVariableSplitArr[i+1] == "" { //这已经是最后一个参数了
+				pathVariables = append(pathVariables, varPath)
+			} else {
+				nextIndex := strings.Index(varPath, pathVariableSplitArr[i+1])
+				if nextIndex == -1 {
+					writer.WriteHeader(http.StatusNotFound)
+					return
+				}
+				pathVariables = append(pathVariables, varPath[:nextIndex])
+				varPath = varPath[nextIndex:]
+			}
+		}
+		id,idErr := strconv.ParseInt(pathVariables[0],10,64)
+		if idErr != nil { //参数类型不匹配
+			writer.WriteHeader(http.StatusUnprocessableEntity)
+			writer.Write([]byte("参数类型不匹配：“" + pathVariables[0] + "”无法转换为int64类型。"))
+			return
+		}
+			controllerappfiles.Thumb(writer, request, id)
+		body = inerceptor.Commit(writer, request, body)
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			writeToResponse(writer, body)
+			return
+
+		}
+		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
+	})
+	http.HandleFunc("/app/install/ffmpeg/progress", func(writer http.ResponseWriter, request *http.Request) {
+			var body any = nil
+			if !inerceptor.StartTransaction(writer, request) {
+
+				// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+				return
+			}
+			controllerappinstallffmpeg.Progress(writer, request)
+		body = inerceptor.Commit(writer, request, body)
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			writeToResponse(writer, body)
+			return
+		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
+	})
+	http.HandleFunc("/app/profile.html", func(writer http.ResponseWriter, request *http.Request) {
+			if request.Method == "GET" {
+			var body any = nil
+			if !inerceptor.StartTransaction(writer, request) {
+
+				// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.HtmlInterceptor(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+				return
+			}
+			if !inerceptor.LoginValidate(writer, request) {
+
+				// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.HtmlInterceptor(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+				return
+			}
+			controllerappprofile.Html()
+		body = inerceptor.Commit(writer, request, body)
+		body = inerceptor.HtmlInterceptor(writer, request, body)
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			writeToTemplate(writer, body, "resources/templates/app/profile.html", "resources/templates/app/include/head.html", "resources/templates/app/include/top-bar.html")
+			return
+		}
+		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
+	})
+	http.HandleFunc("/app/user_list/init", func(writer http.ResponseWriter, request *http.Request) {
+			if request.Method == "POST" {
+			var body any = nil
+			if !inerceptor.StartTransaction(writer, request) {
+
+				// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+				return
+			}
+			if !inerceptor.LoginValidate(writer, request) {
+
+				// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+				return
+			}
+			body = controllerappuser.ListInit()
+		body = inerceptor.Commit(writer, request, body)
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			writeToResponse(writer, body)
+			return
+		}
+		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
+	})
+	http.HandleFunc("/app/files/share", func(writer http.ResponseWriter, request *http.Request) {
+			if request.Method == "POST" {
+			var body any = nil
+			if !inerceptor.StartTransaction(writer, request) {
+
+				// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+				return
+			}
+			if !inerceptor.LoginValidate(writer, request) {
+
+				// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+				return
+			}
+			requestFormData := getRequestFormData(request) //获取表单数据
+
+		// 记录表单验证错误信息
+		filedError := map[string][]string{}
+		validEndDateTime := getStringArray(requestFormData, "endDateTime")
+		isNotEmpty(filedError, "endDateTime", validEndDateTime) // 非空验证
+		validPwd := getStringArray(requestFormData, "pwd")
+		isLength(filedError, "pwd", validPwd, -1, 32)// 输入长度验证
+		validNames := getStringArray(requestFormData, "names")
+		isNotEmpty(filedError, "names", validNames) // 非空验证
+		if len(filedError) > 0{ // 有表单验证错误信息
+			writeFieldError(writer, filedError)
+			return
+		}
+
+		inForm:=controllerappfilesform.ShareForm{}
+		inFormEndDateTime := getInt64Array(requestFormData, "endDateTime")
+		if inFormEndDateTime != nil {// 如果参数存在
+			inForm.EndDateTime = inFormEndDateTime[0]
+		}
+
+		inFormPwd := getStringArray(requestFormData, "pwd")
+		if inFormPwd != nil {// 如果参数存在
+			inForm.Pwd = inFormPwd[0]
+		}
+
+		inFormFolder := getStringArray(requestFormData, "folder")
+		if inFormFolder != nil {// 如果参数存在
+			inForm.Folder = inFormFolder[0]
+		}
+
+		inFormNames := getStringArray(requestFormData, "names")
+		if inFormNames != nil {// 如果参数存在
+			inForm.Names = inFormNames
+		}
+
+		inFormIsEndDateTimeMsg := inForm.IsEndDateTime()
+		if inFormIsEndDateTimeMsg != "" { // 表单相关验证失败
+			writeFieldFormError(writer, inFormIsEndDateTimeMsg, "endDateTime")
+			return
+		}
+			body = controllerappfiles.Share(inForm)
+		body = inerceptor.Commit(writer, request, body)
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			writeToResponse(writer, body)
+			return
+		}
+		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
+	})
+	http.HandleFunc("/app/install/libraw/install", func(writer http.ResponseWriter, request *http.Request) {
+			if request.Method == "POST" {
+			var body any = nil
+			if !inerceptor.StartTransaction(writer, request) {
+
+				// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+				return
+			}
+			controllerappinstalllibraw.Install()
+		body = inerceptor.Commit(writer, request, body)
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			writeToResponse(writer, body)
+			return
+		}
+		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
+	})
+	http.HandleFunc("/app/install/libraw/progress", func(writer http.ResponseWriter, request *http.Request) {
+			var body any = nil
+			if !inerceptor.StartTransaction(writer, request) {
+
+				// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+				return
+			}
+			controllerappinstalllibraw.Progress(writer, request)
+		body = inerceptor.Commit(writer, request, body)
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			writeToResponse(writer, body)
+			return
+		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
+	})
+	http.HandleFunc("/distributed/listen/", func(writer http.ResponseWriter, request *http.Request) {
+			if request.Method == "GET" {
+
+		pathVariableSplitArr := []string{"", ""}
+		varPath := request.URL.Path[20:]
+		if isPathVariable(varPath, pathVariableSplitArr){// 判断是否满足定义的路由参数规则
+						var body any = nil
+			if !inerceptor.StartTransaction(writer, request) {
+
+				// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+				return
+			}
+			requestFormData := getRequestFormData(request) //获取表单数据
+		var lastId int64 // 初始化变量
+		lastIdArr := getInt64Array(requestFormData, "lastId")
+		if lastIdArr != nil { // 如果参数存在
+			lastId = lastIdArr[0]
+		}
+
+		pathVariables := make([]string, 0)
+		for i := 0; i < len(pathVariableSplitArr)-1; i++ {
+			varPath = varPath[len(pathVariableSplitArr[i]):]
+			if pathVariableSplitArr[i+1] == "" { //这已经是最后一个参数了
+				pathVariables = append(pathVariables, varPath)
+			} else {
+				nextIndex := strings.Index(varPath, pathVariableSplitArr[i+1])
+				if nextIndex == -1 {
+					writer.WriteHeader(http.StatusNotFound)
+					return
+				}
+				pathVariables = append(pathVariables, varPath[:nextIndex])
+				varPath = varPath[nextIndex:]
+			}
+		}
+		clientToken := pathVariables[0]
+			controllerdistributed.Listen(writer, clientToken, lastId)
+		body = inerceptor.Commit(writer, request, body)
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			writeToResponse(writer, body)
+			return
+
+		}
+		}
+		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
+	})
+	http.HandleFunc("/app/files/move", func(writer http.ResponseWriter, request *http.Request) {
+			if request.Method == "POST" {
+			var body any = nil
+			if !inerceptor.StartTransaction(writer, request) {
+
+				// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+				return
+			}
+			if !inerceptor.LoginValidate(writer, request) {
+
+				// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+				return
+			}
+			requestFormData := getRequestFormData(request) //获取表单数据
+		var sourcePaths []string // 初始化变量
+		sourcePathsArr := getStringArray(requestFormData, "sourcePaths")
+		if sourcePathsArr != nil { // 如果参数存在
+			sourcePaths = sourcePathsArr
+		}
+		var targetFolder string // 初始化变量
+		targetFolderArr := getStringArray(requestFormData, "targetFolder")
+		if targetFolderArr != nil { // 如果参数存在
+			targetFolder = targetFolderArr[0]
+		}
+		var isOverWrite bool // 初始化变量
+		isOverWriteArr := getBoolArray(requestFormData, "isOverWrite")
+		if isOverWriteArr != nil { // 如果参数存在
+			isOverWrite = isOverWriteArr[0]
+		}
+			body = controllerappfiles.Move(sourcePaths, targetFolder, isOverWrite)
+		body = inerceptor.Commit(writer, request, body)
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			writeToResponse(writer, body)
+			return
+		}
+		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
+	})
+	http.HandleFunc("/app/install/ffmpeg/recycle", func(writer http.ResponseWriter, request *http.Request) {
+			if request.Method == "POST" {
+			var body any = nil
+			if !inerceptor.StartTransaction(writer, request) {
+
+				// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+				return
+			}
+			controllerappinstallffmpeg.Recycle()
+		body = inerceptor.Commit(writer, request, body)
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			writeToResponse(writer, body)
+			return
+		}
+		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
+	})
+	http.HandleFunc("/app/self_set/init", func(writer http.ResponseWriter, request *http.Request) {
+			if request.Method == "POST" {
+			var body any = nil
+			if !inerceptor.StartTransaction(writer, request) {
+
+				// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+				return
+			}
+			if !inerceptor.LoginValidate(writer, request) {
+
+				// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+				return
+			}
+			body = controllerappselfset.Init()
+		body = inerceptor.Commit(writer, request, body)
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			writeToResponse(writer, body)
+			return
+		}
+		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
+	})
+	http.HandleFunc("/app/sync.html", func(writer http.ResponseWriter, request *http.Request) {
+			if request.Method == "GET" {
+			var body any = nil
+			if !inerceptor.StartTransaction(writer, request) {
+
+				// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.HtmlInterceptor(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+				return
+			}
+			if !inerceptor.LoginValidate(writer, request) {
+
+				// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.HtmlInterceptor(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+				return
+			}
+			controllerappsync.Html()
+		body = inerceptor.Commit(writer, request, body)
+		body = inerceptor.HtmlInterceptor(writer, request, body)
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			writeToTemplate(writer, body, "resources/templates/app/sync.html", "resources/templates/app/include/head.html", "resources/templates/app/include/top-bar.html")
+			return
+		}
+		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
+	})
+	http.HandleFunc("/app/trash/logic_delete", func(writer http.ResponseWriter, request *http.Request) {
+			if request.Method == "POST" {
+			var body any = nil
+			if !inerceptor.StartTransaction(writer, request) {
+
+				// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+				return
+			}
+			if !inerceptor.LoginValidate(writer, request) {
+
+				// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+				return
+			}
+			requestFormData := getRequestFormData(request) //获取表单数据
+		var ids []int64 // 初始化变量
+		idsArr := getInt64Array(requestFormData, "ids")
+		if idsArr != nil { // 如果参数存在
+			ids = idsArr
+		}
+			body = controllerapptrash.LogicDelete(ids)
+		body = inerceptor.Commit(writer, request, body)
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			writeToResponse(writer, body)
+			return
+		}
+		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
+	})
+	http.HandleFunc("/app/trash.html", func(writer http.ResponseWriter, request *http.Request) {
+			if request.Method == "GET" {
+			var body any = nil
+			if !inerceptor.StartTransaction(writer, request) {
+
+				// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.HtmlInterceptor(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+				return
+			}
+			if !inerceptor.LoginValidate(writer, request) {
+
+				// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.HtmlInterceptor(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+				return
+			}
+			controllerapptrash.Html()
+		body = inerceptor.Commit(writer, request, body)
+		body = inerceptor.HtmlInterceptor(writer, request, body)
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			writeToTemplate(writer, body, "resources/templates/app/trash.html", "resources/templates/app/include/trash/trash_toolbar.html", "resources/templates/app/include/trash/trash_list.html", "resources/templates/app/include/trash/trash_right_option.html", "resources/templates/app/include/head.html", "resources/templates/app/include/top-bar.html")
 			return
 		}
 		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
@@ -1041,76 +1385,7 @@ func startWebServer(port int) {
 		}
 		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
 	})
-	http.HandleFunc("/app/user_list.html", func(writer http.ResponseWriter, request *http.Request) {
-			if request.Method == "GET" {
-			var body any = nil
-			if !inerceptor.StartTransaction(writer, request) {
-
-				// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.HtmlInterceptor(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-				return
-			}
-			if !inerceptor.LoginValidate(writer, request) {
-
-				// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.HtmlInterceptor(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-				return
-			}
-			controllerappuser.ListHtml()
-		body = inerceptor.Commit(writer, request, body)
-		body = inerceptor.HtmlInterceptor(writer, request, body)
-		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-			writeToTemplate(writer, body, "resources/templates/app/user_list.html", "resources/templates/app/include/head.html", "resources/templates/app/include/top-bar.html")
-			return
-		}
-		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
-	})
-	http.HandleFunc("/app/files/move", func(writer http.ResponseWriter, request *http.Request) {
-			if request.Method == "POST" {
-			var body any = nil
-			if !inerceptor.StartTransaction(writer, request) {
-
-				// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-				return
-			}
-			if !inerceptor.LoginValidate(writer, request) {
-
-				// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-				return
-			}
-			requestFormData := getRequestFormData(request) //获取表单数据
-		var sourcePaths []string // 初始化变量
-		sourcePathsArr := getStringArray(requestFormData, "sourcePaths")
-		if sourcePathsArr != nil { // 如果参数存在
-			sourcePaths = sourcePathsArr
-		}
-		var targetFolder string // 初始化变量
-		targetFolderArr := getStringArray(requestFormData, "targetFolder")
-		if targetFolderArr != nil { // 如果参数存在
-			targetFolder = targetFolderArr[0]
-		}
-		var isOverWrite bool // 初始化变量
-		isOverWriteArr := getBoolArray(requestFormData, "isOverWrite")
-		if isOverWriteArr != nil { // 如果参数存在
-			isOverWrite = isOverWriteArr[0]
-		}
-			body = controllerappfiles.Move(sourcePaths, targetFolder, isOverWrite)
-		body = inerceptor.Commit(writer, request, body)
-		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-			writeToResponse(writer, body)
-			return
-		}
-		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
-	})
-	http.HandleFunc("/app/files/get_list", func(writer http.ResponseWriter, request *http.Request) {
+	http.HandleFunc("/app/files/create_folder", func(writer http.ResponseWriter, request *http.Request) {
 			if request.Method == "POST" {
 			var body any = nil
 			if !inerceptor.StartTransaction(writer, request) {
@@ -1133,37 +1408,7 @@ func startWebServer(port int) {
 		if folderArr != nil { // 如果参数存在
 			folder = folderArr[0]
 		}
-			body = controllerappfiles.GetList(folder)
-		body = inerceptor.Commit(writer, request, body)
-		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-			writeToResponse(writer, body)
-			return
-		}
-		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
-	})
-	http.HandleFunc("/app/install/create_admin/add_admin", func(writer http.ResponseWriter, request *http.Request) {
-			if request.Method == "POST" {
-			var body any = nil
-			if !inerceptor.StartTransaction(writer, request) {
-
-				// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-				return
-			}
-			requestFormData := getRequestFormData(request) //获取表单数据
-		inForm:=controllerappinstallcreateadminform.CreateAdminForm{}
-		inFormName := getStringArray(requestFormData, "name")
-		if inFormName != nil {// 如果参数存在
-			inForm.Name = inFormName[0]
-		}
-
-		inFormPwd := getStringArray(requestFormData, "pwd")
-		if inFormPwd != nil {// 如果参数存在
-			inForm.Pwd = inFormPwd[0]
-		}
-
-			body = controllerappinstallcreateadmin.AddAdmin(inForm)
+			body = controllerappfiles.CreateFolder(folder)
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			writeToResponse(writer, body)
@@ -1191,962 +1436,10 @@ func startWebServer(port int) {
 		}
 		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
 	})
-	http.HandleFunc("/app/sync/by_table", func(writer http.ResponseWriter, request *http.Request) {
+	http.HandleFunc("/app/login/do-login", func(writer http.ResponseWriter, request *http.Request) {
 			if request.Method == "POST" {
 			var body any = nil
 			if !inerceptor.StartTransaction(writer, request) {
-
-				// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-				return
-			}
-			if !inerceptor.LoginValidate(writer, request) {
-
-				// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-				return
-			}
-			controllerappsync.ByTable()
-		body = inerceptor.Commit(writer, request, body)
-		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-			writeToResponse(writer, body)
-			return
-		}
-		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
-	})
-	http.HandleFunc("/app/trash/trash_recover", func(writer http.ResponseWriter, request *http.Request) {
-			if request.Method == "POST" {
-			var body any = nil
-			if !inerceptor.StartTransaction(writer, request) {
-
-				// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-				return
-			}
-			if !inerceptor.LoginValidate(writer, request) {
-
-				// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-				return
-			}
-			requestFormData := getRequestFormData(request) //获取表单数据
-		var ids []int64 // 初始化变量
-		idsArr := getInt64Array(requestFormData, "ids")
-		if idsArr != nil { // 如果参数存在
-			ids = idsArr
-		}
-			body = controllerapptrash.TrashRecover(ids)
-		body = inerceptor.Commit(writer, request, body)
-		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-			writeToResponse(writer, body)
-			return
-		}
-		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
-	})
-	http.HandleFunc("/distributed/get_table_id", func(writer http.ResponseWriter, request *http.Request) {
-			var body any = nil
-			if !inerceptor.StartTransaction(writer, request) {
-
-				// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-				return
-			}
-			requestFormData := getRequestFormData(request) //获取表单数据
-		var tbName string // 初始化变量
-		tbNameArr := getStringArray(requestFormData, "tbName")
-		if tbNameArr != nil { // 如果参数存在
-			tbName = tbNameArr[0]
-		}
-		var lastId int64 // 初始化变量
-		lastIdArr := getInt64Array(requestFormData, "lastId")
-		if lastIdArr != nil { // 如果参数存在
-			lastId = lastIdArr[0]
-		}
-		var aopId int64 // 初始化变量
-		aopIdArr := getInt64Array(requestFormData, "aopId")
-		if aopIdArr != nil { // 如果参数存在
-			aopId = aopIdArr[0]
-		}
-			body = controllerdistributed.GetTableId(tbName, lastId, aopId)
-		body = inerceptor.Commit(writer, request, body)
-		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-			writeToResponse(writer, body)
-			return
-		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
-	})
-	http.HandleFunc("/index.html", func(writer http.ResponseWriter, request *http.Request) {
-			if request.Method == "GET" {
-			var body any = nil
-			if !inerceptor.StartTransaction(writer, request) {
-
-				// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.HtmlInterceptor(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-				return
-			}
-			controllerapp.Index()
-		body = inerceptor.Commit(writer, request, body)
-		body = inerceptor.HtmlInterceptor(writer, request, body)
-		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-			writeToTemplate(writer, body, "resources/templates/index.html")
-			return
-		}
-		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
-	})
-	http.HandleFunc("/app/files/download_history/", func(writer http.ResponseWriter, request *http.Request) {
-			if request.Method == "GET" {
-			var body any = nil
-			if !inerceptor.StartTransaction(writer, request) {
-
-				// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-				return
-			}
-			if !inerceptor.LoginValidate(writer, request) {
-
-				// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-				return
-			}
-			requestFormData := getRequestFormData(request) //获取表单数据
-		var id int64 // 初始化变量
-		idArr := getInt64Array(requestFormData, "id")
-		if idArr != nil { // 如果参数存在
-			id = idArr[0]
-		}
-			controllerappfiles.DownloadByHistory(writer, request, id)
-		body = inerceptor.Commit(writer, request, body)
-		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-			writeToResponse(writer, body)
-			return
-		}
-		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
-	})
-	http.HandleFunc("/app/files/download/", func(writer http.ResponseWriter, request *http.Request) {
-			if request.Method == "GET" {
-			var body any = nil
-			if !inerceptor.StartTransaction(writer, request) {
-
-				// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-				return
-			}
-			if !inerceptor.LoginValidate(writer, request) {
-
-				// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-				return
-			}
-			controllerappfiles.Download(writer, request)
-		body = inerceptor.Commit(writer, request, body)
-		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-			writeToResponse(writer, body)
-			return
-		}
-		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
-	})
-	http.HandleFunc("/app/install/create_admin", func(writer http.ResponseWriter, request *http.Request) {
-			if request.Method == "GET" {
-			var body any = nil
-			if !inerceptor.StartTransaction(writer, request) {
-
-				// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-				return
-			}
-			controllerappinstallcreateadmin.Init(writer, request)
-		body = inerceptor.Commit(writer, request, body)
-		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-			writeToTemplate(writer, body, "resources/templates/app/install/create_admin.html", "resources/templates/app/include/head.html")
-			return
-		}
-		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
-	})
-	http.HandleFunc("/app/trash/logic_delete", func(writer http.ResponseWriter, request *http.Request) {
-			if request.Method == "POST" {
-			var body any = nil
-			if !inerceptor.StartTransaction(writer, request) {
-
-				// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-				return
-			}
-			if !inerceptor.LoginValidate(writer, request) {
-
-				// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-				return
-			}
-			requestFormData := getRequestFormData(request) //获取表单数据
-		var ids []int64 // 初始化变量
-		idsArr := getInt64Array(requestFormData, "ids")
-		if idsArr != nil { // 如果参数存在
-			ids = idsArr
-		}
-			body = controllerapptrash.LogicDelete(ids)
-		body = inerceptor.Commit(writer, request, body)
-		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-			writeToResponse(writer, body)
-			return
-		}
-		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
-	})
-	http.HandleFunc("/app/files/rename", func(writer http.ResponseWriter, request *http.Request) {
-			if request.Method == "POST" {
-			var body any = nil
-			if !inerceptor.StartTransaction(writer, request) {
-
-				// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-				return
-			}
-			if !inerceptor.LoginValidate(writer, request) {
-
-				// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-				return
-			}
-			requestFormData := getRequestFormData(request) //获取表单数据
-		var sourcePath string // 初始化变量
-		sourcePathArr := getStringArray(requestFormData, "sourcePath")
-		if sourcePathArr != nil { // 如果参数存在
-			sourcePath = sourcePathArr[0]
-		}
-		var name string // 初始化变量
-		nameArr := getStringArray(requestFormData, "name")
-		if nameArr != nil { // 如果参数存在
-			name = nameArr[0]
-		}
-			body = controllerappfiles.Rename(sourcePath, name)
-		body = inerceptor.Commit(writer, request, body)
-		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-			writeToResponse(writer, body)
-			return
-		}
-		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
-	})
-	http.HandleFunc("/app/profile/init", func(writer http.ResponseWriter, request *http.Request) {
-			if request.Method == "POST" {
-			var body any = nil
-			if !inerceptor.StartTransaction(writer, request) {
-
-				// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-				return
-			}
-			if !inerceptor.LoginValidate(writer, request) {
-
-				// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-				return
-			}
-			body = controllerappprofile.Init()
-		body = inerceptor.Commit(writer, request, body)
-		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-			writeToResponse(writer, body)
-			return
-		}
-		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
-	})
-	http.HandleFunc("/app/about.html", func(writer http.ResponseWriter, request *http.Request) {
-			if request.Method == "GET" {
-			var body any = nil
-			if !inerceptor.StartTransaction(writer, request) {
-
-				// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.HtmlInterceptor(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-				return
-			}
-			if !inerceptor.LoginValidate(writer, request) {
-
-				// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.HtmlInterceptor(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-				return
-			}
-			controllerappabout.Html()
-		body = inerceptor.Commit(writer, request, body)
-		body = inerceptor.HtmlInterceptor(writer, request, body)
-		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-			writeToTemplate(writer, body, "resources/templates/app/about.html", "resources/templates/app/include/top-bar.html", "resources/templates/app/include/head.html")
-			return
-		}
-		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
-	})
-	http.HandleFunc("/app/folder_selector/get_list", func(writer http.ResponseWriter, request *http.Request) {
-			if request.Method == "POST" {
-			var body any = nil
-			if !inerceptor.StartTransaction(writer, request) {
-
-				// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-				return
-			}
-			if !inerceptor.LoginValidate(writer, request) {
-
-				// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-				return
-			}
-			requestFormData := getRequestFormData(request) //获取表单数据
-		var folder string // 初始化变量
-		folderArr := getStringArray(requestFormData, "folder")
-		if folderArr != nil { // 如果参数存在
-			folder = folderArr[0]
-		}
-			body = controllerappfolderselector.GetList(folder)
-		body = inerceptor.Commit(writer, request, body)
-		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-			writeToResponse(writer, body)
-			return
-		}
-		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
-	})
-	http.HandleFunc("/app/my_share.html", func(writer http.ResponseWriter, request *http.Request) {
-			if request.Method == "GET" {
-			var body any = nil
-			if !inerceptor.StartTransaction(writer, request) {
-
-				// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.HtmlInterceptor(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-				return
-			}
-			if !inerceptor.LoginValidate(writer, request) {
-
-				// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.HtmlInterceptor(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-				return
-			}
-			controllerappmyshare.Html()
-		body = inerceptor.Commit(writer, request, body)
-		body = inerceptor.HtmlInterceptor(writer, request, body)
-		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-			writeToTemplate(writer, body, "resources/templates/app/my_share.html", "resources/templates/app/include/head.html", "resources/templates/app/include/top-bar.html", "resources/templates/app/include/share_detail_dialog.html")
-			return
-		}
-		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
-	})
-	http.HandleFunc("/app/my_share/get_detail", func(writer http.ResponseWriter, request *http.Request) {
-			if request.Method == "POST" {
-			var body any = nil
-			if !inerceptor.StartTransaction(writer, request) {
-
-				// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-				return
-			}
-			if !inerceptor.LoginValidate(writer, request) {
-
-				// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-				return
-			}
-			requestFormData := getRequestFormData(request) //获取表单数据
-		var id int64 // 初始化变量
-		idArr := getInt64Array(requestFormData, "id")
-		if idArr != nil { // 如果参数存在
-			id = idArr[0]
-		}
-			body = controllerappmyshare.GetDetail(id)
-		body = inerceptor.Commit(writer, request, body)
-		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-			writeToResponse(writer, body)
-			return
-		}
-		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
-	})
-	http.HandleFunc("/app/self_set/init", func(writer http.ResponseWriter, request *http.Request) {
-			if request.Method == "POST" {
-			var body any = nil
-			if !inerceptor.StartTransaction(writer, request) {
-
-				// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-				return
-			}
-			if !inerceptor.LoginValidate(writer, request) {
-
-				// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-				return
-			}
-			body = controllerappselfset.Init()
-		body = inerceptor.Commit(writer, request, body)
-		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-			writeToResponse(writer, body)
-			return
-		}
-		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
-	})
-	http.HandleFunc("/app/files/delete", func(writer http.ResponseWriter, request *http.Request) {
-			if request.Method == "POST" {
-			var body any = nil
-			if !inerceptor.StartTransaction(writer, request) {
-
-				// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-				return
-			}
-			if !inerceptor.LoginValidate(writer, request) {
-
-				// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-				return
-			}
-			requestFormData := getRequestFormData(request) //获取表单数据
-		var paths []string // 初始化变量
-		pathsArr := getStringArray(requestFormData, "paths")
-		if pathsArr != nil { // 如果参数存在
-			paths = pathsArr
-		}
-			body = controllerappfiles.Delete(paths)
-		body = inerceptor.Commit(writer, request, body)
-		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-			writeToResponse(writer, body)
-			return
-		}
-		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
-	})
-	http.HandleFunc("/app/install/ffmpeg/progress", func(writer http.ResponseWriter, request *http.Request) {
-			var body any = nil
-			if !inerceptor.StartTransaction(writer, request) {
-
-				// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-				return
-			}
-			controllerappinstallffmpeg.Progress(writer, request)
-		body = inerceptor.Commit(writer, request, body)
-		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-			writeToResponse(writer, body)
-			return
-		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
-	})
-	http.HandleFunc("/app/profile/app/profile/make_token", func(writer http.ResponseWriter, request *http.Request) {
-			if request.Method == "POST" {
-			var body any = nil
-			if !inerceptor.StartTransaction(writer, request) {
-
-				// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-				return
-			}
-			if !inerceptor.LoginValidate(writer, request) {
-
-				// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-				return
-			}
-			controllerappprofile.MakeToken()
-		body = inerceptor.Commit(writer, request, body)
-		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-			writeToResponse(writer, body)
-			return
-		}
-		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
-	})
-	http.HandleFunc("/app/trash/recycle_storage", func(writer http.ResponseWriter, request *http.Request) {
-			if request.Method == "POST" {
-			var body any = nil
-			if !inerceptor.StartTransaction(writer, request) {
-
-				// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-				return
-			}
-			if !inerceptor.LoginValidate(writer, request) {
-
-				// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-				return
-			}
-			controllerapptrash.RecycleStorage()
-		body = inerceptor.Commit(writer, request, body)
-		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-			writeToResponse(writer, body)
-			return
-		}
-		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
-	})
-	http.HandleFunc("/app/user_edit/init", func(writer http.ResponseWriter, request *http.Request) {
-			if request.Method == "POST" {
-			var body any = nil
-			if !inerceptor.StartTransaction(writer, request) {
-
-				// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-				return
-			}
-			if !inerceptor.LoginValidate(writer, request) {
-
-				// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-				return
-			}
-			requestFormData := getRequestFormData(request) //获取表单数据
-		var id int64 // 初始化变量
-		idArr := getInt64Array(requestFormData, "id")
-		if idArr != nil { // 如果参数存在
-			id = idArr[0]
-		}
-			body = controllerappuser.EditInit(id)
-		body = inerceptor.Commit(writer, request, body)
-		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-			writeToResponse(writer, body)
-			return
-		}
-		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
-	})
-	http.HandleFunc("/share/", func(writer http.ResponseWriter, request *http.Request) {
-			if request.Method == "GET" {
-
-		pathVariableSplitArr := []string{"", "/init.html"}
-		varPath := request.URL.Path[7:]
-		if isPathVariable(varPath, pathVariableSplitArr){// 判断是否满足定义的路由参数规则
-						var body any = nil
-			if !inerceptor.StartTransaction(writer, request) {
-
-				// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-				return
-			}
-
-		pathVariables := make([]string, 0)
-		for i := 0; i < len(pathVariableSplitArr)-1; i++ {
-			varPath = varPath[len(pathVariableSplitArr[i]):]
-			if pathVariableSplitArr[i+1] == "" { //这已经是最后一个参数了
-				pathVariables = append(pathVariables, varPath)
-			} else {
-				nextIndex := strings.Index(varPath, pathVariableSplitArr[i+1])
-				if nextIndex == -1 {
-					writer.WriteHeader(http.StatusNotFound)
-					return
-				}
-				pathVariables = append(pathVariables, varPath[:nextIndex])
-				varPath = varPath[nextIndex:]
-			}
-		}
-		id,idErr := strconv.ParseInt(pathVariables[0],10,64)
-		if idErr != nil { //参数类型不匹配
-			writer.WriteHeader(http.StatusUnprocessableEntity)
-			writer.Write([]byte("参数类型不匹配：“" + pathVariables[0] + "”无法转换为int64类型。"))
-			return
-		}
-			controllershare.Html(writer, request, id)
-		body = inerceptor.Commit(writer, request, body)
-		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-			writeToTemplate(writer, body, "resources/templates/share/share.html", "resources/templates/share/include/share/share_right_option.html", "resources/templates/app/include/folder_selector.html", "resources/templates/app/include/head.html", "resources/templates/app/include/top-bar.html", "resources/templates/share/include/share/share_toolbar.html", "resources/templates/share/include/share/share_list.html")
-			return
-
-		}
-		}
-			if request.Method == "GET" {
-
-		pathVariableSplitArr := []string{"", "/input_pwd"}
-		varPath := request.URL.Path[7:]
-		if isPathVariable(varPath, pathVariableSplitArr){// 判断是否满足定义的路由参数规则
-						var body any = nil
-			if !inerceptor.StartTransaction(writer, request) {
-
-				// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-				return
-			}
-
-		pathVariables := make([]string, 0)
-		for i := 0; i < len(pathVariableSplitArr)-1; i++ {
-			varPath = varPath[len(pathVariableSplitArr[i]):]
-			if pathVariableSplitArr[i+1] == "" { //这已经是最后一个参数了
-				pathVariables = append(pathVariables, varPath)
-			} else {
-				nextIndex := strings.Index(varPath, pathVariableSplitArr[i+1])
-				if nextIndex == -1 {
-					writer.WriteHeader(http.StatusNotFound)
-					return
-				}
-				pathVariables = append(pathVariables, varPath[:nextIndex])
-				varPath = varPath[nextIndex:]
-			}
-		}
-		id,idErr := strconv.ParseInt(pathVariables[0],10,64)
-		if idErr != nil { //参数类型不匹配
-			writer.WriteHeader(http.StatusUnprocessableEntity)
-			writer.Write([]byte("参数类型不匹配：“" + pathVariables[0] + "”无法转换为int64类型。"))
-			return
-		}
-			controllershare.InputPwd(id)
-		body = inerceptor.Commit(writer, request, body)
-		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-			writeToTemplate(writer, body, "resources/templates/share/share_pwd.html", "resources/templates/app/include/head.html")
-			return
-
-		}
-		}
-			if request.Method == "POST" {
-
-		pathVariableSplitArr := []string{"", "/valid_pwd"}
-		varPath := request.URL.Path[7:]
-		if isPathVariable(varPath, pathVariableSplitArr){// 判断是否满足定义的路由参数规则
-						var body any = nil
-			if !inerceptor.StartTransaction(writer, request) {
-
-				// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-				return
-			}
-			requestFormData := getRequestFormData(request) //获取表单数据
-		var pwd string // 初始化变量
-		pwdArr := getStringArray(requestFormData, "pwd")
-		if pwdArr != nil { // 如果参数存在
-			pwd = pwdArr[0]
-		}
-
-		pathVariables := make([]string, 0)
-		for i := 0; i < len(pathVariableSplitArr)-1; i++ {
-			varPath = varPath[len(pathVariableSplitArr[i]):]
-			if pathVariableSplitArr[i+1] == "" { //这已经是最后一个参数了
-				pathVariables = append(pathVariables, varPath)
-			} else {
-				nextIndex := strings.Index(varPath, pathVariableSplitArr[i+1])
-				if nextIndex == -1 {
-					writer.WriteHeader(http.StatusNotFound)
-					return
-				}
-				pathVariables = append(pathVariables, varPath[:nextIndex])
-				varPath = varPath[nextIndex:]
-			}
-		}
-		id,idErr := strconv.ParseInt(pathVariables[0],10,64)
-		if idErr != nil { //参数类型不匹配
-			writer.WriteHeader(http.StatusUnprocessableEntity)
-			writer.Write([]byte("参数类型不匹配：“" + pathVariables[0] + "”无法转换为int64类型。"))
-			return
-		}
-			body = controllershare.ValidPwd(writer, request, id, pwd)
-		body = inerceptor.Commit(writer, request, body)
-		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-			writeToResponse(writer, body)
-			return
-
-		}
-		}
-			if request.Method == "POST" {
-
-		pathVariableSplitArr := []string{"", "/save_to"}
-		varPath := request.URL.Path[7:]
-		if isPathVariable(varPath, pathVariableSplitArr){// 判断是否满足定义的路由参数规则
-						var body any = nil
-			if !inerceptor.StartTransaction(writer, request) {
-
-				// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-				return
-			}
-			requestFormData := getRequestFormData(request) //获取表单数据
-		var folder string // 初始化变量
-		folderArr := getStringArray(requestFormData, "folder")
-		if folderArr != nil { // 如果参数存在
-			folder = folderArr[0]
-		}
-		var names []string // 初始化变量
-		namesArr := getStringArray(requestFormData, "names")
-		if namesArr != nil { // 如果参数存在
-			names = namesArr
-		}
-		var target string // 初始化变量
-		targetArr := getStringArray(requestFormData, "target")
-		if targetArr != nil { // 如果参数存在
-			target = targetArr[0]
-		}
-
-		pathVariables := make([]string, 0)
-		for i := 0; i < len(pathVariableSplitArr)-1; i++ {
-			varPath = varPath[len(pathVariableSplitArr[i]):]
-			if pathVariableSplitArr[i+1] == "" { //这已经是最后一个参数了
-				pathVariables = append(pathVariables, varPath)
-			} else {
-				nextIndex := strings.Index(varPath, pathVariableSplitArr[i+1])
-				if nextIndex == -1 {
-					writer.WriteHeader(http.StatusNotFound)
-					return
-				}
-				pathVariables = append(pathVariables, varPath[:nextIndex])
-				varPath = varPath[nextIndex:]
-			}
-		}
-		id,idErr := strconv.ParseInt(pathVariables[0],10,64)
-		if idErr != nil { //参数类型不匹配
-			writer.WriteHeader(http.StatusUnprocessableEntity)
-			writer.Write([]byte("参数类型不匹配：“" + pathVariables[0] + "”无法转换为int64类型。"))
-			return
-		}
-			body = controllershare.SaveTo(writer, request, id, folder, names, target)
-		body = inerceptor.Commit(writer, request, body)
-		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-			writeToResponse(writer, body)
-			return
-
-		}
-		}
-			if request.Method == "POST" {
-
-		pathVariableSplitArr := []string{"", "/get_list"}
-		varPath := request.URL.Path[7:]
-		if isPathVariable(varPath, pathVariableSplitArr){// 判断是否满足定义的路由参数规则
-						var body any = nil
-			if !inerceptor.StartTransaction(writer, request) {
-
-				// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-				return
-			}
-			requestFormData := getRequestFormData(request) //获取表单数据
-		var folder string // 初始化变量
-		folderArr := getStringArray(requestFormData, "folder")
-		if folderArr != nil { // 如果参数存在
-			folder = folderArr[0]
-		}
-
-		pathVariables := make([]string, 0)
-		for i := 0; i < len(pathVariableSplitArr)-1; i++ {
-			varPath = varPath[len(pathVariableSplitArr[i]):]
-			if pathVariableSplitArr[i+1] == "" { //这已经是最后一个参数了
-				pathVariables = append(pathVariables, varPath)
-			} else {
-				nextIndex := strings.Index(varPath, pathVariableSplitArr[i+1])
-				if nextIndex == -1 {
-					writer.WriteHeader(http.StatusNotFound)
-					return
-				}
-				pathVariables = append(pathVariables, varPath[:nextIndex])
-				varPath = varPath[nextIndex:]
-			}
-		}
-		id,idErr := strconv.ParseInt(pathVariables[0],10,64)
-		if idErr != nil { //参数类型不匹配
-			writer.WriteHeader(http.StatusUnprocessableEntity)
-			writer.Write([]byte("参数类型不匹配：“" + pathVariables[0] + "”无法转换为int64类型。"))
-			return
-		}
-			body = controllershare.GetList(writer, request, id, folder)
-		body = inerceptor.Commit(writer, request, body)
-		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-			writeToResponse(writer, body)
-			return
-
-		}
-		}
-			if request.Method == "GET" {
-
-		pathVariableSplitArr := []string{"", "/download/", ""}
-		varPath := request.URL.Path[7:]
-		if isPathVariable(varPath, pathVariableSplitArr){// 判断是否满足定义的路由参数规则
-						var body any = nil
-			if !inerceptor.StartTransaction(writer, request) {
-
-				// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-				return
-			}
-			requestFormData := getRequestFormData(request) //获取表单数据
-		var folder string // 初始化变量
-		folderArr := getStringArray(requestFormData, "folder")
-		if folderArr != nil { // 如果参数存在
-			folder = folderArr[0]
-		}
-
-		pathVariables := make([]string, 0)
-		for i := 0; i < len(pathVariableSplitArr)-1; i++ {
-			varPath = varPath[len(pathVariableSplitArr[i]):]
-			if pathVariableSplitArr[i+1] == "" { //这已经是最后一个参数了
-				pathVariables = append(pathVariables, varPath)
-			} else {
-				nextIndex := strings.Index(varPath, pathVariableSplitArr[i+1])
-				if nextIndex == -1 {
-					writer.WriteHeader(http.StatusNotFound)
-					return
-				}
-				pathVariables = append(pathVariables, varPath[:nextIndex])
-				varPath = varPath[nextIndex:]
-			}
-		}
-		id,idErr := strconv.ParseInt(pathVariables[0],10,64)
-		if idErr != nil { //参数类型不匹配
-			writer.WriteHeader(http.StatusUnprocessableEntity)
-			writer.Write([]byte("参数类型不匹配：“" + pathVariables[0] + "”无法转换为int64类型。"))
-			return
-		}
-		name := pathVariables[1]
-			body = controllershare.Download(writer, request, id, folder, name)
-		body = inerceptor.Commit(writer, request, body)
-		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-			writeToResponse(writer, body)
-			return
-
-		}
-		}
-			if request.Method == "GET" {
-
-		pathVariableSplitArr := []string{"", "/thumb"}
-		varPath := request.URL.Path[7:]
-		if isPathVariable(varPath, pathVariableSplitArr){// 判断是否满足定义的路由参数规则
-						var body any = nil
-			if !inerceptor.StartTransaction(writer, request) {
-
-				// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-				return
-			}
-			requestFormData := getRequestFormData(request) //获取表单数据
-		var fid int64 // 初始化变量
-		fidArr := getInt64Array(requestFormData, "fid")
-		if fidArr != nil { // 如果参数存在
-			fid = fidArr[0]
-		}
-			controllershare.Thumb(writer, request, fid)
-		body = inerceptor.Commit(writer, request, body)
-		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-			writeToResponse(writer, body)
-			return
-
-		}
-		}
-		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
-	})
-	http.HandleFunc("/app/files/get_property", func(writer http.ResponseWriter, request *http.Request) {
-			if request.Method == "POST" {
-			var body any = nil
-			if !inerceptor.StartTransaction(writer, request) {
-
-				// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-				return
-			}
-			if !inerceptor.LoginValidate(writer, request) {
-
-				// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-				return
-			}
-			requestFormData := getRequestFormData(request) //获取表单数据
-		var paths []string // 初始化变量
-		pathsArr := getStringArray(requestFormData, "paths")
-		if pathsArr != nil { // 如果参数存在
-			paths = pathsArr
-		}
-			body = controllerappfiles.GetProperty(paths)
-		body = inerceptor.Commit(writer, request, body)
-		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-			writeToResponse(writer, body)
-			return
-		}
-		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
-	})
-	http.HandleFunc("/app/install/ffprobe/install", func(writer http.ResponseWriter, request *http.Request) {
-			if request.Method == "POST" {
-			var body any = nil
-			if !inerceptor.StartTransaction(writer, request) {
-
-				// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-				return
-			}
-			controllerappinstallffprobe.Install()
-		body = inerceptor.Commit(writer, request, body)
-		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-			writeToResponse(writer, body)
-			return
-		}
-		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
-	})
-	http.HandleFunc("/app/modify_pwd.html", func(writer http.ResponseWriter, request *http.Request) {
-			if request.Method == "GET" {
-			var body any = nil
-			if !inerceptor.StartTransaction(writer, request) {
-
-				// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.HtmlInterceptor(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-				return
-			}
-			if !inerceptor.LoginValidate(writer, request) {
-
-				// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.HtmlInterceptor(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-				return
-			}
-			controllerappmodifypwd.Html()
-		body = inerceptor.Commit(writer, request, body)
-		body = inerceptor.HtmlInterceptor(writer, request, body)
-		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-			writeToTemplate(writer, body, "resources/templates/app/modify_pwd.html", "resources/templates/app/include/head.html")
-			return
-		}
-		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
-	})
-	http.HandleFunc("/app/profile/update", func(writer http.ResponseWriter, request *http.Request) {
-			if request.Method == "POST" {
-			var body any = nil
-			if !inerceptor.StartTransaction(writer, request) {
-
-				// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-				return
-			}
-			if !inerceptor.LoginValidate(writer, request) {
 
 				// 始终都要执行后的操作
 			body = inerceptor.Commit(writer, request, body)
@@ -2157,280 +1450,51 @@ func startWebServer(port int) {
 
 		// 记录表单验证错误信息
 		filedError := map[string][]string{}
-		validUploadMaxSize := getStringArray(requestFormData, "uploadMaxSize")
-		isDigits(filedError, "uploadMaxSize", validUploadMaxSize, 11, 0)// 数值值区间验证
-		isNotBlank(filedError, "uploadMaxSize", validUploadMaxSize) // 非空白验证
-		validFolders := getStringArray(requestFormData, "folders")
-		isNotBlank(filedError, "folders", validFolders) // 非空白验证
-		if len(filedError) > 0{ // 有表单验证错误信息
-			writeFieldError(writer, filedError)
-			return
-		}
-
-		form:=controllerappprofileform.ProfileForm{}
-		formOpenSqlLog := getBoolArray(requestFormData, "openSqlLog")
-		if formOpenSqlLog != nil {// 如果参数存在
-			form.OpenSqlLog = formOpenSqlLog[0]
-		}
-
-		formHasReadOnly := getBoolArray(requestFormData, "hasReadOnly")
-		if formHasReadOnly != nil {// 如果参数存在
-			form.HasReadOnly = formHasReadOnly[0]
-		}
-
-		formUploadMaxSize := getInt64Array(requestFormData, "uploadMaxSize")
-		if formUploadMaxSize != nil {// 如果参数存在
-			form.UploadMaxSize = formUploadMaxSize[0]
-		}
-
-		formFolders := getStringArray(requestFormData, "folders")
-		if formFolders != nil {// 如果参数存在
-			form.Folders = formFolders[0]
-		}
-
-		formSyncDomains := getStringArray(requestFormData, "syncDomains")
-		if formSyncDomains != nil {// 如果参数存在
-			form.SyncDomains = formSyncDomains[0]
-		}
-
-		formToken := getStringArray(requestFormData, "token")
-		if formToken != nil {// 如果参数存在
-			form.Token = formToken[0]
-		}
-
-		formIsFoldersMsg := form.IsFolders()
-		if formIsFoldersMsg != "" { // 表单相关验证失败
-			writeFieldFormError(writer, formIsFoldersMsg, "folders")
-			return
-		}
-			body = controllerappprofile.Update(form)
-		body = inerceptor.Commit(writer, request, body)
-		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-			writeToResponse(writer, body)
-			return
-		}
-		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
-	})
-	http.HandleFunc("/app/self_set.html", func(writer http.ResponseWriter, request *http.Request) {
-			if request.Method == "GET" {
-			var body any = nil
-			if !inerceptor.StartTransaction(writer, request) {
-
-				// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.HtmlInterceptor(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-				return
-			}
-			if !inerceptor.LoginValidate(writer, request) {
-
-				// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.HtmlInterceptor(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-				return
-			}
-			controllerappselfset.Html()
-		body = inerceptor.Commit(writer, request, body)
-		body = inerceptor.HtmlInterceptor(writer, request, body)
-		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-			writeToTemplate(writer, body, "resources/templates/app/self_set.html", "resources/templates/app/include/head.html", "resources/templates/app/include/top-bar.html")
-			return
-		}
-		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
-	})
-	http.HandleFunc("/app/self_set/make_url_path", func(writer http.ResponseWriter, request *http.Request) {
-			if request.Method == "POST" {
-			var body any = nil
-			if !inerceptor.StartTransaction(writer, request) {
-
-				// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-				return
-			}
-			if !inerceptor.LoginValidate(writer, request) {
-
-				// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-				return
-			}
-			requestFormData := getRequestFormData(request) //获取表单数据
-		var flag int // 初始化变量
-		flagArr := getIntArray(requestFormData, "flag")
-		if flagArr != nil { // 如果参数存在
-			flag = flagArr[0]
-		}
-			controllerappselfset.MakeUrlPath(flag)
-		body = inerceptor.Commit(writer, request, body)
-		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-			writeToResponse(writer, body)
-			return
-		}
-		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
-	})
-	http.HandleFunc("/app/self_set/make_encryption", func(writer http.ResponseWriter, request *http.Request) {
-			if request.Method == "POST" {
-			var body any = nil
-			if !inerceptor.StartTransaction(writer, request) {
-
-				// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-				return
-			}
-			if !inerceptor.LoginValidate(writer, request) {
-
-				// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-				return
-			}
-			requestFormData := getRequestFormData(request) //获取表单数据
-		var flag int // 初始化变量
-		flagArr := getIntArray(requestFormData, "flag")
-		if flagArr != nil { // 如果参数存在
-			flag = flagArr[0]
-		}
-			controllerappselfset.MakeEncryption(flag)
-		body = inerceptor.Commit(writer, request, body)
-		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-			writeToResponse(writer, body)
-			return
-		}
-		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
-	})
-	http.HandleFunc("/app/trash.html", func(writer http.ResponseWriter, request *http.Request) {
-			if request.Method == "GET" {
-			var body any = nil
-			if !inerceptor.StartTransaction(writer, request) {
-
-				// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.HtmlInterceptor(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-				return
-			}
-			if !inerceptor.LoginValidate(writer, request) {
-
-				// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.HtmlInterceptor(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-				return
-			}
-			controllerapptrash.Html()
-		body = inerceptor.Commit(writer, request, body)
-		body = inerceptor.HtmlInterceptor(writer, request, body)
-		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-			writeToTemplate(writer, body, "resources/templates/app/trash.html", "resources/templates/app/include/trash/trash_list.html", "resources/templates/app/include/trash/trash_right_option.html", "resources/templates/app/include/head.html", "resources/templates/app/include/top-bar.html", "resources/templates/app/include/trash/trash_toolbar.html")
-			return
-		}
-		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
-	})
-	http.HandleFunc("/app/files/share", func(writer http.ResponseWriter, request *http.Request) {
-			if request.Method == "POST" {
-			var body any = nil
-			if !inerceptor.StartTransaction(writer, request) {
-
-				// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-				return
-			}
-			if !inerceptor.LoginValidate(writer, request) {
-
-				// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-				return
-			}
-			requestFormData := getRequestFormData(request) //获取表单数据
-
-		// 记录表单验证错误信息
-		filedError := map[string][]string{}
-		validEndDateTime := getStringArray(requestFormData, "endDateTime")
-		isNotEmpty(filedError, "endDateTime", validEndDateTime) // 非空验证
+		validName := getStringArray(requestFormData, "name")
+		isNotEmpty(filedError, "name", validName) // 非空验证
+		isLength(filedError, "name", validName, 2, 32)// 输入长度验证
 		validPwd := getStringArray(requestFormData, "pwd")
-		isLength(filedError, "pwd", validPwd, -1, 32)// 输入长度验证
-		validNames := getStringArray(requestFormData, "names")
-		isNotEmpty(filedError, "names", validNames) // 非空验证
+		isNotEmpty(filedError, "pwd", validPwd) // 非空验证
+		isLength(filedError, "pwd", validPwd, 2, 32)// 输入长度验证
+		validDeviceId := getStringArray(requestFormData, "deviceId")
+		isNotEmpty(filedError, "deviceId", validDeviceId) // 非空验证
 		if len(filedError) > 0{ // 有表单验证错误信息
 			writeFieldError(writer, filedError)
 			return
 		}
 
-		inForm:=controllerappfilesform.ShareForm{}
-		inFormEndDateTime := getInt64Array(requestFormData, "endDateTime")
-		if inFormEndDateTime != nil {// 如果参数存在
-			inForm.EndDateTime = inFormEndDateTime[0]
+		loginForm:=controllerapploginform.LoginAppInForm{}
+		loginFormName := getStringArray(requestFormData, "name")
+		if loginFormName != nil {// 如果参数存在
+			loginForm.Name = loginFormName[0]
 		}
 
-		inFormPwd := getStringArray(requestFormData, "pwd")
-		if inFormPwd != nil {// 如果参数存在
-			inForm.Pwd = inFormPwd[0]
+		loginFormPwd := getStringArray(requestFormData, "pwd")
+		if loginFormPwd != nil {// 如果参数存在
+			loginForm.Pwd = loginFormPwd[0]
 		}
 
-		inFormFolder := getStringArray(requestFormData, "folder")
-		if inFormFolder != nil {// 如果参数存在
-			inForm.Folder = inFormFolder[0]
+		loginFormDeviceId := getStringArray(requestFormData, "deviceId")
+		if loginFormDeviceId != nil {// 如果参数存在
+			loginForm.DeviceId = loginFormDeviceId[0]
 		}
 
-		inFormNames := getStringArray(requestFormData, "names")
-		if inFormNames != nil {// 如果参数存在
-			inForm.Names = inFormNames
-		}
-
-		inFormIsEndDateTimeMsg := inForm.IsEndDateTime()
-		if inFormIsEndDateTimeMsg != "" { // 表单相关验证失败
-			writeFieldFormError(writer, inFormIsEndDateTimeMsg, "endDateTime")
+		loginFormIsNameAndPwdMsg := loginForm.IsNameAndPwd()
+		if loginFormIsNameAndPwdMsg != "" { // 表单相关验证失败
+			writeFieldFormError(writer, loginFormIsNameAndPwdMsg, "name", "pwd")
 			return
 		}
-			body = controllerappfiles.Share(inForm)
-		body = inerceptor.Commit(writer, request, body)
-		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-			writeToResponse(writer, body)
-			return
+		var _clientFlag int // 初始化变量
+		_clientFlagArr := getIntArray(requestFormData, "_clientFlag")
+		if _clientFlagArr != nil { // 如果参数存在
+			_clientFlag = _clientFlagArr[0]
 		}
-		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
-	})
-	http.HandleFunc("/app/trash/get_list", func(writer http.ResponseWriter, request *http.Request) {
-			if request.Method == "POST" {
-			var body any = nil
-			if !inerceptor.StartTransaction(writer, request) {
-
-				// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-				return
-			}
-			if !inerceptor.LoginValidate(writer, request) {
-
-				// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-				return
-			}
-			body = controllerapptrash.GetList()
-		body = inerceptor.Commit(writer, request, body)
-		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-			writeToResponse(writer, body)
-			return
+		var _version int // 初始化变量
+		_versionArr := getIntArray(requestFormData, "_version")
+		if _versionArr != nil { // 如果参数存在
+			_version = _versionArr[0]
 		}
-		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
-	})
-	http.HandleFunc("/app/install/libraw/install", func(writer http.ResponseWriter, request *http.Request) {
-			if request.Method == "POST" {
-			var body any = nil
-			if !inerceptor.StartTransaction(writer, request) {
-
-				// 始终都要执行后的操作
-			body = inerceptor.Commit(writer, request, body)
-			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
-				return
-			}
-			controllerappinstalllibraw.Install()
+			body = controllerapplogin.DoLogin(loginForm, _clientFlag, _version)
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			writeToResponse(writer, body)
@@ -2494,7 +1558,7 @@ func startWebServer(port int) {
 		}
 		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
 	})
-	http.HandleFunc("/app/self_set/make_api_token", func(writer http.ResponseWriter, request *http.Request) {
+	http.HandleFunc("/app/my_share/delete", func(writer http.ResponseWriter, request *http.Request) {
 			if request.Method == "POST" {
 			var body any = nil
 			if !inerceptor.StartTransaction(writer, request) {
@@ -2512,12 +1576,12 @@ func startWebServer(port int) {
 				return
 			}
 			requestFormData := getRequestFormData(request) //获取表单数据
-		var flag int // 初始化变量
-		flagArr := getIntArray(requestFormData, "flag")
-		if flagArr != nil { // 如果参数存在
-			flag = flagArr[0]
+		var ids []int64 // 初始化变量
+		idsArr := getInt64Array(requestFormData, "ids")
+		if idsArr != nil { // 如果参数存在
+			ids = idsArr
 		}
-			controllerappselfset.MakeApiToken(flag)
+			controllerappmyshare.Delete(ids)
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			writeToResponse(writer, body)
@@ -2525,7 +1589,7 @@ func startWebServer(port int) {
 		}
 		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
 	})
-	http.HandleFunc("/app/user_list/init", func(writer http.ResponseWriter, request *http.Request) {
+	http.HandleFunc("/app/profile/app/profile/make_token", func(writer http.ResponseWriter, request *http.Request) {
 			if request.Method == "POST" {
 			var body any = nil
 			if !inerceptor.StartTransaction(writer, request) {
@@ -2542,7 +1606,227 @@ func startWebServer(port int) {
 			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 				return
 			}
-			body = controllerappuser.ListInit()
+			controllerappprofile.MakeToken()
+		body = inerceptor.Commit(writer, request, body)
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			writeToResponse(writer, body)
+			return
+		}
+		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
+	})
+	http.HandleFunc("/app/trash/get_list", func(writer http.ResponseWriter, request *http.Request) {
+			if request.Method == "POST" {
+			var body any = nil
+			if !inerceptor.StartTransaction(writer, request) {
+
+				// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+				return
+			}
+			if !inerceptor.LoginValidate(writer, request) {
+
+				// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+				return
+			}
+			body = controllerapptrash.GetList()
+		body = inerceptor.Commit(writer, request, body)
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			writeToResponse(writer, body)
+			return
+		}
+		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
+	})
+	http.HandleFunc("/distributed/get_table_id", func(writer http.ResponseWriter, request *http.Request) {
+			var body any = nil
+			if !inerceptor.StartTransaction(writer, request) {
+
+				// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+				return
+			}
+			requestFormData := getRequestFormData(request) //获取表单数据
+		var tbName string // 初始化变量
+		tbNameArr := getStringArray(requestFormData, "tbName")
+		if tbNameArr != nil { // 如果参数存在
+			tbName = tbNameArr[0]
+		}
+		var lastId int64 // 初始化变量
+		lastIdArr := getInt64Array(requestFormData, "lastId")
+		if lastIdArr != nil { // 如果参数存在
+			lastId = lastIdArr[0]
+		}
+		var aopId int64 // 初始化变量
+		aopIdArr := getInt64Array(requestFormData, "aopId")
+		if aopIdArr != nil { // 如果参数存在
+			aopId = aopIdArr[0]
+		}
+			body = controllerdistributed.GetTableId(tbName, lastId, aopId)
+		body = inerceptor.Commit(writer, request, body)
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			writeToResponse(writer, body)
+			return
+		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
+	})
+	http.HandleFunc("/distributed/get_table_data", func(writer http.ResponseWriter, request *http.Request) {
+			var body any = nil
+			if !inerceptor.StartTransaction(writer, request) {
+
+				// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+				return
+			}
+			requestFormData := getRequestFormData(request) //获取表单数据
+		var tbName string // 初始化变量
+		tbNameArr := getStringArray(requestFormData, "tbName")
+		if tbNameArr != nil { // 如果参数存在
+			tbName = tbNameArr[0]
+		}
+		var ids string // 初始化变量
+		idsArr := getStringArray(requestFormData, "ids")
+		if idsArr != nil { // 如果参数存在
+			ids = idsArr[0]
+		}
+			body = controllerdistributed.GetTableData(tbName, ids)
+		body = inerceptor.Commit(writer, request, body)
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			writeToResponse(writer, body)
+			return
+		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
+	})
+	http.HandleFunc("/index.html", func(writer http.ResponseWriter, request *http.Request) {
+			if request.Method == "GET" {
+			var body any = nil
+			if !inerceptor.StartTransaction(writer, request) {
+
+				// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.HtmlInterceptor(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+				return
+			}
+			controllerapp.Index()
+		body = inerceptor.Commit(writer, request, body)
+		body = inerceptor.HtmlInterceptor(writer, request, body)
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			writeToTemplate(writer, body, "resources/templates/index.html")
+			return
+		}
+		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
+	})
+	http.HandleFunc("/app/files/get_property", func(writer http.ResponseWriter, request *http.Request) {
+			if request.Method == "POST" {
+			var body any = nil
+			if !inerceptor.StartTransaction(writer, request) {
+
+				// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+				return
+			}
+			if !inerceptor.LoginValidate(writer, request) {
+
+				// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+				return
+			}
+			requestFormData := getRequestFormData(request) //获取表单数据
+		var paths []string // 初始化变量
+		pathsArr := getStringArray(requestFormData, "paths")
+		if pathsArr != nil { // 如果参数存在
+			paths = pathsArr
+		}
+			body = controllerappfiles.GetProperty(paths)
+		body = inerceptor.Commit(writer, request, body)
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			writeToResponse(writer, body)
+			return
+		}
+		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
+	})
+	http.HandleFunc("/app/install/ffprobe/install", func(writer http.ResponseWriter, request *http.Request) {
+			if request.Method == "POST" {
+			var body any = nil
+			if !inerceptor.StartTransaction(writer, request) {
+
+				// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+				return
+			}
+			controllerappinstallffprobe.Install()
+		body = inerceptor.Commit(writer, request, body)
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			writeToResponse(writer, body)
+			return
+		}
+		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
+	})
+	http.HandleFunc("/app/file_upload", func(writer http.ResponseWriter, request *http.Request) {
+			if request.Method == "POST" {
+			var body any = nil
+			if !inerceptor.StartTransaction(writer, request) {
+
+				// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+				return
+			}
+			if !inerceptor.LoginValidate(writer, request) {
+
+				// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+				return
+			}
+			requestFormData := getRequestFormData(request) //获取表单数据
+		var folder string // 初始化变量
+		folderArr := getStringArray(requestFormData, "folder")
+		if folderArr != nil { // 如果参数存在
+			folder = folderArr[0]
+		}
+		var contentType string // 初始化变量
+		contentTypeArr := getStringArray(requestFormData, "contentType")
+		if contentTypeArr != nil { // 如果参数存在
+			contentType = contentTypeArr[0]
+		}
+			body = controllerappfileupload.Upload(request, folder, contentType)
+		body = inerceptor.Commit(writer, request, body)
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			writeToResponse(writer, body)
+			return
+		}
+		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
+	})
+	http.HandleFunc("/app/files/download_history/", func(writer http.ResponseWriter, request *http.Request) {
+			if request.Method == "GET" {
+			var body any = nil
+			if !inerceptor.StartTransaction(writer, request) {
+
+				// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+				return
+			}
+			if !inerceptor.LoginValidate(writer, request) {
+
+				// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+				return
+			}
+			requestFormData := getRequestFormData(request) //获取表单数据
+		var id int64 // 初始化变量
+		idArr := getInt64Array(requestFormData, "id")
+		if idArr != nil { // 如果参数存在
+			id = idArr[0]
+		}
+			controllerappfiles.DownloadByHistory(writer, request, id)
 		body = inerceptor.Commit(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			writeToResponse(writer, body)
@@ -2566,6 +1850,658 @@ func startWebServer(port int) {
 		body = inerceptor.HtmlInterceptor(writer, request, body)
 		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
 			writeToTemplate(writer, body, "resources/templates/app/install/install_ffprobe.html", "resources/templates/app/include/head.html")
+			return
+		}
+		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
+	})
+	http.HandleFunc("/app/sync/info_list", func(writer http.ResponseWriter, request *http.Request) {
+			if request.Method == "POST" {
+			var body any = nil
+			if !inerceptor.StartTransaction(writer, request) {
+
+				// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+				return
+			}
+			if !inerceptor.LoginValidate(writer, request) {
+
+				// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+				return
+			}
+			body = controllerappsync.InfoList()
+		body = inerceptor.Commit(writer, request, body)
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			writeToResponse(writer, body)
+			return
+		}
+		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
+	})
+	http.HandleFunc("/share/", func(writer http.ResponseWriter, request *http.Request) {
+			if request.Method == "GET" {
+
+		pathVariableSplitArr := []string{"", "/init"}
+		varPath := request.URL.Path[7:]
+		if isPathVariable(varPath, pathVariableSplitArr){// 判断是否满足定义的路由参数规则
+						var body any = nil
+			if !inerceptor.StartTransaction(writer, request) {
+
+				// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+				return
+			}
+
+		pathVariables := make([]string, 0)
+		for i := 0; i < len(pathVariableSplitArr)-1; i++ {
+			varPath = varPath[len(pathVariableSplitArr[i]):]
+			if pathVariableSplitArr[i+1] == "" { //这已经是最后一个参数了
+				pathVariables = append(pathVariables, varPath)
+			} else {
+				nextIndex := strings.Index(varPath, pathVariableSplitArr[i+1])
+				if nextIndex == -1 {
+					writer.WriteHeader(http.StatusNotFound)
+					return
+				}
+				pathVariables = append(pathVariables, varPath[:nextIndex])
+				varPath = varPath[nextIndex:]
+			}
+		}
+		eid := pathVariables[0]
+			controllershare.Init(writer, request, eid)
+		body = inerceptor.Commit(writer, request, body)
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			writeToTemplate(writer, body, "resources/templates/share/init.html", "resources/templates/share/include/share/share_list.html", "resources/templates/share/include/share/share_right_option.html", "resources/templates/app/include/folder_selector.html", "resources/templates/app/include/head.html", "resources/templates/app/include/top-bar.html", "resources/templates/share/include/share/share_toolbar.html")
+			return
+
+		}
+		}
+			if request.Method == "GET" {
+
+		pathVariableSplitArr := []string{"", "/pwd"}
+		varPath := request.URL.Path[7:]
+		if isPathVariable(varPath, pathVariableSplitArr){// 判断是否满足定义的路由参数规则
+						var body any = nil
+			if !inerceptor.StartTransaction(writer, request) {
+
+				// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+				return
+			}
+			controllershare.Pwd()
+		body = inerceptor.Commit(writer, request, body)
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			writeToTemplate(writer, body, "resources/templates/share/pwd.html", "resources/templates/app/include/head.html")
+			return
+
+		}
+		}
+			if request.Method == "POST" {
+
+		pathVariableSplitArr := []string{"", "/valid_pwd"}
+		varPath := request.URL.Path[7:]
+		if isPathVariable(varPath, pathVariableSplitArr){// 判断是否满足定义的路由参数规则
+						var body any = nil
+			if !inerceptor.StartTransaction(writer, request) {
+
+				// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+				return
+			}
+			requestFormData := getRequestFormData(request) //获取表单数据
+		var pwd string // 初始化变量
+		pwdArr := getStringArray(requestFormData, "pwd")
+		if pwdArr != nil { // 如果参数存在
+			pwd = pwdArr[0]
+		}
+			body = controllershare.ValidPwd(request, pwd)
+		body = inerceptor.Commit(writer, request, body)
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			writeToResponse(writer, body)
+			return
+
+		}
+		}
+			if request.Method == "POST" {
+
+		pathVariableSplitArr := []string{"", "/save_to"}
+		varPath := request.URL.Path[7:]
+		if isPathVariable(varPath, pathVariableSplitArr){// 判断是否满足定义的路由参数规则
+						var body any = nil
+			if !inerceptor.StartTransaction(writer, request) {
+
+				// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+				return
+			}
+			requestFormData := getRequestFormData(request) //获取表单数据
+		var folder string // 初始化变量
+		folderArr := getStringArray(requestFormData, "folder")
+		if folderArr != nil { // 如果参数存在
+			folder = folderArr[0]
+		}
+		var names []string // 初始化变量
+		namesArr := getStringArray(requestFormData, "names")
+		if namesArr != nil { // 如果参数存在
+			names = namesArr
+		}
+		var target string // 初始化变量
+		targetArr := getStringArray(requestFormData, "target")
+		if targetArr != nil { // 如果参数存在
+			target = targetArr[0]
+		}
+
+		pathVariables := make([]string, 0)
+		for i := 0; i < len(pathVariableSplitArr)-1; i++ {
+			varPath = varPath[len(pathVariableSplitArr[i]):]
+			if pathVariableSplitArr[i+1] == "" { //这已经是最后一个参数了
+				pathVariables = append(pathVariables, varPath)
+			} else {
+				nextIndex := strings.Index(varPath, pathVariableSplitArr[i+1])
+				if nextIndex == -1 {
+					writer.WriteHeader(http.StatusNotFound)
+					return
+				}
+				pathVariables = append(pathVariables, varPath[:nextIndex])
+				varPath = varPath[nextIndex:]
+			}
+		}
+		eid := pathVariables[0]
+			body = controllershare.SaveTo(request, eid, folder, names, target)
+		body = inerceptor.Commit(writer, request, body)
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			writeToResponse(writer, body)
+			return
+
+		}
+		}
+			if request.Method == "POST" {
+
+		pathVariableSplitArr := []string{"", "/get_list"}
+		varPath := request.URL.Path[7:]
+		if isPathVariable(varPath, pathVariableSplitArr){// 判断是否满足定义的路由参数规则
+						var body any = nil
+			if !inerceptor.StartTransaction(writer, request) {
+
+				// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+				return
+			}
+			requestFormData := getRequestFormData(request) //获取表单数据
+		var folder string // 初始化变量
+		folderArr := getStringArray(requestFormData, "folder")
+		if folderArr != nil { // 如果参数存在
+			folder = folderArr[0]
+		}
+
+		pathVariables := make([]string, 0)
+		for i := 0; i < len(pathVariableSplitArr)-1; i++ {
+			varPath = varPath[len(pathVariableSplitArr[i]):]
+			if pathVariableSplitArr[i+1] == "" { //这已经是最后一个参数了
+				pathVariables = append(pathVariables, varPath)
+			} else {
+				nextIndex := strings.Index(varPath, pathVariableSplitArr[i+1])
+				if nextIndex == -1 {
+					writer.WriteHeader(http.StatusNotFound)
+					return
+				}
+				pathVariables = append(pathVariables, varPath[:nextIndex])
+				varPath = varPath[nextIndex:]
+			}
+		}
+		eid := pathVariables[0]
+			body = controllershare.GetList(request, eid, folder)
+		body = inerceptor.Commit(writer, request, body)
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			writeToResponse(writer, body)
+			return
+
+		}
+		}
+			if request.Method == "GET" {
+
+		pathVariableSplitArr := []string{"", "/download/", ""}
+		varPath := request.URL.Path[7:]
+		if isPathVariable(varPath, pathVariableSplitArr){// 判断是否满足定义的路由参数规则
+						var body any = nil
+			if !inerceptor.StartTransaction(writer, request) {
+
+				// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+				return
+			}
+			requestFormData := getRequestFormData(request) //获取表单数据
+		var folder string // 初始化变量
+		folderArr := getStringArray(requestFormData, "folder")
+		if folderArr != nil { // 如果参数存在
+			folder = folderArr[0]
+		}
+
+		pathVariables := make([]string, 0)
+		for i := 0; i < len(pathVariableSplitArr)-1; i++ {
+			varPath = varPath[len(pathVariableSplitArr[i]):]
+			if pathVariableSplitArr[i+1] == "" { //这已经是最后一个参数了
+				pathVariables = append(pathVariables, varPath)
+			} else {
+				nextIndex := strings.Index(varPath, pathVariableSplitArr[i+1])
+				if nextIndex == -1 {
+					writer.WriteHeader(http.StatusNotFound)
+					return
+				}
+				pathVariables = append(pathVariables, varPath[:nextIndex])
+				varPath = varPath[nextIndex:]
+			}
+		}
+		eid := pathVariables[0]
+		name := pathVariables[1]
+			body = controllershare.Download(writer, request, eid, folder, name)
+		body = inerceptor.Commit(writer, request, body)
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			writeToResponse(writer, body)
+			return
+
+		}
+		}
+			if request.Method == "GET" {
+
+		pathVariableSplitArr := []string{"", "/thumb"}
+		varPath := request.URL.Path[7:]
+		if isPathVariable(varPath, pathVariableSplitArr){// 判断是否满足定义的路由参数规则
+						var body any = nil
+			if !inerceptor.StartTransaction(writer, request) {
+
+				// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+				return
+			}
+			requestFormData := getRequestFormData(request) //获取表单数据
+		var fid int64 // 初始化变量
+		fidArr := getInt64Array(requestFormData, "fid")
+		if fidArr != nil { // 如果参数存在
+			fid = fidArr[0]
+		}
+			controllershare.Thumb(writer, request, fid)
+		body = inerceptor.Commit(writer, request, body)
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			writeToResponse(writer, body)
+			return
+
+		}
+		}
+		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
+	})
+	http.HandleFunc("/app/files/get_list", func(writer http.ResponseWriter, request *http.Request) {
+			if request.Method == "POST" {
+			var body any = nil
+			if !inerceptor.StartTransaction(writer, request) {
+
+				// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+				return
+			}
+			if !inerceptor.LoginValidate(writer, request) {
+
+				// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+				return
+			}
+			requestFormData := getRequestFormData(request) //获取表单数据
+		var folder string // 初始化变量
+		folderArr := getStringArray(requestFormData, "folder")
+		if folderArr != nil { // 如果参数存在
+			folder = folderArr[0]
+		}
+			body = controllerappfiles.GetList(folder)
+		body = inerceptor.Commit(writer, request, body)
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			writeToResponse(writer, body)
+			return
+		}
+		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
+	})
+	http.HandleFunc("/app/install/create_admin", func(writer http.ResponseWriter, request *http.Request) {
+			if request.Method == "GET" {
+			var body any = nil
+			if !inerceptor.StartTransaction(writer, request) {
+
+				// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+				return
+			}
+			controllerappinstallcreateadmin.Init(writer, request)
+		body = inerceptor.Commit(writer, request, body)
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			writeToTemplate(writer, body, "resources/templates/app/install/create_admin.html", "resources/templates/app/include/head.html")
+			return
+		}
+		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
+	})
+	http.HandleFunc("/app/install/ffprobe/progress", func(writer http.ResponseWriter, request *http.Request) {
+			var body any = nil
+			if !inerceptor.StartTransaction(writer, request) {
+
+				// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+				return
+			}
+			controllerappinstallffprobe.Progress(writer, request)
+		body = inerceptor.Commit(writer, request, body)
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			writeToResponse(writer, body)
+			return
+		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
+	})
+	http.HandleFunc("/app/login.html", func(writer http.ResponseWriter, request *http.Request) {
+			if request.Method == "GET" {
+			var body any = nil
+			if !inerceptor.StartTransaction(writer, request) {
+
+				// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.HtmlInterceptor(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+				return
+			}
+			controllerapplogin.Init(writer, request)
+		body = inerceptor.Commit(writer, request, body)
+		body = inerceptor.HtmlInterceptor(writer, request, body)
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			writeToTemplate(writer, body, "resources/templates/app/login.html", "resources/templates/app/include/head.html")
+			return
+		}
+		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
+	})
+	http.HandleFunc("/app/profile/init", func(writer http.ResponseWriter, request *http.Request) {
+			if request.Method == "POST" {
+			var body any = nil
+			if !inerceptor.StartTransaction(writer, request) {
+
+				// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+				return
+			}
+			if !inerceptor.LoginValidate(writer, request) {
+
+				// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+				return
+			}
+			body = controllerappprofile.Init()
+		body = inerceptor.Commit(writer, request, body)
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			writeToResponse(writer, body)
+			return
+		}
+		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
+	})
+	http.HandleFunc("/app/my_share/get_list", func(writer http.ResponseWriter, request *http.Request) {
+			if request.Method == "POST" {
+			var body any = nil
+			if !inerceptor.StartTransaction(writer, request) {
+
+				// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+				return
+			}
+			if !inerceptor.LoginValidate(writer, request) {
+
+				// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+				return
+			}
+			body = controllerappmyshare.GetList()
+		body = inerceptor.Commit(writer, request, body)
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			writeToResponse(writer, body)
+			return
+		}
+		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
+	})
+	http.HandleFunc("/distributed/get_aop_id", func(writer http.ResponseWriter, request *http.Request) {
+			var body any = nil
+			if !inerceptor.StartTransaction(writer, request) {
+
+				// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+				return
+			}
+			body = controllerdistributed.GetAopId()
+		body = inerceptor.Commit(writer, request, body)
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			writeToResponse(writer, body)
+			return
+		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
+	})
+	http.HandleFunc("/app/folder_selector/get_list", func(writer http.ResponseWriter, request *http.Request) {
+			if request.Method == "POST" {
+			var body any = nil
+			if !inerceptor.StartTransaction(writer, request) {
+
+				// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+				return
+			}
+			if !inerceptor.LoginValidate(writer, request) {
+
+				// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+				return
+			}
+			requestFormData := getRequestFormData(request) //获取表单数据
+		var folder string // 初始化变量
+		folderArr := getStringArray(requestFormData, "folder")
+		if folderArr != nil { // 如果参数存在
+			folder = folderArr[0]
+		}
+			body = controllerappfolderselector.GetList(folder)
+		body = inerceptor.Commit(writer, request, body)
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			writeToResponse(writer, body)
+			return
+		}
+		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
+	})
+	http.HandleFunc("/app/install/ffmpeg/install_ffmpeg.html", func(writer http.ResponseWriter, request *http.Request) {
+			if request.Method == "GET" {
+			var body any = nil
+			if !inerceptor.StartTransaction(writer, request) {
+
+				// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.HtmlInterceptor(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+				return
+			}
+			controllerappinstallffmpeg.Html()
+		body = inerceptor.Commit(writer, request, body)
+		body = inerceptor.HtmlInterceptor(writer, request, body)
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			writeToTemplate(writer, body, "resources/templates/app/install/install_ffmpeg.html", "resources/templates/app/include/head.html")
+			return
+		}
+		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
+	})
+	http.HandleFunc("/app/install/ffprobe/recycle", func(writer http.ResponseWriter, request *http.Request) {
+			if request.Method == "POST" {
+			var body any = nil
+			if !inerceptor.StartTransaction(writer, request) {
+
+				// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+				return
+			}
+			controllerappinstallffprobe.Recycle()
+		body = inerceptor.Commit(writer, request, body)
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			writeToResponse(writer, body)
+			return
+		}
+		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
+	})
+	http.HandleFunc("/app/my_share/get_detail", func(writer http.ResponseWriter, request *http.Request) {
+			if request.Method == "POST" {
+			var body any = nil
+			if !inerceptor.StartTransaction(writer, request) {
+
+				// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+				return
+			}
+			if !inerceptor.LoginValidate(writer, request) {
+
+				// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+				return
+			}
+			requestFormData := getRequestFormData(request) //获取表单数据
+		var id int64 // 初始化变量
+		idArr := getInt64Array(requestFormData, "id")
+		if idArr != nil { // 如果参数存在
+			id = idArr[0]
+		}
+			body = controllerappmyshare.GetDetail(id)
+		body = inerceptor.Commit(writer, request, body)
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			writeToResponse(writer, body)
+			return
+		}
+		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
+	})
+	http.HandleFunc("/app/trash/recycle_storage", func(writer http.ResponseWriter, request *http.Request) {
+			if request.Method == "POST" {
+			var body any = nil
+			if !inerceptor.StartTransaction(writer, request) {
+
+				// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+				return
+			}
+			if !inerceptor.LoginValidate(writer, request) {
+
+				// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+				return
+			}
+			controllerapptrash.RecycleStorage()
+		body = inerceptor.Commit(writer, request, body)
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			writeToResponse(writer, body)
+			return
+		}
+		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
+	})
+	http.HandleFunc("/app/install/ffmpeg/install", func(writer http.ResponseWriter, request *http.Request) {
+			if request.Method == "POST" {
+			var body any = nil
+			if !inerceptor.StartTransaction(writer, request) {
+
+				// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+				return
+			}
+			controllerappinstallffmpeg.Install()
+		body = inerceptor.Commit(writer, request, body)
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			writeToResponse(writer, body)
+			return
+		}
+		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
+	})
+	http.HandleFunc("/app/install/libraw/recycle", func(writer http.ResponseWriter, request *http.Request) {
+			if request.Method == "POST" {
+			var body any = nil
+			if !inerceptor.StartTransaction(writer, request) {
+
+				// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+				return
+			}
+			controllerappinstalllibraw.Recycle()
+		body = inerceptor.Commit(writer, request, body)
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			writeToResponse(writer, body)
+			return
+		}
+		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
+	})
+	http.HandleFunc("/app/sync/by_table", func(writer http.ResponseWriter, request *http.Request) {
+			if request.Method == "POST" {
+			var body any = nil
+			if !inerceptor.StartTransaction(writer, request) {
+
+				// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+				return
+			}
+			if !inerceptor.LoginValidate(writer, request) {
+
+				// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+				return
+			}
+			controllerappsync.ByTable()
+		body = inerceptor.Commit(writer, request, body)
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			writeToResponse(writer, body)
+			return
+		}
+		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
+	})
+	http.HandleFunc("/app/trash/trash_recover", func(writer http.ResponseWriter, request *http.Request) {
+			if request.Method == "POST" {
+			var body any = nil
+			if !inerceptor.StartTransaction(writer, request) {
+
+				// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+				return
+			}
+			if !inerceptor.LoginValidate(writer, request) {
+
+				// 始终都要执行后的操作
+			body = inerceptor.Commit(writer, request, body)
+			body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+				return
+			}
+			requestFormData := getRequestFormData(request) //获取表单数据
+		var ids []int64 // 初始化变量
+		idsArr := getInt64Array(requestFormData, "ids")
+		if idsArr != nil { // 如果参数存在
+			ids = idsArr
+		}
+			body = controllerapptrash.TrashRecover(ids)
+		body = inerceptor.Commit(writer, request, body)
+		body = inerceptor.RemoveGoroutineLocal(writer, request, body)
+			writeToResponse(writer, body)
 			return
 		}
 		writer.WriteHeader(http.StatusNotFound) // 设置状态码"
