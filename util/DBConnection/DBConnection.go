@@ -2,6 +2,8 @@ package DBConnection
 
 import (
 	"DairoDFS/application"
+	"DairoDFS/application/SystemConfig"
+	"DairoDFS/exception"
 	"DairoDFS/util/DBSqlLog"
 	"DairoDFS/util/DBUpgrade"
 	"DairoDFS/util/GoroutineLocal"
@@ -141,6 +143,10 @@ func Rollback() {
 
 // 执行写数据操作
 func Write(query string, args ...any) (sql.Result, error) {
+	systemConfig := SystemConfig.Instance()
+	if systemConfig.IsReadOnly {
+		panic(exception.Biz("当前设置为只读模式，该操作不允许"))
+	}
 	isAutoCommit := IsAutoCommit()
 	if !isAutoCommit { //手动提交表单的话，在开启事务
 		StartTransaction()
@@ -148,7 +154,7 @@ func Write(query string, args ...any) (sql.Result, error) {
 	switch value := getConnection().(type) {
 	case *sql.DB:
 		r, e := value.Exec(query, args...)
-		if e == nil { //保存执行的sql
+		if systemConfig.OpenSqlLog && e == nil { //没有发生错误的情况下，保存执行的sql
 			DBSqlLog.Add(query, args)
 			if isAutoCommit { //自动提交事务时，需要手动将数据保存到DB
 				DBSqlLog.Insert(DBConn)
@@ -157,7 +163,7 @@ func Write(query string, args ...any) (sql.Result, error) {
 		return r, e
 	case *sql.Tx:
 		r, e := value.Exec(query, args...)
-		if e == nil { //保存执行的sql
+		if systemConfig.OpenSqlLog && e == nil { //没有发生错误的情况下，保存执行的sql
 			DBSqlLog.Add(query, args)
 			if isAutoCommit { //自动提交事务时，需要手动将数据保存到DB
 				DBSqlLog.Insert(DBConn)
