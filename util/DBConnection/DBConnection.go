@@ -12,6 +12,7 @@ import (
 	"fmt"
 	_ "github.com/mattn/go-sqlite3"
 	"log"
+	"strings"
 	"time"
 )
 
@@ -145,7 +146,9 @@ func Rollback() {
 func Write(query string, args ...any) (sql.Result, error) {
 	systemConfig := SystemConfig.Instance()
 	if systemConfig.IsReadOnly {
-		panic(exception.Biz("当前设置为只读模式，该操作不允许"))
+		if !strings.Contains(query, "user_token") { // 过滤掉对user_token的操作，保证还能正常登录
+			panic(exception.Biz("当前设置为只读模式，该操作不允许"))
+		}
 	}
 	isAutoCommit := IsAutoCommit()
 	if !isAutoCommit { //手动提交表单的话，在开启事务
