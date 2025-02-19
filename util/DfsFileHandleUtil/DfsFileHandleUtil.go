@@ -213,10 +213,7 @@ func makeExtra(dfsFileDto dto.DfsFileDto) error {
 		md5 := File.ToMd5ByBytes(pngData)
 
 		//保存文件
-		storageFileDto, err := DfsFileService.SaveToStorageFile(md5, bytes.NewReader(pngData))
-		if err != nil {
-			return err
-		}
+		storageFileDto := DfsFileService.SaveToStorageFile(md5, bytes.NewReader(pngData))
 		extraDto := dto.DfsFileDto{
 			Id:          Number.ID(),
 			Name:        "preview",
@@ -303,12 +300,9 @@ func makeExtra(dfsFileDto dto.DfsFileDto) error {
 			targetFile, _ := os.Open(targetPath)
 
 			//保存到本地文件
-			storageFileDto, saveFileErr := DfsFileService.SaveToStorageFile(md5, targetFile)
+			storageFileDto := DfsFileService.SaveToStorageFile(md5, targetFile)
 			targetFile.Close()
 			os.Remove(targetPath)
-			if saveFileErr != nil {
-				return err
-			}
 
 			extraDto := dto.DfsFileDto{
 				Id:          Number.ID(),
@@ -338,10 +332,7 @@ func makeExtra(dfsFileDto dto.DfsFileDto) error {
 		md5 := File.ToMd5ByBytes(jpgData)
 
 		//保存文件
-		storageFileDto, err := DfsFileService.SaveToStorageFile(md5, bytes.NewReader(jpgData))
-		if err != nil {
-			return err
-		}
+		storageFileDto := DfsFileService.SaveToStorageFile(md5, bytes.NewReader(jpgData))
 		extraDto := dto.DfsFileDto{
 			Id:          Number.ID(),
 			Name:        "preview",
@@ -423,10 +414,7 @@ func makeThumb(dfsFileDto dto.DfsFileDto) error {
 	md5 := File.ToMd5ByBytes(data)
 
 	//保存文件
-	storageFileDto, saveErr := DfsFileService.SaveToStorageFile(md5, bytes.NewReader(data))
-	if saveErr != nil {
-		return saveErr
-	}
+	storageFileDto := DfsFileService.SaveToStorageFile(md5, bytes.NewReader(data))
 
 	//添加缩率图附属文件
 	extraDto := dto.DfsFileDto{

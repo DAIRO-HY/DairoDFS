@@ -59,7 +59,7 @@ func ByTable(info *Sync.SyncServerInfo, dataMap map[string]any) error {
 		user, _ := UserDao.SelectOne(userId)
 
 		//得到发生错误的文件路径
-		path, _ := DfsFileService.GetPathById(id)
+		path := DfsFileService.GetPathById(id)
 		return exception.Biz("同步失败，服务器：" + info.Url + "  用户名：" + user.Name + "  路径：" + path + " 文件冲突。原因：同一个文件夹下，不允许同名的文件或文件夹。解决方案：请重命名当前或者服务器端 " + path + " 的文件名。")
 	}
 	return nil
@@ -114,7 +114,7 @@ func ByLog(info *Sync.SyncServerInfo, params []any) (string, error) {
 		user, _ := UserDao.SelectOne(userId)
 
 		//得到发生错误的文件路径
-		path, _ := DfsFileService.GetPathById(existsFile.Id)
+		path := DfsFileService.GetPathById(existsFile.Id)
 		return "", exception.Biz("同步失败，服务器：" + info.Url + "  用户名：" + user.Name + "  路径：" + path + " 文件冲突。原因：同一个文件夹下，不允许同名的文件或文件夹。解决方案：请重命名当前或者服务器端 " + path + " 的文件名。")
 	}
 	return "", nil

@@ -2,7 +2,6 @@ package String
 
 import (
 	"DairoDFS/application"
-	"DairoDFS/exception"
 	"crypto/md5"
 	"encoding/base64"
 	"encoding/hex"
@@ -56,24 +55,6 @@ func FileParent(path string) string {
 		return ""
 	}
 	return path[:lastSplitChar]
-}
-
-/**
- * 将路径分割成列表
- */
-func ToDfsFileNameList(name string) ([]string, error) {
-	//TODO:这里是否需要检查路径的正确行，待验证
-	//DfsFileUtil.CheckPath(name)
-	if len(name) == 0 {
-		return []string{""}, nil
-	}
-	if !strings.HasPrefix(name, "/") {
-		return nil, exception.Biz("文件路径必须以/开头")
-	}
-	if strings.HasSuffix(name, "/") {
-		name = name[:len(name)-1]
-	}
-	return strings.Split(name, "/"), nil
 }
 
 /**

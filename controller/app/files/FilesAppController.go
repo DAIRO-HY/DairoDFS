@@ -26,10 +26,7 @@ func Html() {}
 // @Post:/get_list
 func GetList(folder string) []form.FileForm {
 	loginId := LoginState.LoginId()
-	folderId, err := DfsFileService.GetIdByFolder(loginId, folder, false)
-	if err != nil {
-		return []form.FileForm{}
-	}
+	folderId := DfsFileService.GetIdByFolder(loginId, folder, false)
 	list := DfsFileDao.SelectSubFile(loginId, folderId)
 
 	forms := make([]form.FileForm, 0)
@@ -59,46 +56,38 @@ func GetList(folder string) []form.FileForm {
 
 // 创建文件夹
 // @Post:/create_folder
-func CreateFolder(folder string) error {
+func CreateFolder(folder string) {
 	loginId := LoginState.LoginId()
-	nameList, err := String.ToDfsFileNameList(folder)
-	if err != nil {
-		return err
-	}
+	nameList := DfsFileUtil.ToDfsFileNameList(folder)
 	existsFileId := DfsFileDao.SelectIdByPath(loginId, nameList)
-	if existsFileId != 0 {
-		return exception.EXISTS(folder)
+	if existsFileId != 0 { // 文件夹已经存在，终止程序
+		panic(exception.EXISTS(folder))
 	}
 	DfsFileService.Mkdirs(loginId, folder)
-	return nil
 }
 
 // 删除文件
 // @Post:/delete
-func Delete(paths []string) error {
+func Delete(paths []string) {
 	loginId := LoginState.LoginId()
 	for _, it := range paths {
-		err := DfsFileService.SetDelete(loginId, it)
-		if err != nil {
-			return err
-		}
+		DfsFileService.SetDelete(loginId, it)
 	}
-	return nil
 }
 
 // 重命名
 // sourcePath 源路径
 // name 新名称
 // @Post:/rename
-func Rename(sourcePath string, name string) error {
+func Rename(sourcePath string, name string) {
 	if strings.Contains(name, "/") {
-		return exception.Biz("文件名不能包含/")
+		panic(exception.Biz("文件名不能包含/"))
 	}
 	if strings.Contains(name, "\\") {
-		return exception.Biz("文件名不能包含\\")
+		panic(exception.Biz("文件名不能包含\\"))
 	}
 	loginId := LoginState.LoginId()
-	return DfsFileService.Rename(loginId, sourcePath, name)
+	DfsFileService.Rename(loginId, sourcePath, name)
 }
 
 // 文件复制
@@ -106,9 +95,9 @@ func Rename(sourcePath string, name string) error {
 // targetFolder 目标文件夹
 // isOverWrite 是否覆盖目标文件
 // @Post:/copy
-func Copy(sourcePaths []string, targetFolder string, isOverWrite bool) error {
+func Copy(sourcePaths []string, targetFolder string, isOverWrite bool) {
 	loginId := LoginState.LoginId()
-	return DfsFileService.Copy(loginId, sourcePaths, targetFolder, isOverWrite)
+	DfsFileService.Copy(loginId, sourcePaths, targetFolder, isOverWrite)
 }
 
 // 文件移动
@@ -116,35 +105,32 @@ func Copy(sourcePaths []string, targetFolder string, isOverWrite bool) error {
 // targetFolder 目标文件夹
 // isOverWrite 是否覆盖目标文件
 // @Post:/move
-func Move(sourcePaths []string, targetFolder string, isOverWrite bool) error {
+func Move(sourcePaths []string, targetFolder string, isOverWrite bool) {
 	loginId := LoginState.LoginId()
-	return DfsFileService.Move(loginId, sourcePaths, targetFolder, isOverWrite)
+	DfsFileService.Move(loginId, sourcePaths, targetFolder, isOverWrite)
 }
 
 // 分享文件
 // @Post:/share
-func Share(inForm form.ShareForm) any {
+func Share(inForm form.ShareForm) int64 {
 	loginId := LoginState.LoginId()
-	shareId, err := FileShareService.Share(loginId, inForm)
-	if err != nil {
-		return err
-	}
+	shareId := FileShareService.Share(loginId, inForm)
 	return shareId
 }
 
 // 文件或文件夹属性
 // paths 选择的路径列表
 // @Post:/get_property
-func GetProperty(paths []string) any {
+func GetProperty(paths []string) form.FilePropertyForm {
 	loginId := LoginState.LoginId()
 	outForm := form.FilePropertyForm{}
 	if len(paths) > 1 { //多个文件时
 		totalForm := form.ComputeSubTotalForm{}
 		for _, it := range paths {
-			nameList, _ := String.ToDfsFileNameList(it)
+			nameList := DfsFileUtil.ToDfsFileNameList(it)
 			fileId := DfsFileDao.SelectIdByPath(loginId, nameList)
 			if fileId == 0 {
-				return exception.NO_EXISTS()
+				panic(exception.NO_EXISTS())
 			}
 			dfsFile, _ := DfsFileDao.SelectOne(fileId)
 			if dfsFile.IsFolder() {
@@ -160,10 +146,10 @@ func GetProperty(paths []string) any {
 		outForm.FolderCount = totalForm.FolderCount
 	} else { //单文件时
 		path := paths[0]
-		nameList, _ := String.ToDfsFileNameList(path)
+		nameList := DfsFileUtil.ToDfsFileNameList(path)
 		fileId := DfsFileDao.SelectIdByPath(loginId, nameList)
 		if fileId == 0 {
-			return exception.NO_EXISTS()
+			panic(exception.NO_EXISTS())
 		}
 		dfsFile, _ := DfsFileDao.SelectOne(fileId)
 		outForm.Name = dfsFile.Name
@@ -212,15 +198,14 @@ func computeSubTotal(totalForm *form.ComputeSubTotalForm, loginId int64, folderI
 // path 文件路径
 // contentType 文件类型
 // @Post:/set_content_type
-func SetContentType(path string, contentType string) error {
+func SetContentType(path string, contentType string) {
 	loginId := LoginState.LoginId()
-	nameList, _ := String.ToDfsFileNameList(path)
+	nameList := DfsFileUtil.ToDfsFileNameList(path)
 	fileId := DfsFileDao.SelectIdByPath(loginId, nameList)
 	if fileId == 0 {
-		return exception.NO_EXISTS()
+		panic(exception.NO_EXISTS())
 	}
 	DfsFileDao.SetContentType(fileId, contentType)
-	return nil
 }
 
 /**
@@ -294,7 +279,7 @@ func Download(writer http.ResponseWriter, request *http.Request) {
 	loginId := LoginState.LoginId()
 	filePath := request.URL.Path
 	filePath = filePath[strings.Index(filePath, "/download")+9:]
-	nameList, _ := String.ToDfsFileNameList(filePath)
+	nameList := DfsFileUtil.ToDfsFileNameList(filePath)
 	fileId := DfsFileDao.SelectIdByPath(loginId, nameList)
 	if fileId == 0 { //文件不存在
 		writer.WriteHeader(http.StatusNotFound)

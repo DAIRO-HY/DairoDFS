@@ -70,11 +70,11 @@ func DfsContentType(ext string) string {
 /**
  * 判断储存路径的磁盘剩余容量,选择合适的目录
  */
-func SelectDriverFolder() (string, error) {
+func SelectDriverFolder() string {
 	//maxSize := SystemConfig.Instance().UploadMaxSize
 	saveFolderList := SystemConfig.Instance().SaveFolderList
 	if len(saveFolderList) == 0 {
-		return "", exception.Biz("没有配置存储目录")
+		panic(exception.Biz("没有配置存储目录"))
 	}
 	for _, folder := range saveFolderList {
 		_, err := os.Stat(folder)
@@ -88,28 +88,25 @@ func SelectDriverFolder() (string, error) {
 		//if usage.Free > uint64(maxSize) { //空间足够
 		//	return folder, nil
 		//}
-		return folder, nil
+		return folder
 	}
-	return "", exception.Biz("文件夹不存在或没有足够存储空间")
+	panic(exception.Biz("文件夹不存在或没有足够存储空间"))
 }
 
 /**
  * 获取本地文件存储路径
  */
-func LocalPath() (string, error) {
+func LocalPath() string {
 
 	//选择合适的文件夹储存
-	localSaveFolder, err := SelectDriverFolder()
-	if err != nil {
-		return "", err
-	}
+	localSaveFolder := SelectDriverFolder()
 	dateFormat := time.Now().Format("2006-01")
 	folder := localSaveFolder + "/" + dateFormat
 	_, statErr := os.Stat(folder)
 	if os.IsNotExist(statErr) { //文件夹不存在时
 		mkdirErr := os.MkdirAll(folder, os.ModePerm)
 		if mkdirErr != nil {
-			return "", mkdirErr
+			panic(exception.Biz("创建文件夹失败：" + mkdirErr.Error()))
 		}
 	}
 	makePathLock.Lock()
@@ -127,25 +124,41 @@ func LocalPath() (string, error) {
 	makePathLock.Unlock()
 	_, pathErr := os.Stat(path)
 	if os.IsExist(pathErr) { //文件已经存在，则报错（小概率事件）
-		return "", exception.Biz("准备创建的文件已经存在")
+		panic(exception.Biz("准备创建的文件已经存在"))
 	}
-	return path, nil
+	return path
 }
 
 /**
  * 检查文件路径是否合法
  * @param path 文件路径
  */
-func CheckPath(path string) error {
+func CheckPath(path string) {
 	pattern := `[>,?,\\,:,|,<,*,"]`
 	matched, _ := regexp.MatchString(pattern, path)
 	if matched {
-		return exception.Biz("文件路径不能包含>,?,\\,:,|,<,*,\"字符")
+		panic(exception.Biz("文件路径不能包含>,?,\\,:,|,<,*,\"字符"))
 	}
 	if strings.Contains(path, "//") {
-		return exception.Biz("文件路径不能包含两个连续的字符/")
+		panic(exception.Biz("文件路径不能包含两个连续的字符/"))
 	}
-	return nil
+}
+
+// 将路径分割成列表
+// filePath 文件或文件夹路径
+// return 拆分后的文件名数组
+func ToDfsFileNameList(filePath string) []string {
+	CheckPath(filePath)
+	if len(filePath) == 0 {
+		return []string{""}
+	}
+	if !strings.HasPrefix(filePath, "/") {
+		panic(exception.Biz("文件路径必须以/开头"))
+	}
+	if strings.HasSuffix(filePath, "/") {
+		filePath = filePath[:len(filePath)-1]
+	}
+	return strings.Split(filePath, "/")
 }
 
 /**

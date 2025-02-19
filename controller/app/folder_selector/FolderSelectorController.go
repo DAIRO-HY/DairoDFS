@@ -15,10 +15,7 @@ import (
 // @Post:/app/folder_selector/get_list
 func GetList(folder string) []form.FolderForm {
 	loginId := LoginState.LoginId()
-	folderId, folderIdErr := DfsFileService.GetIdByFolder(loginId, folder, false)
-	if folderIdErr != nil {
-		return []form.FolderForm{}
-	}
+	folderId := DfsFileService.GetIdByFolder(loginId, folder, false)
 	list := make([]form.FolderForm, 0)
 	for _, it := range DfsFileDao.SelectSubFile(loginId, folderId) {
 		if it.StorageId > 0 {

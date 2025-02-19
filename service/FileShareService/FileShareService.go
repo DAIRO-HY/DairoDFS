@@ -20,22 +20,16 @@ import (
  * 分享文件
  * @param form 分享表单
  */
-func Share(userId int64, inForm form.ShareForm) (int64, error) {
+func Share(userId int64, inForm form.ShareForm) int64 {
 	if len(inForm.Names) == 0 {
-		return 0, exception.Biz("请选择要分享的路径")
+		panic(exception.Biz("请选择要分享的路径"))
 	}
 
 	//得到缩略图ID
-	thumbId, err := findThumb(userId, inForm.Folder, inForm.Names)
-	if err != nil {
-		return 0, err
-	}
+	thumbId := findThumb(userId, inForm.Folder, inForm.Names)
 
 	//判断这是不是只是一个文件夹
-	folderFlag, err := isFolder(userId, inForm.Folder, inForm.Names)
-	if err != nil {
-		return 0, err
-	}
+	folderFlag := isFolder(userId, inForm.Folder, inForm.Names)
 
 	//获取分享文件的标题
 	title := getTitle(inForm.Names)
@@ -53,21 +47,18 @@ func Share(userId int64, inForm form.ShareForm) (int64, error) {
 		Id:         Number.ID(),
 	}
 	ShareDao.Add(shareDto)
-	return shareDto.Id, nil
+	return shareDto.Id
 }
 
 /**
  * 去查找缩略图
  */
-func findThumb(userId int64, folder string, names []string) (int64, error) {
+func findThumb(userId int64, folder string, names []string) int64 {
 
 	//得到分享的父文件夹ID
-	folderId, err := DfsFileService.GetIdByFolder(userId, folder, false)
-	if err != nil {
-		return 0, err
-	}
+	folderId := DfsFileService.GetIdByFolder(userId, folder, false)
 	if folderId == 0 {
-		return 0, exception.NO_FOLDER()
+		panic(exception.NO_FOLDER())
 	}
 
 	//取出当前目录下的所有文件，用来查找缩略图
@@ -85,33 +76,30 @@ func findThumb(userId int64, folder string, names []string) (int64, error) {
 	for _, name := range names {
 		thumbFile, isExists := name2file[name]
 		if isExists { //如果有缩略图
-			return thumbFile.Id, nil
+			return thumbFile.Id
 		}
 	}
-	return 0, nil
+	return 0
 }
 
 /**
  * 判断这是不是只是一个文件夹
  */
-func isFolder(userId int64, folder string, names []string) (bool, error) {
+func isFolder(userId int64, folder string, names []string) bool {
 	if len(names) > 1 {
-		return false, nil
+		return false
 	}
 
 	//得到分享的文件ID
-	fileId, err := DfsFileService.GetIdByFolder(userId, folder+"/"+names[0], false)
-	if err != nil {
-		return false, err
-	}
+	fileId := DfsFileService.GetIdByFolder(userId, folder+"/"+names[0], false)
 	if fileId == 0 {
-		return false, exception.NO_FOLDER()
+		panic(exception.NO_FOLDER())
 	}
 	fileDto, _ := DfsFileDao.SelectOne(fileId)
 	if fileDto.StorageId == 0 { //这是一个文件夹
-		return true, nil
+		return true
 	}
-	return false, nil
+	return false
 }
 
 /**

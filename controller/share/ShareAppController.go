@@ -92,9 +92,7 @@ func SaveTo(request *http.Request, eid string, folder string, names []string, ta
 	for _, it := range names {
 		truePaths = append(truePaths, shareDto.Folder+folder+"/"+it)
 	}
-	if err := DfsFileService.ShareSaveTo(shareDto.UserId, userId, truePaths, target, false); err != nil {
-		return err
-	}
+	DfsFileService.ShareSaveTo(shareDto.UserId, userId, truePaths, target, false)
 
 	//开启生成缩略图线程
 	DfsFileHandleUtil.NotifyWorker()
@@ -119,10 +117,7 @@ func GetList(request *http.Request, eid string, folder string) any {
 	if folder == "" { //所分享目录的根目录，并非用户跟目录
 
 		//得到分享的父文件夹ID
-		shareFolderId, folderIdErr := DfsFileService.GetIdByFolder(userId, shareDto.Folder, false)
-		if folderIdErr != nil {
-			return folderIdErr
-		}
+		shareFolderId := DfsFileService.GetIdByFolder(userId, shareDto.Folder, false)
 
 		//分享的文件名或文件夹名列表
 		shareFileNameMap := make(map[string]struct{})
@@ -143,10 +138,7 @@ func GetList(request *http.Request, eid string, folder string) any {
 		trueFolder := shareDto.Folder + folder
 
 		//得到分享的父文件夹ID
-		folderId, folderIdErr := DfsFileService.GetIdByFolder(userId, trueFolder, false)
-		if folderIdErr != nil {
-			return folderIdErr
-		}
+		folderId := DfsFileService.GetIdByFolder(userId, trueFolder, false)
 		fileList = DfsFileDao.SelectSubFile(userId, folderId)
 	}
 	formList := make([]form.ShareForm, 0)
@@ -183,7 +175,7 @@ func Download(writer http.ResponseWriter, request *http.Request, eid string, fol
 	//实际文件目录
 	truePath := shareDto.Folder + path
 
-	names, _ := String.ToDfsFileNameList(truePath)
+	names := DfsFileUtil.ToDfsFileNameList(truePath)
 
 	//得到文件ID
 	fileId := DfsFileDao.SelectIdByPath(userId, names)
@@ -223,10 +215,7 @@ func validatePath(request *http.Request, eid string, paths ...string) (dto.Share
 	}
 
 	//得到分享的父文件夹ID
-	shareFolderId, folderErr := DfsFileService.GetIdByFolder(shareDto.UserId, shareDto.Folder, false)
-	if folderErr != nil {
-		return dto.ShareDto{}, exception.NO_FOLDER()
-	}
+	shareFolderId := DfsFileService.GetIdByFolder(shareDto.UserId, shareDto.Folder, false)
 	if shareFolderId > 0 { //非根目录时,要验证是否存在文件夹
 		dfsFile, isExists := DfsFileDao.SelectOne(shareFolderId)
 		if !isExists {
@@ -246,10 +235,7 @@ func validatePath(request *http.Request, eid string, paths ...string) (dto.Share
 		if it == "" {
 			continue
 		}
-		names, toNamesErr := String.ToDfsFileNameList(it)
-		if toNamesErr != nil {
-			return dto.ShareDto{}, toNamesErr
-		}
+		names := DfsFileUtil.ToDfsFileNameList(it)
 		if _, isExists := shareNameSet[names[1]]; !isExists {
 			return dto.ShareDto{}, exception.NO_FOLDER()
 		}

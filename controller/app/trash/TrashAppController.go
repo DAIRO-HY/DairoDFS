@@ -85,9 +85,9 @@ func LogicDelete(ids []int64) error {
 // 从垃圾箱还原文件
 // ids 选中的文件ID列表
 // @Post:/trash_recover
-func TrashRecover(ids []int64) error {
+func TrashRecover(ids []int64) {
 	loginId := LoginState.LoginId()
-	return DfsFileService.TrashRecover(loginId, ids)
+	DfsFileService.TrashRecover(loginId, ids)
 }
 
 // 立即回收储存空间

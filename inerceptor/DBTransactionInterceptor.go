@@ -10,6 +10,10 @@ import (
 // @include:**
 // @order:999999997
 func Commit(writer http.ResponseWriter, request *http.Request, body any) any {
-	DBConnection.Commit()
+	if _, ok := body.(error); ok { //程序发生了错误
+		DBConnection.Rollback()
+	} else {
+		DBConnection.Commit()
+	}
 	return body
 }

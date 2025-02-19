@@ -5,9 +5,9 @@ import (
 	"DairoDFS/util/DBConnection"
 	"DairoDFS/util/LogUtil"
 	"database/sql"
+	"errors"
 	"fmt"
 	_ "github.com/mattn/go-sqlite3"
-	"log"
 	"reflect"
 	"strings"
 	"time"
@@ -17,8 +17,7 @@ import (
 func ExecIgnoreError(query string, args ...any) int64 {
 	count, err := Exec(query, args...)
 	if err != nil {
-		log.Printf("%q: %s\n", err, query)
-		return -1
+		panic(err)
 	}
 	return count
 }
@@ -40,8 +39,7 @@ func Exec(query string, args ...any) (int64, error) {
 func InsertIgnoreError(query string, args ...any) int64 {
 	count, err := Insert(query, args...)
 	if err != nil {
-		LogUtil.Error(fmt.Sprintf("添加数据失败:%s  err:%q\n", query, err))
-		return -1
+		panic(err)
 	}
 	return count
 }
@@ -73,12 +71,13 @@ func SelectSingleOne[T any](query string, args ...any) (T, error) {
 
 	// 使用 Scan 将结果赋值给 value
 	// 这里最好使用指针的指针类型，否则可能导致string类型为nil时报错
-	err := row.Scan(&value)
-	if err != nil {
-		LogUtil.Debug(fmt.Sprintf("error: %q, sql: %s", err, query))
-		return *new(T), err // 返回默认值和错误
+	if err := row.Scan(&value); err != nil {
+		if errors.Is(err, sql.ErrNoRows) { //没有查询到数据
+			return *new(T), nil // 返回默认值
+		}
+		panic(err)
 	}
-	if value == nil { //c查询到的值本省为null
+	if value == nil { //查询到的值本省为null
 		return *new(T), nil
 	}
 	return *value, nil

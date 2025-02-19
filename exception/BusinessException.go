@@ -21,6 +21,11 @@ func Biz(msg string) *BusinessException {
 	}
 }
 
+// Panic 终止程序
+func Panic(msg string) {
+	panic(Biz(msg))
+}
+
 // 获取一个异常
 func BizCode(code int, msg string) *BusinessException {
 	return &BusinessException{

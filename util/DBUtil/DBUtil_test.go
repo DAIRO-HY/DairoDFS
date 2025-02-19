@@ -291,6 +291,9 @@ func TestUniqueName(t *testing.T) {
  * @param dto 用户信息
  */
 func TestSelectOne2(t *testing.T) {
-	count, _ := SelectSingleOne[int64]("select pwd from user")
+	count, err := SelectSingleOne[int64]("select pwd from user")
+	if err != nil {
+		t.Fatal(err)
+	}
 	fmt.Println(count)
 }

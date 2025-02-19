@@ -35,9 +35,7 @@ func Upload(request *http.Request, folder string, contentType string) error {
 	path := folder + "/" + name
 
 	//检查文件路径是否合法
-	if err := DfsFileUtil.CheckPath(path); err != nil {
-		return err
-	}
+	DfsFileUtil.CheckPath(path)
 
 	//文件MD5
 	md5File, openErr := header.Open()
@@ -52,13 +50,8 @@ func Upload(request *http.Request, folder string, contentType string) error {
 	defer file.Close()
 
 	//将文件存放到指定目录
-	storageFileDto, saveErr := DfsFileService.SaveToStorageFile(md5, file)
-	if saveErr != nil {
-		return saveErr
-	}
-	if addErr := addDfsFile(LoginState.LoginId(), storageFileDto, path, contentType); addErr != nil {
-		return addErr
-	}
+	storageFileDto := DfsFileService.SaveToStorageFile(md5, file)
+	addDfsFile(LoginState.LoginId(), storageFileDto, path, contentType)
 
 	//立即提交事务，否则可能导致文件处理任务获取不到数据
 	DBConnection.Commit()
@@ -156,7 +149,7 @@ func Upload(request *http.Request, folder string, contentType string) error {
  * @param path DFS文件路径
  * @param fileContentType 文件类型
  */
-func addDfsFile(userId int64, storageFileDto dto.StorageFileDto, path string, fileContentType string) error {
+func addDfsFile(userId int64, storageFileDto dto.StorageFileDto, path string, fileContentType string) {
 
 	//文件名
 	name := String.FileName(path)
@@ -165,10 +158,7 @@ func addDfsFile(userId int64, storageFileDto dto.StorageFileDto, path string, fi
 	folder := String.FileParent(path)
 
 	//获取文件夹ID
-	folderId, err := DfsFileService.GetIdByFolder(userId, folder, true)
-	if err != nil {
-		return err
-	}
+	folderId := DfsFileService.GetIdByFolder(userId, folder, true)
 	contentType := ""
 	if fileContentType != "" {
 		contentType = fileContentType
@@ -186,5 +176,5 @@ func addDfsFile(userId int64, storageFileDto dto.StorageFileDto, path string, fi
 		Size:        fileInfo.Size(),
 		ParentId:    folderId,
 	}
-	return DfsFileService.AddFile(fileDto, true)
+	DfsFileService.AddFile(fileDto, true)
 }
