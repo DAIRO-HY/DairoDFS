@@ -5,12 +5,12 @@ import (
 	"DairoDFS/extension/String"
 	"DairoDFS/util/DBConnection"
 	"DairoDFS/util/DBUtil"
-	"DairoDFS/util/Sync"
-	"DairoDFS/util/Sync/DfsFileSyncHandle"
-	"DairoDFS/util/Sync/StorageFileSyncHandle"
-	"DairoDFS/util/Sync/SyncByLog"
-	"DairoDFS/util/Sync/SyncHttp"
-	"DairoDFS/util/Sync/SyncInfoManager"
+	"DairoDFS/util/SyncUtil"
+	"DairoDFS/util/SyncUtil/DfsFileSyncHandle"
+	"DairoDFS/util/SyncUtil/StorageFileSyncHandle"
+	"DairoDFS/util/SyncUtil/SyncByLog"
+	"DairoDFS/util/SyncUtil/SyncHttp"
+	"DairoDFS/util/SyncUtil/SyncInfoManager"
 	"encoding/json"
 	"strconv"
 	"strings"
@@ -23,8 +23,8 @@ func SyncAll() {
 	SyncInfoManager.ReloadList()
 
 	//单线程同步
-	Sync.SyncLock.Lock()
-	defer Sync.SyncLock.Unlock()
+	SyncUtil.SyncLock.Lock()
+	defer SyncUtil.SyncLock.Unlock()
 
 	for _, info := range SyncInfoManager.SyncInfoList {
 		info.State = 1
@@ -70,7 +70,7 @@ func SyncAll() {
 /**
  * 循环同步数据，直到包数据同步完成
  */
-func loopSync(info *Sync.SyncServerInfo, tbName string, lastId int64, aopId int64) error {
+func loopSync(info *SyncUtil.SyncServerInfo, tbName string, lastId int64, aopId int64) error {
 	if info.IsStop {
 		return exception.Biz("同步被强制取消")
 	}
@@ -124,7 +124,7 @@ func loopSync(info *Sync.SyncServerInfo, tbName string, lastId int64, aopId int6
  * 获取一个断面ID，防止再全量同步的过程中，主机又增加数据，导致全量同步数据不完整
  * 其实就是服务器端的时间戳
  */
-func getAopId(info *Sync.SyncServerInfo) (int64, error) {
+func getAopId(info *SyncUtil.SyncServerInfo) (int64, error) {
 	url := info.Url + "/distributed/get_aop_id"
 	data, err := SyncHttp.Request(url)
 	if err != nil {
@@ -141,7 +141,7 @@ func getAopId(info *Sync.SyncServerInfo) (int64, error) {
  * @param lastId 上次获取到的最后一个id
  * @param aopId 本次同步的服务器端的最大id
  */
-func getTableId(info *Sync.SyncServerInfo, tbName string, lastId int64, aopId int64) (string, error) {
+func getTableId(info *SyncUtil.SyncServerInfo, tbName string, lastId int64, aopId int64) (string, error) {
 	url := info.Url + "/distributed/get_table_id?tbName=" + tbName + "&lastId=" + String.ValueOf(lastId) + "&aopId=" + String.ValueOf(aopId)
 	data, err := SyncHttp.Request(url)
 	if err != nil {
@@ -179,7 +179,7 @@ func filterNotExistsId(tbName string, ids string) string {
 /**
  * 从同步主机端取数据
  */
-func getTableData(info *Sync.SyncServerInfo, tbName string, ids string) ([]map[string]any, error) {
+func getTableData(info *SyncUtil.SyncServerInfo, tbName string, ids string) ([]map[string]any, error) {
 	url := info.Url + "/distributed/get_table_data?tbName=" + tbName + "&ids=" + ids
 	data, err := SyncHttp.Request(url)
 	if err != nil {
@@ -191,7 +191,7 @@ func getTableData(info *Sync.SyncServerInfo, tbName string, ids string) ([]map[s
 }
 
 // 往数据库插入数据
-func insertData(info *Sync.SyncServerInfo, tbName string, dataMapList []map[string]any) error {
+func insertData(info *SyncUtil.SyncServerInfo, tbName string, dataMapList []map[string]any) error {
 	for _, dataMap := range dataMapList {
 		switch tbName {
 		case "storage_file": //当前请求的是本地文件存储表，先去下载文件

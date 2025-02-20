@@ -3,7 +3,7 @@ package main
 import (
 	"DairoDFS/application"
 	"DairoDFS/controller/app"
-	"DairoDFS/util/Sync/SyncByLog"
+	"DairoDFS/util/SyncUtil/SyncByLog"
 )
 
 func main() {

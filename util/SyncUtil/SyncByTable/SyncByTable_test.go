@@ -4,7 +4,7 @@ import (
 	"DairoDFS/application"
 	"DairoDFS/application/SystemConfig"
 	"DairoDFS/extension/String"
-	"DairoDFS/util/Sync"
+	"DairoDFS/util/SyncUtil"
 	"fmt"
 	"testing"
 	"time"
@@ -24,10 +24,10 @@ func TestDoSync(t *testing.T) {
  */
 func TestLoopSync(t *testing.T) {
 	application.Init()
-	aopId, _ := getAopId(&Sync.SyncServerInfo{
+	aopId, _ := getAopId(&SyncUtil.SyncServerInfo{
 		Url: "http://localhost:" + String.ValueOf(application.Args.Port),
 	})
-	info := &Sync.SyncServerInfo{
+	info := &SyncUtil.SyncServerInfo{
 		Url: "http://localhost:" + String.ValueOf(application.Args.Port),
 	}
 	err := loopSync(info, "storage_file", 0, aopId)
@@ -43,7 +43,7 @@ func TestLoopSync(t *testing.T) {
  */
 func TestGetAopId(t *testing.T) {
 	application.Init()
-	aopId, err := getAopId(&Sync.SyncServerInfo{
+	aopId, err := getAopId(&SyncUtil.SyncServerInfo{
 		Url: "http://localhost:" + String.ValueOf(application.Args.Port),
 	})
 	if err != nil {
@@ -63,7 +63,7 @@ func TestGetAopId(t *testing.T) {
 func TestGetTableId(t *testing.T) {
 	application.Init()
 
-	info := &Sync.SyncServerInfo{
+	info := &SyncUtil.SyncServerInfo{
 		Url: "http://localhost:" + String.ValueOf(application.Args.Port),
 	}
 	aopId, _ := getAopId(info)
@@ -86,7 +86,7 @@ func TestFilterNotExistsId(t *testing.T) {
  */
 func TestGetTableData(t *testing.T) {
 	application.Init()
-	info := &Sync.SyncServerInfo{
+	info := &SyncUtil.SyncServerInfo{
 		Url: "http://localhost:" + String.ValueOf(application.Args.Port),
 	}
 	aopId, _ := getAopId(info)

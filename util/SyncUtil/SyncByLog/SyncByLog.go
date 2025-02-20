@@ -8,11 +8,11 @@ import (
 	"DairoDFS/extension/Date"
 	"DairoDFS/extension/String"
 	"DairoDFS/util/DBConnection"
-	"DairoDFS/util/Sync"
-	"DairoDFS/util/Sync/DfsFileSyncHandle"
-	"DairoDFS/util/Sync/StorageFileSyncHandle"
-	"DairoDFS/util/Sync/SyncHttp"
-	"DairoDFS/util/Sync/SyncInfoManager"
+	"DairoDFS/util/SyncUtil"
+	"DairoDFS/util/SyncUtil/DfsFileSyncHandle"
+	"DairoDFS/util/SyncUtil/StorageFileSyncHandle"
+	"DairoDFS/util/SyncUtil/SyncHttp"
+	"DairoDFS/util/SyncUtil/SyncInfoManager"
 	"context"
 	"encoding/json"
 	"io"
@@ -36,7 +36,7 @@ func ListenAll() {
 }
 
 // 监听服务端日志变化
-func listen(info *Sync.SyncServerInfo) {
+func listen(info *SyncUtil.SyncServerInfo) {
 	for {
 		if info.IsStop { // 如果被强行终止
 			break
@@ -48,7 +48,7 @@ func listen(info *Sync.SyncServerInfo) {
 
 // 循环发起请求
 // return 是否停止循环
-func loopListen(info *Sync.SyncServerInfo) {
+func loopListen(info *SyncUtil.SyncServerInfo) {
 	if info.IsStop {
 		return
 	}
@@ -109,16 +109,16 @@ func loopListen(info *Sync.SyncServerInfo) {
 
 // 循环取sql日志
 // @return 是否处理完成
-func requestSqlLog(info *Sync.SyncServerInfo) {
+func requestSqlLog(info *SyncUtil.SyncServerInfo) {
 
 	//单线程同步
-	Sync.SyncLock.Lock()
+	SyncUtil.SyncLock.Lock()
 
 	//由于该函数有递归调用，通过defer关闭可能导致死锁
 	//defer Sync.SyncLock.Unlock()
 
 	if info.IsStop { // 如果被强行终止
-		Sync.SyncLock.Unlock()
+		SyncUtil.SyncLock.Unlock()
 		return
 	}
 
@@ -129,7 +129,7 @@ func requestSqlLog(info *Sync.SyncServerInfo) {
 	if err != nil {
 		info.State = 2 //标记为同步失败
 		info.Msg = err.Error()
-		Sync.SyncLock.Unlock()
+		SyncUtil.SyncLock.Unlock()
 		return
 	}
 	if string(logData) == "[]" { //已经没有sql日志
@@ -146,7 +146,7 @@ func requestSqlLog(info *Sync.SyncServerInfo) {
 		info.State = 0 //同步完成，标记为待机中
 		info.Msg = ""
 		info.LastTime = time.Now().UnixMilli() //最后一次同步完成时间
-		Sync.SyncLock.Unlock()
+		SyncUtil.SyncLock.Unlock()
 		return
 	}
 	info.State = 1 //标记为正在同步中
@@ -174,7 +174,7 @@ func requestSqlLog(info *Sync.SyncServerInfo) {
 		info.Msg = runSqlErr.Error()
 		return
 	}
-	Sync.SyncLock.Unlock()
+	SyncUtil.SyncLock.Unlock()
 
 	//递归调用，直到服务端日志同步完成
 	requestSqlLog(info)
@@ -202,7 +202,7 @@ func insertLog(host string, sqlLogList []dto.SqlLogDto) error {
 /**
 * 执行日志里的sql语句
  */
-func runSql(info *Sync.SyncServerInfo) error {
+func runSql(info *SyncUtil.SyncServerInfo) error {
 
 	//获取还未执行的sql语句
 	notRunList := SqlLogDao.GetNotRunList()

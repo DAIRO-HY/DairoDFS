@@ -1,4 +1,4 @@
-package Sync
+package SyncUtil
 
 import (
 	"DairoDFS/util/DBConnection"

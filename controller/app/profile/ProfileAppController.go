@@ -4,7 +4,7 @@ import (
 	"DairoDFS/application/SystemConfig"
 	"DairoDFS/controller/app/profile/form"
 	"DairoDFS/extension/String"
-	"DairoDFS/util/Sync/SyncByLog"
+	"DairoDFS/util/SyncUtil/SyncByLog"
 	"strings"
 )
 

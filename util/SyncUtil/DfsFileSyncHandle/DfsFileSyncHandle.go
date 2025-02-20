@@ -5,13 +5,13 @@ import (
 	"DairoDFS/dao/UserDao"
 	"DairoDFS/exception"
 	"DairoDFS/service/DfsFileService"
-	"DairoDFS/util/Sync"
+	"DairoDFS/util/SyncUtil"
 )
 
 /**
  * DFS文件同步之前，本地文件的一些操作
  */
-func ByTable(info *Sync.SyncServerInfo, dataMap map[string]any) error {
+func ByTable(info *SyncUtil.SyncServerInfo, dataMap map[string]any) error {
 
 	//用户文件id
 	id := int64(dataMap["id"].(float64))
@@ -66,7 +66,7 @@ func ByTable(info *Sync.SyncServerInfo, dataMap map[string]any) error {
 }
 
 // @TODO:应该开启事务,防止数据不完整
-func ByLog(info *Sync.SyncServerInfo, params []any) (string, error) {
+func ByLog(info *SyncUtil.SyncServerInfo, params []any) (string, error) {
 
 	//用户文件id
 	id := int64(params[0].(float64))

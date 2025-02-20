@@ -5,7 +5,7 @@ import (
 	"DairoDFS/exception"
 	"DairoDFS/extension/Number"
 	"DairoDFS/extension/String"
-	"DairoDFS/util/Sync"
+	"DairoDFS/util/SyncUtil"
 	"io"
 	"net"
 	"net/http"
@@ -34,7 +34,7 @@ import (
  * @param retryTimes 记录出错重试次数
  * @return 存储目录
  */
-func Download(info *Sync.SyncServerInfo, md5 string, retryTimes int) (string, error) {
+func Download(info *SyncUtil.SyncServerInfo, md5 string, retryTimes int) (string, error) {
 	if info.IsStop {
 		return "", exception.Biz("同步被强制取消")
 	}
