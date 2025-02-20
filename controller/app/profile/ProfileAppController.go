@@ -30,6 +30,8 @@ func Init() form.ProfileForm {
 	inForm.Folders = strings.Join(systemConfig.SaveFolderList, "\n")
 	inForm.SyncDomains = strings.Join(systemConfig.SyncDomains, "\n")
 	inForm.Token = systemConfig.Token
+	inForm.TrashTimeout = systemConfig.TrashTimeout
+	inForm.DeleteStorageTimeout = systemConfig.DeleteStorageTimeout
 	return inForm
 }
 
@@ -55,6 +57,8 @@ func Update(form form.ProfileForm) error {
 	systemConfig.UploadMaxSize = form.UploadMaxSize
 	systemConfig.OpenSqlLog = form.OpenSqlLog
 	systemConfig.IsReadOnly = form.HasReadOnly
+	systemConfig.TrashTimeout = form.TrashTimeout
+	systemConfig.DeleteStorageTimeout = form.DeleteStorageTimeout
 
 	if form.SyncDomains == "" {
 		systemConfig.SyncDomains = []string{}

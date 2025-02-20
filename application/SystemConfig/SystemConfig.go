@@ -13,40 +13,32 @@ import (
 	"time"
 )
 
-/**
- * 系统配置
- */
+// 系统配置
 type SystemConfig struct {
 
-	/**
-	 * 记录同步日志
-	 */
+	// 记录同步日志
 	OpenSqlLog bool
 
-	/**
-	 * 将当前服务器设置为只读,仅作为备份使用
-	 */
+	// 将当前服务器设置为只读,仅作为备份使用
 	IsReadOnly bool
 
-	/**
-	 * 文件上传限制(MB)
-	 */
+	// 文件上传限制(MB)
 	UploadMaxSize int64
 
-	/**
-	 * 文件保存文件夹列表
-	 */
+	// 文件保存文件夹列表
 	SaveFolderList []string
 
-	/**
-	 * 同步域名
-	 */
+	// 同步域名
 	SyncDomains []string
 
-	/**
-	 * 分机与主机同步连接票据
-	 */
+	// 分机与主机同步连接票据
 	Token string
+
+	// 回收站超时(单位：天)
+	TrashTimeout int64
+
+	// 删除没有被使用的文件超时设置(单位：天)
+	DeleteStorageTimeout int64
 }
 
 // 读取文件锁
@@ -65,10 +57,12 @@ func Instance() *SystemConfig {
 
 			//创建一个新的实列
 			instance = &SystemConfig{
-				UploadMaxSize:  10 * 1024 * 1024 * 1024, //默认文件上传限制10GB
-				SaveFolderList: []string{application.DataPath},
-				SyncDomains:    []string{},
-				Token:          String.ToMd5(timeNow),
+				UploadMaxSize:        10 * 1024 * 1024 * 1024, //默认文件上传限制10GB
+				SaveFolderList:       []string{application.DataPath},
+				SyncDomains:          []string{},
+				Token:                String.ToMd5(timeNow),
+				TrashTimeout:         30 * 1000,
+				DeleteStorageTimeout: 30 * 1000,
 			}
 			Save()
 		} else {

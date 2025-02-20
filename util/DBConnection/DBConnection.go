@@ -40,7 +40,7 @@ func init() {
 		log.Fatal(err)
 	}
 
-	db.SetMaxOpenConns(10)               // 设置最大打开连接数，值越大支持的并发越高，但常驻内存也会增加。默认无限，大并发可能会导致内存激增。建议设置
+	db.SetMaxOpenConns(20)               // 设置最大打开连接数，值越大支持的并发越高，但常驻内存也会增加。默认无限，大并发可能会导致内存激增。建议设置
 	db.SetMaxIdleConns(3)                // 设置最大空闲连接数
 	db.SetConnMaxLifetime(1 * time.Hour) // SQLite 通常是文件数据库，不需要 SetConnMaxLifetime，默认让连接长期存活。
 

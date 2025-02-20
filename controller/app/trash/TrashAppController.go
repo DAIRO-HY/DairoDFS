@@ -1,7 +1,7 @@
 package trash
 
 import (
-	"DairoDFS/application"
+	"DairoDFS/application/SystemConfig"
 	"DairoDFS/controller/app/trash/form"
 	"DairoDFS/dao/DfsFileDao"
 	"DairoDFS/exception"
@@ -29,7 +29,7 @@ func Html() {}
 func GetList() []form.TrashForm {
 	loginId := LoginState.LoginId()
 	now := time.Now().UnixMilli()
-	var trashSaveTime int64 = application.TRASH_TIMEOUT * 24 * 60 * 60 * 1000
+	trashSaveTime := SystemConfig.Instance().TrashTimeout * 24 * 60 * 60 * 1000
 	list := make([]form.TrashForm, 0)
 	for _, it := range DfsFileDao.SelectDelete(loginId) {
 		deleteDate := it.DeleteDate
@@ -67,19 +67,18 @@ func GetList() []form.TrashForm {
 // 彻底删除文件
 // ids 选中的文件ID列表
 // @Post:/logic_delete
-func LogicDelete(ids []int64) error {
+func LogicDelete(ids []int64) {
 	loginId := LoginState.LoginId()
 	for _, it := range ids { //验证是否有删除权限
 		fileDto, _ := DfsFileDao.SelectOne(it)
 		if fileDto.UserId != loginId { //非自己的文件，无法删除
-			return exception.NOT_ALLOW()
+			panic(exception.NOT_ALLOW())
 		}
 		if fileDto.DeleteDate == 0 { //该文件未标记为删除
-			return exception.NOT_ALLOW()
+			panic(exception.NOT_ALLOW())
 		}
 	}
 	DfsFileDeleteService.AddDelete(ids)
-	return nil
 }
 
 // 从垃圾箱还原文件

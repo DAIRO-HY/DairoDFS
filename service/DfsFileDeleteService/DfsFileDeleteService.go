@@ -62,6 +62,8 @@ func deleteSelfAndExtra(fileDto dto.DfsFileDto) {
  */
 func addDelete(fileDto dto.DfsFileDto) {
 	DfsFileDeleteDao.Insert(fileDto.Id)
+
+	//重新设置删除时间
 	DfsFileDeleteDao.SetDeleteDate(fileDto.Id, time.Now().UnixMilli())
 	DfsFileDao.Delete(fileDto.Id)
 }

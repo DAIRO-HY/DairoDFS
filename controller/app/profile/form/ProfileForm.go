@@ -26,6 +26,12 @@ type ProfileForm struct {
 
 	/** 分机与主机同步连接票据 **/
 	Token string `json:"token"`
+
+	// 回收站超时(单位：天)
+	TrashTimeout int64 `json:"trashTimeout"`
+
+	// 删除没有被使用的文件超时设置(单位：天)
+	DeleteStorageTimeout int64 `json:"deleteStorageTimeout"`
 }
 
 // 目录正确性检查

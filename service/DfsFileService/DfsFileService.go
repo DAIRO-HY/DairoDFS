@@ -424,9 +424,9 @@ func ShareSaveTo(shareUserId int64, userId int64, sourcePaths []string, targetFo
  * @param iStream 文件流
  */
 func SaveToStorageFile(md5 string, reader io.Reader) dto.StorageFileDto {
-	_, isExists := StorageFileDao.SelectByFileMd5(md5)
-	if isExists { //该文件已经存在,删除本次上传的文件并返回
-		panic(exception.Biz(md5 + "的文件已经存在"))
+	existsStorageDto, isExists := StorageFileDao.SelectByFileMd5(md5)
+	if isExists { //该文件已经存在
+		return existsStorageDto
 	}
 
 	//获取本地文件存储路径

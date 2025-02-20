@@ -27,7 +27,7 @@ func SetDeleteDate(id int64, time int64) {
  * @param time 时间戳
  */
 func SelectIdsByTimeout(time int64) []dto.DfsFileDto {
-	return DBUtil.SelectList[dto.DfsFileDto]("select * from dfs_file_delete where deleteDate < ? limit 1000", time)
+	return DBUtil.SelectList[dto.DfsFileDto]("select id,storageId from dfs_file_delete where deleteDate < ? limit 1000", time)
 }
 
 /**
