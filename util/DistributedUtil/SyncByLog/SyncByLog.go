@@ -62,6 +62,13 @@ func loopListen(info *DistributedUtil.SyncServerInfo) {
 			}
 		}
 	}()
+
+	//监听之前先执行一次请求，达到上次执行失败，本次重试的目的
+	callRequestSqlLog(info)
+	if info.State == 2 { //执行失败了，没有必要继续往下执行
+		return
+	}
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	info.CancelFunc = cancel
@@ -99,7 +106,7 @@ func loopListen(info *DistributedUtil.SyncServerInfo) {
 			info.Msg = "心跳检测中。"
 			tag := buf[0]
 			if tag == 1 { //接收到的标记为1时，代表服务器端有新的日志
-				requestSqlLog(info)
+				callRequestSqlLog(info)
 				break
 			} else if tag == 0 {
 				continue
@@ -120,18 +127,17 @@ func loopListen(info *DistributedUtil.SyncServerInfo) {
 	}
 }
 
+// 调起requestSqlLog函数
+func callRequestSqlLog(info *DistributedUtil.SyncServerInfo) {
+	defer DistributedUtil.SyncLock.Unlock()
+	DistributedUtil.SyncLock.Lock() //单线程同步
+	requestSqlLog(info)
+}
+
 // 循环取sql日志
 // @return 是否处理完成
 func requestSqlLog(info *DistributedUtil.SyncServerInfo) {
-
-	//单线程同步
-	DistributedUtil.SyncLock.Lock()
-
-	//由于该函数有递归调用，通过defer关闭可能导致死锁
-	//defer Sync.SyncLock.Unlock()
-
 	if info.IsStop { // 如果被强行终止
-		DistributedUtil.SyncLock.Unlock()
 		return
 	}
 
@@ -142,7 +148,6 @@ func requestSqlLog(info *DistributedUtil.SyncServerInfo) {
 	if err != nil {
 		info.State = 2 //标记为同步失败
 		info.Msg = err.Error()
-		DistributedUtil.SyncLock.Unlock()
 		return
 	}
 	if string(logData) == "[]" { //已经没有sql日志
@@ -159,7 +164,6 @@ func requestSqlLog(info *DistributedUtil.SyncServerInfo) {
 		info.State = 0 //同步完成，标记为待机中
 		info.Msg = ""
 		info.LastTime = time.Now().UnixMilli() //最后一次同步完成时间
-		DistributedUtil.SyncLock.Unlock()
 		return
 	}
 	info.State = 1 //标记为正在同步中
@@ -187,7 +191,6 @@ func requestSqlLog(info *DistributedUtil.SyncServerInfo) {
 		info.Msg = runSqlErr.Error()
 		return
 	}
-	DistributedUtil.SyncLock.Unlock()
 
 	//递归调用，直到服务端日志同步完成
 	requestSqlLog(info)

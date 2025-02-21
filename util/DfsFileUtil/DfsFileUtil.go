@@ -10,6 +10,7 @@ import (
 	"embed"
 	_ "embed"
 	"fmt"
+	"github.com/shirou/gopsutil/disk"
 	"io"
 	"log"
 	"net/http"
@@ -81,14 +82,13 @@ func SelectDriverFolder() string {
 		if os.IsNotExist(err) { //如果文件夹不存在
 			continue
 		}
-		//usage, usageErr := disk.Usage(folder)
-		//if usageErr != nil {
-		//	return "", usageErr
-		//}
-		//if usage.Free > uint64(maxSize) { //空间足够
-		//	return folder, nil
-		//}
-		return folder
+		usage, usageErr := disk.Usage(folder)
+		if usageErr != nil {
+			panic(usageErr)
+		}
+		if usage.Free > uint64(1*1024*1024*1024) { //空间足够
+			return folder
+		}
 	}
 	panic(exception.Biz("文件夹不存在或没有足够存储空间"))
 }

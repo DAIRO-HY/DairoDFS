@@ -22,9 +22,10 @@ func SyncAll() {
 	// 重新加载同步信息
 	SyncInfoManager.ReloadList()
 
-	//单线程同步
-	DistributedUtil.SyncLock.Lock()
+	//避免并发
 	defer DistributedUtil.SyncLock.Unlock()
+	DistributedUtil.SyncLock.Lock()
+
 	for _, info := range SyncInfoManager.SyncInfoList {
 		syncByInfo(info)
 	}

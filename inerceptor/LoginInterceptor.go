@@ -47,7 +47,7 @@ func reject(writer http.ResponseWriter, request *http.Request) {
 		jsonData, _ := json.Marshal(exception.NO_LOGIN())
 		writer.Write(jsonData)
 	} else {
-		http.Redirect(writer, request, "/app/login.html", http.StatusFound)
+		http.Redirect(writer, request, "/app/login", http.StatusFound)
 		//if (request.getHeader("range") != null) {//可能来自客户端下载
 		//    response.status = 500
 		//} else {

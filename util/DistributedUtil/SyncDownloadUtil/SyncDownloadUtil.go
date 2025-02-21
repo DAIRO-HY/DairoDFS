@@ -99,9 +99,6 @@ func Download(info *DistributedUtil.SyncServerInfo, md5 string, retryTimes int) 
 		if info.IsStop {
 			return "", exception.Biz("同步被强制取消")
 		}
-
-		//@TEST
-		time.Sleep(10 * time.Millisecond)
 		n, readErr := res.Body.Read(cache)
 		if n > 0 {
 			downloadedSize += int64(n)

@@ -17,7 +17,8 @@ import (
 //@Group:/app/login
 
 /** 页面初始化 */
-//@Html:.html
+//@Get:
+//@Html:/app/login.html
 func Init(writer http.ResponseWriter, request *http.Request) {
 	if !UserDao.IsInit() { //是否已经初始化
 		http.Redirect(writer, request, "/app/install/ffmpeg", http.StatusFound)

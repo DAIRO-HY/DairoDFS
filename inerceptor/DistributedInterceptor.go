@@ -19,6 +19,18 @@ func DistributedValidate(writer http.ResponseWriter, request *http.Request) bool
 
 	//得到主机端的同步token
 	masterToken := paths[2]
+
+	//得到客户端的同步token
+	clentToken := paths[3]
+	if masterToken == clentToken {
+		// 设置 Content-Type 头部信息
+		writer.Header().Set("Content-Type", "text/plain;charset=UTF-8")
+
+		// 设置 HTTP 状态码
+		writer.WriteHeader(http.StatusInternalServerError) // 设置状态码
+		writer.Write([]byte("禁止本机循环同步"))
+		return false
+	}
 	if masterToken == SystemConfig.Instance().DistributedToken {
 		return true
 	}

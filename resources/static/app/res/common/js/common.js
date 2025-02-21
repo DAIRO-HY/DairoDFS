@@ -57,7 +57,7 @@ $(function () {
  */
 function logout() {
     $.ajaxByData("/app/login/logout").success(() => {
-        window.location.href = "/app/login.html"
+        window.location.href = "/app/login"
     }).post()
 }
 
@@ -66,7 +66,7 @@ function logout() {
  */
 function reinit() {
     $.ajaxByData("/app/index/reinit").success(() => {
-        window.location.href = "/app/login.html"
+        window.location.href = "/app/login"
     }).post()
 }
 
