@@ -1,13 +1,14 @@
 ﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
+    {{template "head" .}}
     <title>分布式部署</title>
 </head>
 <body class="bg-login">
 <div class="text-center d-table" style="width: 100vw;height: 100vh;">
     <div class="d-table-cell align-middle" style="padding: 0 100px">
         <div class="d-inline-block border rounded bg-white p-3" style="max-width: 700px;width: 100%;">
-            <div id="syncUrlDiv">
+            <div>
                 <span class="fs-4">分布式部署</span>
                 <form action="/app/install/distributed/set">
                     <div id="urlDiv">
@@ -35,27 +36,10 @@
                     </div>
                 </form>
             </div>
-            <div id="syncLogDiv" style="display: none;">
-                <span class="fs-4">同步结果</span>
-                <div id="syncResult" class="text-start p-1 rounded"
-                     style="background-color: black;color: white;height: 300px;overflow: auto;">
-
-                </div>
-                <div class="mt-3">
-                    请等待同步完成之后,点击完成按钮
-                    <br>
-                    <button class="btn btn-primary" onclick="window.location.href='/'">
-                        完成
-                    </button>
-                </div>
-            </div>
         </div>
     </div>
 </div>
 <script>
-    $(function () {
-        initSocket()
-    })
 
     /**
      * 添加一个连接点击事件
@@ -69,32 +53,8 @@
      */
     function onSetClick() {
         $("form").ajaxByForm().success(() => {
-            $("#syncUrlDiv").hide()
-            $("#syncLogDiv").show()
+            location.href = "/app/login.html"
         }).post()
-    }
-
-    function initSocket() {
-        let socket = new WebSocket(`ws://${location.host}/ws/app/sync`);
-
-        socket.onopen = function (e) {
-            console.log("websocket开启成功");
-        };
-
-        socket.onmessage = function (event) {
-            $("#syncUrlDiv").hide()
-            $("#syncLogDiv").show()
-            const data = JSON.parse(event.data)
-            $("#syncResult").append(`<div class="text-nowrap">${data.url} 件数:${data.syncCount} ${data.msg}</div>`)
-
-            if (data.state === 2) {
-                $("#syncResult").append(`<div class="text-danger">同步失败</div>`)
-            }
-
-            //将滚动条滚动到最底部
-            const div = document.getElementById('syncResult');
-            div.scrollTop = div.scrollHeight;
-        };
     }
 </script>
 </body>

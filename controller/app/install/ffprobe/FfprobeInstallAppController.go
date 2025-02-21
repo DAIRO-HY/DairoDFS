@@ -3,6 +3,7 @@ package ffprobe
 import (
 	"DairoDFS/application"
 	"DairoDFS/controller/app/install"
+	"DairoDFS/controller/app/install/ffmpeg"
 	"DairoDFS/util/ShellUtil"
 	"net/http"
 	"runtime"
@@ -32,12 +33,12 @@ func url() string {
 	}
 }
 
-/**
- * 页面初始化
- */
-//@Get:/install_ffprobe.html
-//@Html:app/install/install_ffprobe.html
+// @Get:
+// @Html:app/install/ffprobe.html
 func Html() {
+
+	//清除上一步的缓存
+	ffmpeg.Recycle()
 	if downloadInfo == nil {
 		downloadInfo = &install.LibDownloadInfo{
 			Url:      url(),

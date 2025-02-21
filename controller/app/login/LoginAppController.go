@@ -20,7 +20,7 @@ import (
 //@Html:.html
 func Init(writer http.ResponseWriter, request *http.Request) {
 	if !UserDao.IsInit() { //是否已经初始化
-		http.Redirect(writer, request, "/app/install/create_admin", http.StatusFound)
+		http.Redirect(writer, request, "/app/install/ffmpeg", http.StatusFound)
 	}
 }
 

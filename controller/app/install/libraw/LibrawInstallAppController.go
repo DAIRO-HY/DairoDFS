@@ -3,6 +3,7 @@ package libraw
 import (
 	"DairoDFS/application"
 	"DairoDFS/controller/app/install"
+	"DairoDFS/controller/app/install/ffprobe"
 	"DairoDFS/extension/String"
 	"DairoDFS/util/ShellUtil"
 	"embed"
@@ -42,12 +43,12 @@ func url() string {
 	}
 }
 
-/**
- * 页面初始化
- */
-//@Get:/install_libraw.html
-//@Html:app/install/install_libraw.html
+// @Get:
+// @Html:app/install/libraw.html
 func Html() {
+
+	//清除上一步的缓存
+	ffprobe.Recycle()
 	if downloadInfo == nil {
 		downloadInfo = &install.LibDownloadInfo{
 			Url:      url(),

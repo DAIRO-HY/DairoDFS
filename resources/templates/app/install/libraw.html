@@ -2,17 +2,16 @@
 <html lang="zh-CN">
 <head>
     {{template "head" .}}
-    <title>安装FFPROBE</title>
+    <title>安装LIBRAW</title>
 </head>
 <body class="bg-login">
 <div class="text-center d-table" style="width: 100vw;height: 100vh;">
     <div class="d-table-cell align-middle" style="padding: 0 100px">
         <div class="d-inline-block border rounded bg-white p-3" style="max-width: 700px;">
-            <span class="fs-4">安装FFPROBE</span>
+            <span class="fs-4">安装LIBRAW</span>
             <div class="text-start">
-                FFprobe 是一个非常强大的多媒体处理工具，用于处理视频、音频、字幕等多种多媒体文件。<br>
-                它可以执行编码、解码、转码、复用、解复用、流传输、过滤和播放等操作。<br>
-                FFprobe 支持几乎所有流行的多媒体格式，适用于很多平台，如 Linux、Windows、macOS 等。
+                Libraw 是一个用于读取和处理 RAW 图像文件的开源库，支持多种相机品牌和型号。<br>
+                RAW 文件包含相机传感器捕获的原始数据，提供更高的图像质量和更大的后期处理灵活性。
             </div>
             <div id="downloadInfo" class="mt-3" style="display: none;">
                 <div class="progress" role="progressbar" aria-label="Example with label"
@@ -26,16 +25,16 @@
                     </div>
                 </div>
             </div>
-            <div id="info" class="text-start p-2"
+            <div id="info" class="text-start p-2 mt-2"
                  style="background-color: black;color: white;width: 100%;height: 260px;border-radius: 6px;overflow-y: auto;">
             </div>
             <div class="d-flex justify-content-between mt-3">
                 <div>
-                    1/6
+                    3/6
                 </div>
                 <div>
                     <button id="btnInstall" class="btn btn-primary" onclick="onInstallClick()">安装</button>
-                    <button id="btnNext" class="btn btn-primary" onclick="window.location.href='../libraw/install_libraw.html'" disabled>
+                    <button id="btnNext" class="btn btn-primary" onclick="window.location.href='./set_storage'" disabled>
                         下一步
                     </button>
                 </div>
@@ -59,7 +58,7 @@
      * 初始化按钮点击事件
      */
     function onInstallClick() {
-        $.ajaxByData("/app/install/ffprobe/install").success(showProgress).post()
+        $.ajaxByData("/app/install/libraw/install").success(showProgress).post()
     }
 
     /**
@@ -71,7 +70,7 @@
             //关闭上次的连接，避免重复创建
             progressWebsocket.close()
         }
-        progressWebsocket = new WebSocket(`ws://${location.host}/app/install/ffprobe/progress`)
+        progressWebsocket = new WebSocket(`ws://${location.host}/app/install/libraw/progress`)
         progressWebsocket.onopen = function () {
             console.log("websocket连接成功")
         }
@@ -93,9 +92,7 @@
             return
         }
         $("#downloadInfo").show()
-        $("#progressBar").text(data.progress + "%")
-            .css("width", data.progress + "%")
-
+        $("#progressBar").text(data.progress + "%").css("width", data.progress + "%")
         $("#speed").text(data.speed)
         $("#downloaded").text(`${data.downloadedSize}/${data.total}`)
     }

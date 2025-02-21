@@ -32,11 +32,8 @@ func url() string {
 	}
 }
 
-/**
- * 页面初始化
- */
-//@Get:/install_ffmpeg.html
-//@Html:app/install/install_ffmpeg.html
+// @Get:
+// @Html:app/install/ffmpeg.html
 func Html() {
 	if downloadInfo == nil {
 		downloadInfo = &install.LibDownloadInfo{

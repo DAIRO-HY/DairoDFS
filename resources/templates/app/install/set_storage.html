@@ -1,6 +1,7 @@
 ﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
+    {{template "head" .}}
     <title>设置存储目录</title>
 </head>
 <body class="bg-login">
@@ -27,7 +28,7 @@
                         <button type="button" id="btnInstall" class="btn btn-primary" onclick="onSetClick()">设置
                         </button>
                         <button type="button" id="btnNext" class="btn btn-primary"
-                                onclick="window.location.href='distributed'">
+                                onclick="window.location.href='./distributed'">
                             跳过
                         </button>
                     </div>
@@ -50,7 +51,7 @@
      */
     function onSetClick() {
         $("form").ajaxByForm().success(() => {
-            window.location.href = 'distributed'
+            window.location.href = './distributed'
         }).post()
     }
 </script>
