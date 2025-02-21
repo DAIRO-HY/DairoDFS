@@ -38,9 +38,10 @@
             localStorage.setItem("deviceId", hexMD5(deviceId))
         }
         $("input[name='deviceId']").val(deviceId)
-        $("form").ajaxByForm().add("pwd", hexMD5($("input[name='pwd']").val())).success(token => {
+        $("form").ajaxByForm().add("pwd", hexMD5($("input[name='pwd']").val())).success(data => {
             localStorage.setItem("name", $("input[name='name']").val())
-            document.cookie = "token=" + token + "; max-age=3153600000; path=/";
+            localStorage.setItem("isAdmin", data.isAdmin)
+            document.cookie = "token=" + data.token + "; max-age=3153600000; path=/";
             window.location.href = "/app/files.html"
         }).post()
     }

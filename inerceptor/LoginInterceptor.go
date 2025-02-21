@@ -9,7 +9,7 @@ import (
 	"net/http"
 )
 
-// LoginValidate 管理员登录验证
+// LoginValidate 登录验证
 // @interceptor:before
 // @include:/app/**
 // @exclude:/app/login**,/app/install**,/distributed**

@@ -5,6 +5,7 @@ import (
 	"DairoDFS/dao/UserDao"
 	"DairoDFS/dao/dto"
 	"DairoDFS/exception"
+	"DairoDFS/extension/Number"
 	"DairoDFS/extension/String"
 	"DairoDFS/service/UserService"
 	"net/http"
@@ -32,6 +33,7 @@ func AddAdmin(inForm form.CreateAdminForm) any {
 	pwd := String.ToMd5(inForm.Pwd)
 	state := int8(1)
 	userDto := dto.UserDto{
+		Id:    Number.ID(),
 		Name:  inForm.Name,
 		Pwd:   pwd,
 		State: state,

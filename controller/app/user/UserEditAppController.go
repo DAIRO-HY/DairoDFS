@@ -5,6 +5,7 @@ import (
 	"DairoDFS/dao/UserDao"
 	"DairoDFS/dao/dto"
 	"DairoDFS/extension/Date"
+	"DairoDFS/extension/Number"
 	"DairoDFS/service/UserService"
 )
 
@@ -53,11 +54,12 @@ func Edit(inForm form.UserEditInoutForm) {
 		State: inForm.State,
 	}
 	if inForm.Id == 0 {
+		userDto.Id = Number.ID()
 		UserService.Add(userDto)
 	} else {
 		UserDao.Update(userDto)
 	}
 	if inForm.Pwd != PWD_PLACEHOLDER { //更新密码
-		UserDao.SetPwd(inForm.Id, inForm.Pwd)
+		UserDao.SetPwd(userDto.Id, inForm.Pwd)
 	}
 }

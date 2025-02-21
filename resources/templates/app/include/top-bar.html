@@ -11,16 +11,16 @@
                 <li class="nav-item">
                     <a class="nav-link" href="/app/files.html">文件</a>
                 </li>
-                <li class="nav-item" th:if="${IS_ADMIN}">
+                <li class="nav-item" admin>
                     <a class="nav-link" href="/app/user_list.html">用户</a>
                 </li>
-                <li class="nav-item" th:if="${IS_ADMIN}">
+                <li class="nav-item" admin>
                     <a class="nav-link" href="/app/profile.html">配置</a>
                 </li>
-                <li class="nav-item" th:if="${IS_ADMIN}">
+                <li class="nav-item" admin>
                     <a class="nav-link" href="/app/sync.html">同步</a>
                 </li>
-                <li class="nav-item" th:if="${IS_ADMIN}">
+                <li class="nav-item" admin>
                     <a class="nav-link" href="/app/advanced.html">高级</a>
                 </li>
                 <li class="nav-item">
@@ -71,7 +71,13 @@
 
     //设置导航栏的标题
     document.getElementById("contentBarTitle").innerText = document.title
+    $(function(){
+        if(localStorage.getItem("isAdmin") === "true"){
 
+        }else{//移除需要管理员权限的标签
+            $("li[admin]").remove()
+        }
+    })
     function initTopBar() {
 
         //显示当前登录用户名

@@ -8,6 +8,7 @@ import (
 	"DairoDFS/dao/dto"
 	"DairoDFS/extension/Number"
 	"DairoDFS/extension/String"
+	"DairoDFS/util/RequestUtil"
 	"net/http"
 	"strconv"
 	"time"
@@ -27,7 +28,7 @@ func Init(writer http.ResponseWriter, request *http.Request) {
 
 /** 用户登录 */
 //@Post:/do-login
-func DoLogin(loginForm form.LoginAppInForm, _clientFlag int, _version int) any {
+func DoLogin(request *http.Request, loginForm form.LoginAppInForm, _clientFlag int, _version int) form.LoginAppOutForm {
 	userDto, _ := UserDao.SelectByName(loginForm.Name)
 
 	//删除已经存在登录记录
@@ -36,9 +37,7 @@ func DoLogin(loginForm form.LoginAppInForm, _clientFlag int, _version int) any {
 	//登录token
 	token := strconv.FormatInt(time.Now().UnixMicro(), 10)
 	token = String.ToMd5(token)
-
-	//TODO:
-	ip := "0.0.0.0"
+	ip := RequestUtil.GetIp(request)
 	userTokenDto := dto.UserTokenDto{
 		Id:         Number.ID(),
 		UserId:     userDto.Id,
@@ -61,7 +60,10 @@ func DoLogin(loginForm form.LoginAppInForm, _clientFlag int, _version int) any {
 		//移除第一个元素
 		userTokenList = userTokenList[1:]
 	}
-	return token
+	return form.LoginAppOutForm{
+		Token:   token,
+		IsAdmin: userDto.Id == UserDao.SelectAdminId(),
+	}
 }
 
 /**

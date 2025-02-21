@@ -3,7 +3,6 @@ package UserService
 import (
 	"DairoDFS/dao/UserDao"
 	"DairoDFS/dao/dto"
-	"DairoDFS/extension/Number"
 	"time"
 )
 
@@ -17,6 +16,5 @@ import (
  */
 func Add(dto dto.UserDto) {
 	dto.Date = time.Now().UnixMilli()
-	dto.Id = Number.ID()
 	UserDao.Add(dto)
 }
