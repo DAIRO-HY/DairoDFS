@@ -5,13 +5,13 @@ import (
 	"DairoDFS/exception"
 	"DairoDFS/extension/File"
 	"DairoDFS/util/DfsFileUtil"
-	"DairoDFS/util/SyncUtil"
-	"DairoDFS/util/SyncUtil/SyncDownloadUtil"
+	"DairoDFS/util/DistributedUtil"
+	"DairoDFS/util/DistributedUtil/SyncDownloadUtil"
 	"os"
 )
 
 // 表同步时的特殊处理
-func ByTable(info *SyncUtil.SyncServerInfo, dataMap map[string]any) error {
+func ByTable(info *DistributedUtil.SyncServerInfo, dataMap map[string]any) error {
 	id := int64(dataMap["id"].(float64))
 	md5 := dataMap["md5"].(string)
 	path, err := download(info, md5, id)
@@ -23,7 +23,7 @@ func ByTable(info *SyncUtil.SyncServerInfo, dataMap map[string]any) error {
 }
 
 // 日志同步时的特殊处理
-func ByLog(info *SyncUtil.SyncServerInfo, params []any) error {
+func ByLog(info *DistributedUtil.SyncServerInfo, params []any) error {
 	id := int64(params[0].(float64)) //数值类型的Json反序列化之后都是float64类型
 
 	//得到文件的md5
@@ -40,7 +40,7 @@ func ByLog(info *SyncUtil.SyncServerInfo, params []any) error {
 // info 主机信息
 // md5 文件md5
 // masterStorageFileId 主机存储文件Id
-func download(info *SyncUtil.SyncServerInfo, md5 string, masterStorageFileId int64) (string, error) {
+func download(info *DistributedUtil.SyncServerInfo, md5 string, masterStorageFileId int64) (string, error) {
 
 	//从本地数据库查找该文件
 	existsStorageFile, isExists := StorageFileDao.SelectByFileMd5(md5)

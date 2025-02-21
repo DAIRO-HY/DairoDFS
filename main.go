@@ -3,8 +3,8 @@ package main
 import (
 	"DairoDFS/application"
 	"DairoDFS/controller/app"
+	"DairoDFS/util/DistributedUtil/SyncByLog"
 	"DairoDFS/util/RecycleStorageTimer"
-	"DairoDFS/util/SyncUtil/SyncByLog"
 )
 
 func main() {

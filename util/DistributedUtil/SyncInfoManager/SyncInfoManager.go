@@ -2,20 +2,20 @@ package SyncInfoManager
 
 import (
 	"DairoDFS/application/SystemConfig"
-	"DairoDFS/util/SyncUtil"
+	"DairoDFS/util/DistributedUtil"
 )
 
 // 当前同步主机信息
-var SyncInfoList []*SyncUtil.SyncServerInfo
+var SyncInfoList []*DistributedUtil.SyncServerInfo
 
 // 重新加载同步信息
 func ReloadList() {
 	for _, it := range SyncInfoList {
 		it.Cancel() //停止所有同步操作
 	}
-	SyncInfoList = make([]*SyncUtil.SyncServerInfo, 0)
+	SyncInfoList = make([]*DistributedUtil.SyncServerInfo, 0)
 	for i, it := range SystemConfig.Instance().SyncDomains {
-		info := &SyncUtil.SyncServerInfo{
+		info := &DistributedUtil.SyncServerInfo{
 			Url: it,
 			No:  i + 1,
 			Msg: "等待同步中",
