@@ -10,6 +10,7 @@ import (
 	"DairoDFS/extension/String"
 	"DairoDFS/service/DfsFileService"
 	"DairoDFS/service/FileShareService"
+	"DairoDFS/util/DfsFileHandleUtil"
 	"DairoDFS/util/DfsFileUtil"
 	"DairoDFS/util/LoginState"
 	"net/http"
@@ -98,6 +99,7 @@ func Rename(sourcePath string, name string) {
 func Copy(sourcePaths []string, targetFolder string, isOverWrite bool) {
 	loginId := LoginState.LoginId()
 	DfsFileService.Copy(loginId, sourcePaths, targetFolder, isOverWrite)
+	DfsFileHandleUtil.NotifyWorker()
 }
 
 // 文件移动

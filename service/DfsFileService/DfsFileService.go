@@ -125,10 +125,6 @@ func Copy(userId int64, sourcePaths []string, targetFolder string, isOverWrite b
 			AddFile(createFileDto, isOverWrite)
 		}
 	}
-
-	//生成缩略图等附属文件
-	// @TODO: 待实现
-	//DfsFileHandleUtil.start()
 }
 
 /**

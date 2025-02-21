@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"github.com/gorilla/websocket"
 	"net/http"
+	"net/url"
 	"reflect"
 	"time"
 )
@@ -18,21 +19,17 @@ import (
 // 数据同步状态
 //@Group: /app/sync
 
-/**
- * 页面初始化
- */
-//@Html:.html
+// @Html:.html
 func Html() {}
 
-/**
- * 页面数据初始化
- */
-//@Post:/info_list
+// 页面数据初始化
+// @Post:/info_list
 func InfoList() []form.SyncServerForm {
 	formList := make([]form.SyncServerForm, 0)
 	for _, it := range SyncInfoManager.SyncInfoList {
+		pUrl, _ := url.Parse(it.Url)
 		outForm := form.SyncServerForm{
-			Url:           it.Url,
+			Url:           pUrl.Scheme + "://" + pUrl.Host,
 			State:         it.State,
 			Msg:           it.Msg,
 			No:            it.No,

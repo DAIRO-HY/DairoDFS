@@ -58,8 +58,8 @@ func Instance() *SystemConfig {
 				SaveFolderList:       []string{application.DataPath},
 				SyncDomains:          []string{},
 				DistributedToken:     String.MakeRandStr(32),
-				TrashTimeout:         30 * 1000,
-				DeleteStorageTimeout: 30 * 1000,
+				TrashTimeout:         30,
+				DeleteStorageTimeout: 30,
 			}
 			Save()
 		} else {

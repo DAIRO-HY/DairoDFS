@@ -25,24 +25,14 @@ var LastRunTime int64
 /**
  * 回收存储空间计时器(毫秒)
  */
-
-// @Value("\${config.delete-file-timeout}")
-//const deleteFileTimeout = 20 * 1000
-//
-//const trashTimeout = 10 * 1000
-
-/**
- * 删除文件
- * 每天凌晨3点执行
- */
 func Init() {
 
 	// 创建一个新的cron实例
 	cn := cron.New(cron.WithSeconds())
 
 	// 添加一个每天凌晨3点执行的任务
-	//cn.AddFunc("0 3 * * *", start)
-	cn.AddFunc("*/5 * * * * *", start)
+	cn.AddFunc("0 3 * * *", start)
+	//cn.AddFunc("*/5 * * * * *", start)
 
 	// 启动cron调度器
 	cn.Start()
@@ -66,10 +56,19 @@ func start() {
 	IsRunning = true
 
 	now := time.Now().UnixMilli()
+	deleteSqlLog()         // 删除超出指定时间的sql日志
 	deleteTrashTimeout()   // 删除回收站到期的文件
 	recycleDeletedFile()   // 回收已经被删除的文件
 	recycleNotUseStorage() // 回收没有被使用的存储文件
 	LastRunTime = time.Now().UnixMilli() - now
+}
+
+// 删除超出指定时间的sql日志
+func deleteSqlLog() {
+
+	//删除超过一天的日志
+	deleteTime := time.Now().UnixMilli() - 1*24*60*60*1000
+	DBConnection.DBConn.Exec("delete from sql_log where date < ?", deleteTime)
 }
 
 // 删除回收站到期的文件
