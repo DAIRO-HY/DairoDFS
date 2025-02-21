@@ -25,46 +25,64 @@ func SyncAll() {
 	//单线程同步
 	DistributedUtil.SyncLock.Lock()
 	defer DistributedUtil.SyncLock.Unlock()
-
 	for _, info := range SyncInfoManager.SyncInfoList {
-		info.State = 1
-		info.Msg = "全量同步中"
+		syncByInfo(info)
+	}
 
-		//从主机端获取断面ID,避免同步过程中，主机数据发生变化导致数据不一致的BUG
-		aopId, aopIdErr := getAopId(info)
-		if aopIdErr != nil {
-			info.State = 2
-			info.Msg = "获取断面ID失败：" + aopIdErr.Error()
-			return
-		}
-		tbNames := []string{
-			"user",
-			"user_token",
-			"dfs_file",
-			"dfs_file_delete",
-			"share",
-			"storage_file",
-		}
-		for _, it := range tbNames {
-			err := loopSync(info, it, 0, aopId)
-			if err != nil {
-				info.State = 2
-				info.Msg = "全量同步失败：" + err.Error()
-				return
-			}
-		}
+	if !SyncInfoManager.HasError() {
 
-		//从日志数据表中删除当前已经同步成功的服务端日志
-		DBConnection.DBConn.Exec("delete from sql_log where source = ? and id < ?", info.Url, aopId)
-
-		//设置日志同步最后的ID
-		SyncByLog.SaveLastId(info.Url, aopId)
-		info.State = 0
-		info.Msg = "全量同步完成"
-
-		//开启日志同步
+		// 全量同步完成，如果没有错误消息，立马开启日志同步
 		go SyncByLog.ListenAll()
 	}
+}
+
+// 全量同步主机数据
+func syncByInfo(info *DistributedUtil.SyncServerInfo) {
+	defer func() {
+		if r := recover(); r != nil { //如果发生了panic错误
+			switch rValue := r.(type) {
+			case error:
+				info.Msg = "panic:" + rValue.Error()
+			case string:
+				info.Msg = "panic:" + rValue
+			}
+			info.State = 2
+		}
+	}()
+	info.State = 1
+	info.Msg = "全量同步中"
+
+	//从主机端获取断面ID,避免同步过程中，主机数据发生变化导致数据不一致的BUG
+	aopId, aopIdErr := getAopId(info)
+	if aopIdErr != nil {
+		info.State = 2
+		info.Msg = "获取断面ID失败：" + aopIdErr.Error()
+		return
+	}
+	tbNames := []string{
+		"user",
+		"user_token",
+		"dfs_file",
+		"dfs_file_delete",
+		"share",
+		"storage_file",
+	}
+	for _, it := range tbNames {
+		err := loopSync(info, it, 0, aopId)
+		if err != nil {
+			info.State = 2
+			info.Msg = "全量同步失败：" + err.Error()
+			return
+		}
+	}
+
+	//从日志数据表中删除当前已经同步成功的服务端日志
+	DBConnection.DBConn.Exec("delete from sql_log where source = ? and id < ?", info.Url, aopId)
+
+	//设置日志同步最后的ID
+	SyncByLog.SaveLastId(info.Url, aopId)
+	info.State = 0
+	info.Msg = "全量同步完成"
 }
 
 /**
@@ -125,7 +143,7 @@ func loopSync(info *DistributedUtil.SyncServerInfo, tbName string, lastId int64,
  * 其实就是服务器端的时间戳
  */
 func getAopId(info *DistributedUtil.SyncServerInfo) (int64, error) {
-	url := info.Url + "/distributed/get_aop_id"
+	url := info.Url + "/get_aop_id"
 	data, err := SyncHttp.Request(url)
 	if err != nil {
 		return 0, err
@@ -142,7 +160,7 @@ func getAopId(info *DistributedUtil.SyncServerInfo) (int64, error) {
  * @param aopId 本次同步的服务器端的最大id
  */
 func getTableId(info *DistributedUtil.SyncServerInfo, tbName string, lastId int64, aopId int64) (string, error) {
-	url := info.Url + "/distributed/get_table_id?tbName=" + tbName + "&lastId=" + String.ValueOf(lastId) + "&aopId=" + String.ValueOf(aopId)
+	url := info.Url + "/get_table_id?tbName=" + tbName + "&lastId=" + String.ValueOf(lastId) + "&aopId=" + String.ValueOf(aopId)
 	data, err := SyncHttp.Request(url)
 	if err != nil {
 		return "", err
@@ -180,7 +198,7 @@ func filterNotExistsId(tbName string, ids string) string {
  * 从同步主机端取数据
  */
 func getTableData(info *DistributedUtil.SyncServerInfo, tbName string, ids string) ([]map[string]any, error) {
-	url := info.Url + "/distributed/get_table_data?tbName=" + tbName + "&ids=" + ids
+	url := info.Url + "/get_table_data?tbName=" + tbName + "&ids=" + ids
 	data, err := SyncHttp.Request(url)
 	if err != nil {
 		return nil, err

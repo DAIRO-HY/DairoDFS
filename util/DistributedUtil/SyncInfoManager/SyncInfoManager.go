@@ -13,10 +13,12 @@ func ReloadList() {
 	for _, it := range SyncInfoList {
 		it.Cancel() //停止所有同步操作
 	}
+
+	systemConfig := SystemConfig.Instance()
 	SyncInfoList = make([]*DistributedUtil.SyncServerInfo, 0)
 	for i, it := range SystemConfig.Instance().SyncDomains {
 		info := &DistributedUtil.SyncServerInfo{
-			Url: it,
+			Url: it + "/" + systemConfig.DistributedToken,
 			No:  i + 1,
 			Msg: "等待同步中",
 		}

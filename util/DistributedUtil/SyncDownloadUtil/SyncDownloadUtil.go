@@ -49,7 +49,7 @@ func Download(info *DistributedUtil.SyncServerInfo, md5 string, retryTimes int) 
 	if !os.IsNotExist(statErr) { //若文件已经存在
 		downloadStart = saveFileInfo.Size()
 	}
-	url := info.Url + "/distributed/download/" + md5
+	url := info.Url + "/download/" + md5
 
 	// 创建一个新的HTTP请求
 	request, _ := http.NewRequest("GET", url, nil)

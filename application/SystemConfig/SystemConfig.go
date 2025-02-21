@@ -8,9 +8,7 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"strconv"
 	"sync"
-	"time"
 )
 
 // 系统配置
@@ -32,7 +30,7 @@ type SystemConfig struct {
 	SyncDomains []string
 
 	// 分机与主机同步连接票据
-	Token string
+	DistributedToken string
 
 	// 回收站超时(单位：天)
 	TrashTimeout int64
@@ -53,14 +51,13 @@ func Instance() *SystemConfig {
 		readLock.Lock()
 		_, err := os.Stat(application.SYSTEM_JSON_PATH)
 		if os.IsNotExist(err) { //若配置文件不存在
-			timeNow := strconv.FormatInt(time.Now().UnixMilli(), 10)
 
 			//创建一个新的实列
 			instance = &SystemConfig{
 				UploadMaxSize:        10 * 1024 * 1024 * 1024, //默认文件上传限制10GB
 				SaveFolderList:       []string{application.DataPath},
 				SyncDomains:          []string{},
-				Token:                String.ToMd5(timeNow),
+				DistributedToken:     String.MakeRandStr(32),
 				TrashTimeout:         30 * 1000,
 				DeleteStorageTimeout: 30 * 1000,
 			}

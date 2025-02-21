@@ -3,7 +3,7 @@ package SyncByTable
 import (
 	"DairoDFS/application"
 	"DairoDFS/application/SystemConfig"
-	"DairoDFS/extension/String"
+	"DairoDFS/util/DistributedUtil"
 	"fmt"
 	"testing"
 	"time"
@@ -11,7 +11,7 @@ import (
 
 func TestDoSync(t *testing.T) {
 	application.Init()
-	SystemConfig.Instance().SyncDomains = []string{"http://localhost:" + String.ValueOf(application.Args.Port)}
+	SystemConfig.Instance().SyncDomains = []string{DistributedUtil.GetMasterInfo().Url}
 	go SyncAll()
 	time.Sleep(100 * time.Microsecond)
 	SyncAll()
@@ -23,12 +23,8 @@ func TestDoSync(t *testing.T) {
  */
 func TestLoopSync(t *testing.T) {
 	application.Init()
-	aopId, _ := getAopId(&DistributedUtil.SyncServerInfo{
-		Url: "http://localhost:" + String.ValueOf(application.Args.Port),
-	})
-	info := &DistributedUtil.SyncServerInfo{
-		Url: "http://localhost:" + String.ValueOf(application.Args.Port),
-	}
+	info := DistributedUtil.GetMasterInfo()
+	aopId, _ := getAopId(info)
 	err := loopSync(info, "storage_file", 0, aopId)
 	if err != nil {
 		t.Fatal(err)
@@ -42,9 +38,8 @@ func TestLoopSync(t *testing.T) {
  */
 func TestGetAopId(t *testing.T) {
 	application.Init()
-	aopId, err := getAopId(&DistributedUtil.SyncServerInfo{
-		Url: "http://localhost:" + String.ValueOf(application.Args.Port),
-	})
+	info := DistributedUtil.GetMasterInfo()
+	aopId, err := getAopId(info)
 	if err != nil {
 		t.Fatal(err)
 		return
@@ -61,10 +56,7 @@ func TestGetAopId(t *testing.T) {
  */
 func TestGetTableId(t *testing.T) {
 	application.Init()
-
-	info := &DistributedUtil.SyncServerInfo{
-		Url: "http://localhost:" + String.ValueOf(application.Args.Port),
-	}
+	info := DistributedUtil.GetMasterInfo()
 	aopId, _ := getAopId(info)
 	ids, err := getTableId(info, "dfs_file", 0, aopId)
 	if err != nil {
@@ -85,9 +77,7 @@ func TestFilterNotExistsId(t *testing.T) {
  */
 func TestGetTableData(t *testing.T) {
 	application.Init()
-	info := &DistributedUtil.SyncServerInfo{
-		Url: "http://localhost:" + String.ValueOf(application.Args.Port),
-	}
+	info := DistributedUtil.GetMasterInfo()
 	aopId, _ := getAopId(info)
 	ids, _ := getTableId(info, "user", 0, aopId)
 	data, err := getTableData(info, "user", ids)

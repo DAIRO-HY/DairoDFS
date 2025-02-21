@@ -16,7 +16,7 @@ import (
 /**
  * 数据同步处理Controller
  */
-//@Group:/distributed
+//@Group:/distributed/{token}/{clientToken}
 
 // 记录分机端的请求
 var waitingRequestMap = make(map[string]int64)
@@ -28,7 +28,7 @@ var waitingRequestLock sync.Mutex
  * @param clientToken 分机端的票据
  * @param lastId 分机端同步到日志最大ID,用来解决分机端在判断是否最新日志的过程中,又有新的日志增加,虽然是小概率事件,但还是有发生的可能
  */
-//@Get:/listen/{clientToken}
+//@Get:/listen
 func Listen(writer http.ResponseWriter, clientToken string, lastId int64) {
 	waitingRequestLock.Lock()
 	time.Sleep(1 * time.Microsecond) //确保每次生成的时间戳不一样

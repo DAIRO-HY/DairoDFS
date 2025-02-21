@@ -52,10 +52,20 @@ func loopListen(info *DistributedUtil.SyncServerInfo) {
 	if info.IsStop {
 		return
 	}
+	defer func() {
+		if r := recover(); r != nil { //如果发生了panic错误
+			switch rValue := r.(type) {
+			case error:
+				info.Msg = "panic:" + rValue.Error()
+			case string:
+				info.Msg = "panic:" + rValue
+			}
+		}
+	}()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	info.CancelFunc = cancel
-	url := info.Url + "/distributed/listen?lastId=" + String.ValueOf(getLastId(info.Url))
+	url := info.Url + "/listen?lastId=" + String.ValueOf(getLastId(info.Url))
 	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	transport := &http.Transport{
 		//MaxIdleConns:          1,
@@ -88,12 +98,15 @@ func loopListen(info *DistributedUtil.SyncServerInfo) {
 			info.LastHeartTime = time.Now().UnixMilli()
 			info.Msg = "心跳检测中。"
 			tag := buf[0]
-			//fmt.Println("-->" + String.ValueOf(info.No) + ":" + String.ValueOf(tag))
 			if tag == 1 { //接收到的标记为1时，代表服务器端有新的日志
 				requestSqlLog(info)
 				break
+			} else if tag == 0 {
+				continue
+			} else { //返回标记不等于0、1时，有可能时token失效
+				info.Msg = "监听日志连接返回了非0,1错误，可能是认证token失效。"
+				break
 			}
-			continue
 		}
 		if readErr != nil {
 			if readErr != io.EOF {
@@ -124,7 +137,7 @@ func requestSqlLog(info *DistributedUtil.SyncServerInfo) {
 
 	//得到最后请求的id
 	lastId := getLastId(info.Url)
-	url := info.Url + "/distributed/get_log?lastId=" + String.ValueOf(lastId)
+	url := info.Url + "/get_log?lastId=" + String.ValueOf(lastId)
 	logData, err := SyncHttp.Request(url)
 	if err != nil {
 		info.State = 2 //标记为同步失败

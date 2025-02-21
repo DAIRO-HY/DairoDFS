@@ -4,6 +4,7 @@ import (
 	"DairoDFS/application"
 	"DairoDFS/controller/distributed/DistributedPush"
 	"DairoDFS/dao/dto"
+	"DairoDFS/util/DistributedUtil"
 	"fmt"
 	"net"
 	"net/http"
@@ -26,7 +27,8 @@ func TestAddLog(t *testing.T) {
 
 func TestExecuteSqlLog(t *testing.T) {
 	application.Init()
-	runSql(&DistributedUtil.SyncServerInfo{Url: "asdafsfsdfdsf"})
+	info := DistributedUtil.GetMasterInfo()
+	runSql(info)
 }
 
 func TestSaveLastId(t *testing.T) {
@@ -42,16 +44,14 @@ func TestGetLastId(t *testing.T) {
 
 func TestListen(t *testing.T) {
 	application.Init()
-	listen(&DistributedUtil.SyncServerInfo{
-		Url: "http://localhost:8031",
-	})
+	info := DistributedUtil.GetMasterInfo()
+	listen(info)
 }
 
 func TestRequestSqlLog(t *testing.T) {
 	application.Init()
-	requestSqlLog(&DistributedUtil.SyncServerInfo{
-		Url: "http://localhost:8031",
-	})
+	info := DistributedUtil.GetMasterInfo()
+	requestSqlLog(info)
 }
 
 func TestBigRequest(t *testing.T) {

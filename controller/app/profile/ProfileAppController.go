@@ -11,16 +11,12 @@ import (
 //系统配置
 //@Group:/app/profile
 
-/**
- * 页面初始化
- */
-//@Html:.html
+// 页面初始化
+// @Html:.html
 func Html() {}
 
-/**
- * 页面数据初始化
- */
-//@Post:/init
+// 页面数据初始化
+// @Post:/init
 func Init() form.ProfileForm {
 	inForm := form.ProfileForm{}
 	systemConfig := SystemConfig.Instance()
@@ -29,16 +25,14 @@ func Init() form.ProfileForm {
 	inForm.UploadMaxSize = systemConfig.UploadMaxSize
 	inForm.Folders = strings.Join(systemConfig.SaveFolderList, "\n")
 	inForm.SyncDomains = strings.Join(systemConfig.SyncDomains, "\n")
-	inForm.Token = systemConfig.Token
+	inForm.Token = systemConfig.DistributedToken
 	inForm.TrashTimeout = systemConfig.TrashTimeout
 	inForm.DeleteStorageTimeout = systemConfig.DeleteStorageTimeout
 	return inForm
 }
 
-/**
- * 页面初始化
- */
-//@Post:/update
+// 页面初始化
+// @Post:/update
 func Update(form form.ProfileForm) error {
 	folders := strings.Split(form.Folders, "\n")
 	systemConfig := SystemConfig.Instance()
@@ -68,9 +62,6 @@ func Update(form form.ProfileForm) error {
 		syncDomains := strings.Split(form.SyncDomains, "\n")
 		systemConfig.SyncDomains = syncDomains
 	}
-
-	//@TODO:等待完成
-	//SyncByLog.init()
 	SystemConfig.Save()
 
 	//重新开启监听
@@ -78,12 +69,10 @@ func Update(form form.ProfileForm) error {
 	return nil
 }
 
-/**
- * 切换token
- */
-//@Post:/app/profile/make_token
+// 切换token
+// @Post:/make_token
 func MakeToken() {
 	systemConfig := SystemConfig.Instance()
-	systemConfig.Token = String.MakeRandStr(32)
+	systemConfig.DistributedToken = String.MakeRandStr(32)
 	SystemConfig.Save()
 }
