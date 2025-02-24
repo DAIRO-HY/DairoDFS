@@ -1,7 +1,10 @@
 package file_upload
 
 import (
+	"DairoDFS/application"
+	"DairoDFS/dao/StorageFileDao"
 	"DairoDFS/dao/dto"
+	"DairoDFS/exception"
 	"DairoDFS/extension/File"
 	"DairoDFS/extension/String"
 	"DairoDFS/service/DfsFileService"
@@ -11,6 +14,7 @@ import (
 	"DairoDFS/util/LoginState"
 	"net/http"
 	"os"
+	"sync"
 )
 
 // 文件上传Controller
@@ -22,6 +26,7 @@ import (
  * md5 -> 上传时间戳
  */
 var uploadingFileMap = map[string]int64{}
+var uploadingLock sync.Mutex
 
 // 浏览器文件上传
 // @Post:
@@ -59,88 +64,87 @@ func Upload(request *http.Request, folder string, contentType string) error {
 	return nil
 }
 
-//    @Operation(summary = "以流的方式上传文件")
-//    @PostMapping("/by_stream/{md5}")
-//    @ResponseBody
-//    fun byStream(request: HttpServletRequest, @PathVariable md5: String) {
-//        synchronized(this.uploadingFileMap) {
-//            if (this.uploadingFileMap.containsKey(md5)) {
-//                throw ErrorCode.FILE_UPLOADING
-//            }
-//            this.uploadingFileMap[md5] = System.currentTimeMillis()
-//        }
-//
-//        try {//保存到文件
-//            val file = File(this.dataPath + "/temp/" + md5)
-//
-//            //文件输出流
-//            FileOutputStream(file, true).use {
-//                request.inputStream.transferTo(it)
-////                val stream = request.inputStream
-////                val data = ByteArray(64 * 1024)
-////                var len: Int
-////                while (stream.read(data).also { len = it } != -1) {
-////                    sleep(10)
-////                    it.write(data, 0, len)
-////                }
-//            }
-//
-//            //计算文件的MD5
-//            val fileMd5 = file.md5
-//            if (md5 != fileMd5) {
-//                file.delete()
-//                throw BusinessException("文件校验失败")
-//            }
-//
-//            //将文件存放到指定目录
-//            this.dfsFileService.saveToStorageFile(md5, file.inputStream())
-//            file.delete()
-//
-//            //开启生成缩略图线程
-//            DfsFileHandleUtil.start()
-//        } finally {
-//            synchronized(this.uploadingFileMap) {
-//                this.uploadingFileMap.remove(md5)
-//            }
-//        }
-//    }
-//
-//    @Operation(summary = "获取文件已经上传大小")
-//    @PostMapping("/get_uploaded_size")
-//    @ResponseBody
-//    fun getUploadedSize(@Parameter(name = "文件的MD5") @RequestParam("md5", required = true) md5: String): Long {
-//        if (this.uploadingFileMap.containsKey(md5)) {
-//            throw ErrorCode.FILE_UPLOADING
-//        }
-//        val file = File(dataPath + "/temp/" + md5)
-//        if (!file.exists()) {
-//            return 0
-//        }
-//        return file.length()
-//    }
-//
-//    /**
-//     * 通过MD5上传
-//     * @param md5 文件md5
-//     * @param path 文件路径
-//     */
-//    @PostMapping("/by_md5")
-//    @ResponseBody
-//    fun byMd5(md5: String, path: String, contentType: String?) {
-//
-//        val storageFileDto = this.storageFileDao.selectByFileMd5(md5)
-//            ?: throw ErrorCode.NO_EXISTS
-//
-//        //添加到DFS文件
-//        this.addDfsFile(super.loginId, storageFileDto, path, contentType)
-//
-//        //删除上传的临时文件
-//        File(dataPath + "/temp/" + md5).delete()
-//
-//        //开启生成缩略图线程
-//        DfsFileHandleUtil.start()
-//    }
-//
+// ByStream 以流的方式上传文件
+// @Post:/by_stream/{md5}
+func ByStream(request *http.Request, md5 string) {
+	uploadingLock.Lock()
+	if _, isExists := uploadingFileMap[md5]; isExists {
+		uploadingLock.Unlock()
+		panic(exception.FILE_UPLOADING())
+	}
+	this.uploadingFileMap[md5] = System.currentTimeMillis()
+	uploadingLock.Unlock()
+
+	//        try {//保存到文件
+	//            val file = File(this.dataPath + "/temp/" + md5)
+	//
+	//            //文件输出流
+	//            FileOutputStream(file, true).use {
+	//                request.inputStream.transferTo(it)
+	////                val stream = request.inputStream
+	////                val data = ByteArray(64 * 1024)
+	////                var len: Int
+	////                while (stream.read(data).also { len = it } != -1) {
+	////                    sleep(10)
+	////                    it.write(data, 0, len)
+	////                }
+	//            }
+	//
+	//            //计算文件的MD5
+	//            val fileMd5 = file.md5
+	//            if (md5 != fileMd5) {
+	//                file.delete()
+	//                throw BusinessException("文件校验失败")
+	//            }
+	//
+	//            //将文件存放到指定目录
+	//            this.dfsFileService.saveToStorageFile(md5, file.inputStream())
+	//            file.delete()
+	//
+	//            //开启生成缩略图线程
+	//            DfsFileHandleUtil.start()
+	//        } finally {
+	//            synchronized(this.uploadingFileMap) {
+	//                this.uploadingFileMap.remove(md5)
+	//            }
+	//        }
+}
+
+// GetUploadedSize 获取文件已经上传大小
+// md5 文件的MD5
+// @Post:/get_uploaded_size
+func GetUploadedSize(md5 string) int64 {
+	_, isExists := uploadingFileMap[md5]
+	if isExists {
+		panic(exception.FILE_UPLOADING())
+	}
+	stat, err := os.Stat(application.TEMP_PATH + "/" + md5)
+	if os.IsNotExist(err) {
+		return 0
+	}
+	return stat.Size()
+}
+
+// stat 通过MD5上传
+// md5 文件md5
+// path 文件路径
+// @Post:/by_md5
+func ç(md5 string, path string, contentType string) {
+	loginId := LoginState.LoginId()
+	storageFileDto, isExists := StorageFileDao.SelectByFileMd5(md5)
+	if !isExists {
+		panic(exception.NO_EXISTS())
+	}
+
+	//添加到DFS文件
+	addDfsFile(loginId, storageFileDto, path, contentType)
+
+	//删除上传的临时文件
+	os.Remove(application.TEMP_PATH + "/" + md5)
+
+	//开启生成缩略图线程
+	DfsFileHandleUtil.NotifyWorker()
+}
 
 /**
  * 添加到DFS文件
