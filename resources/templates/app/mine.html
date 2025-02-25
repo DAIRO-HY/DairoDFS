@@ -95,7 +95,7 @@
 
 <script>
     $(function () {
-        $.ajaxByData("/app/self_set/init").success(data => {
+        $.ajaxByData("/app/mine/init").success(data => {
             $("form").bindValue(data)
         }).post()
     })
@@ -108,7 +108,7 @@
         if (!btnOk) {
             return
         }
-        $.ajaxByData("/app/self_set/make_api_token?flag=" + flag).success(() => history.go(0)).post()
+        $.ajaxByData("/app/mine/make_api_token?flag=" + flag).success(() => history.go(0)).post()
     }
 
     /**
@@ -119,7 +119,7 @@
         if (!btnOk) {
             return
         }
-        $.ajaxByData("/app/self_set/make_url_path?flag=" + flag).success(() => history.go(0)).post()
+        $.ajaxByData("/app/mine/make_url_path?flag=" + flag).success(() => history.go(0)).post()
     }
 
     /**
@@ -130,7 +130,7 @@
         if (!btnOk) {
             return
         }
-        $.ajaxByData("/app/self_set/make_encryption?flag=" + flag).success(() => history.go(0)).post()
+        $.ajaxByData("/app/mine/make_encryption?flag=" + flag).success(() => history.go(0)).post()
     }
 </script>
 </body>

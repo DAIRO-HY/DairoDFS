@@ -12,9 +12,11 @@ import (
 	"DairoDFS/util/DfsFileHandleUtil"
 	"DairoDFS/util/DfsFileUtil"
 	"DairoDFS/util/LoginState"
+	"io"
 	"net/http"
 	"os"
 	"sync"
+	"time"
 )
 
 // 文件上传Controller
@@ -67,47 +69,54 @@ func Upload(request *http.Request, folder string, contentType string) error {
 // ByStream 以流的方式上传文件
 // @Post:/by_stream/{md5}
 func ByStream(request *http.Request, md5 string) {
+	defer func() {
+		uploadingLock.Lock()
+
+		//执行结束之后移除正在上传标记
+		delete(uploadingFileMap, md5)
+		uploadingLock.Unlock()
+	}()
 	uploadingLock.Lock()
 	if _, isExists := uploadingFileMap[md5]; isExists {
 		uploadingLock.Unlock()
 		panic(exception.FILE_UPLOADING())
 	}
-	this.uploadingFileMap[md5] = System.currentTimeMillis()
+	uploadingFileMap[md5] = time.Now().UnixMilli()
 	uploadingLock.Unlock()
 
-	//        try {//保存到文件
-	//            val file = File(this.dataPath + "/temp/" + md5)
-	//
-	//            //文件输出流
-	//            FileOutputStream(file, true).use {
-	//                request.inputStream.transferTo(it)
-	////                val stream = request.inputStream
-	////                val data = ByteArray(64 * 1024)
-	////                var len: Int
-	////                while (stream.read(data).also { len = it } != -1) {
-	////                    sleep(10)
-	////                    it.write(data, 0, len)
-	////                }
-	//            }
-	//
-	//            //计算文件的MD5
-	//            val fileMd5 = file.md5
-	//            if (md5 != fileMd5) {
-	//                file.delete()
-	//                throw BusinessException("文件校验失败")
-	//            }
-	//
-	//            //将文件存放到指定目录
-	//            this.dfsFileService.saveToStorageFile(md5, file.inputStream())
-	//            file.delete()
-	//
-	//            //开启生成缩略图线程
-	//            DfsFileHandleUtil.start()
-	//        } finally {
-	//            synchronized(this.uploadingFileMap) {
-	//                this.uploadingFileMap.remove(md5)
-	//            }
-	//        }
+	//保存文件
+	tempPath := application.TEMP_PATH + "/" + md5
+
+	//以追加的方式打开文件
+	writeFile, openFileErr := os.OpenFile(tempPath, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
+	if openFileErr != nil {
+		panic(openFileErr)
+	}
+	defer func() { //最终关闭流并删除临时文件
+		writeFile.Close()
+	}()
+
+	//保存文件
+	_, copyErr := io.Copy(writeFile, request.Body)
+	if copyErr != nil { //可能与客户端中断的情况
+		panic(copyErr)
+		return
+	}
+
+	//计算文件的MD5
+	fileMd5 := File.ToMd5(tempPath)
+	if md5 != fileMd5 {
+		writeFile.Close()
+		os.Remove(tempPath)
+		panic(exception.Biz("文件校验失败"))
+	}
+
+	//将文件存放到指定目录
+	DfsFileService.SaveToStorageFileByPath(md5, tempPath)
+
+	//文件上传成功，删除临时文件
+	writeFile.Close()
+	os.Remove(tempPath)
 }
 
 // GetUploadedSize 获取文件已经上传大小
@@ -129,7 +138,7 @@ func GetUploadedSize(md5 string) int64 {
 // md5 文件md5
 // path 文件路径
 // @Post:/by_md5
-func ç(md5 string, path string, contentType string) {
+func ByMd5(md5 string, path string, contentType string) {
 	loginId := LoginState.LoginId()
 	storageFileDto, isExists := StorageFileDao.SelectByFileMd5(md5)
 	if !isExists {
@@ -146,13 +155,11 @@ func ç(md5 string, path string, contentType string) {
 	DfsFileHandleUtil.NotifyWorker()
 }
 
-/**
- * 添加到DFS文件
- * @param userId 会员id
- * @param storageFileDto 本地文件Dto
- * @param path DFS文件路径
- * @param fileContentType 文件类型
- */
+// 添加到DFS文件
+// userId 会员id
+// storageFileDto 本地文件Dto
+// path DFS文件路径
+// fileContentType 文件类型
 func addDfsFile(userId int64, storageFileDto dto.StorageFileDto, path string, fileContentType string) {
 
 	//文件名

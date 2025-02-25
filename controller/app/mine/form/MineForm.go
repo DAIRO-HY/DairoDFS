@@ -1,6 +1,6 @@
 package form
 
-type SelfSetForm struct {
+type MineForm struct {
 
 	/** 主键 **/
 	Id int64 `json:"id"`

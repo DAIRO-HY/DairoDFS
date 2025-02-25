@@ -27,7 +27,7 @@ func Init(writer http.ResponseWriter, request *http.Request) {
 }
 
 /** 用户登录 */
-//@Post:/do-login
+//@Post:/do_login
 func DoLogin(request *http.Request, loginForm form.LoginAppInForm, _clientFlag int, _version int) form.LoginAppOutForm {
 	userDto, _ := UserDao.SelectByName(loginForm.Name)
 

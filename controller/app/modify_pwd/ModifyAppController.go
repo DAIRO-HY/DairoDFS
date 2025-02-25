@@ -19,10 +19,9 @@ func Html() {}
 
 // 修改密码
 // @Post:/modify
-func Modify(inForm form.ModifyPwdAppForm) error {
+func Modify(inForm form.ModifyPwdAppForm) {
 	userId := LoginState.LoginId()
 	newPwd := String.ToMd5(inForm.Pwd)
 	UserDao.SetPwd(userId, newPwd)
 	UserTokenDao.DeleteByUserId(userId)
-	return nil
 }

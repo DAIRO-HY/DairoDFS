@@ -26,9 +26,9 @@ func Init(writer http.ResponseWriter, request *http.Request) {
 
 // 账号初始化API
 // @Post:/add_admin
-func AddAdmin(inForm form.CreateAdminForm) any {
+func AddAdmin(inForm form.CreateAdminForm) {
 	if UserDao.IsInit() { //管理员用户只能被创建一次
-		return exception.NOT_ALLOW()
+		panic(exception.NOT_ALLOW())
 	}
 	pwd := String.ToMd5(inForm.Pwd)
 	state := int8(1)
@@ -39,5 +39,4 @@ func AddAdmin(inForm form.CreateAdminForm) any {
 		State: state,
 	}
 	UserService.Add(userDto)
-	return nil
 }

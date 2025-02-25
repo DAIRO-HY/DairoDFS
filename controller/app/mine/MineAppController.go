@@ -1,8 +1,8 @@
-package self_set
+package mine
 
 import (
-	application "DairoDFS/application"
-	"DairoDFS/controller/app/self_set/form"
+	"DairoDFS/application"
+	"DairoDFS/controller/app/mine/form"
 	"DairoDFS/dao/UserDao"
 	"DairoDFS/extension/Date"
 	"DairoDFS/extension/String"
@@ -13,20 +13,18 @@ import (
 )
 
 // 系统设置
-//@Group:/app/self_set
+//@Group:/app/mine
 
 // 页面初始化
 // @Html:.html
 func Html() {}
 
-/**
- * 页面初始化
- */
-//@Post:/init
-func Init() form.SelfSetForm {
+// 页面初始化
+// @Post:/init
+func Init() form.MineForm {
 	loginId := LoginState.LoginId()
 	userDto, _ := UserDao.SelectOne(loginId)
-	return form.SelfSetForm{
+	return form.MineForm{
 		Id:            userDto.Id,
 		Name:          userDto.Name,
 		Email:         userDto.Email,

@@ -414,6 +414,18 @@ func ShareSaveTo(shareUserId int64, userId int64, sourcePaths []string, targetFo
 	}
 }
 
+// 保存文件到本地磁盘
+// md5 文件md5
+// path 文件路径
+func SaveToStorageFileByPath(md5 string, path string) dto.StorageFileDto {
+	file, err := os.Open(path)
+	if err != nil {
+		panic(err)
+	}
+	defer file.Close()
+	return SaveToStorageFile(md5, file)
+}
+
 /**
  * 保存文件到本地磁盘
  * @param md5 文件md5
