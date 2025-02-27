@@ -18,7 +18,7 @@ type MyShareDetailForm struct {
 	Names string `json:"names"`
 
 	/** 结束日期 **/
-	EndDate string `json:"end_date"`
+	EndDate string `json:"endDate"`
 
 	/** 创建日期 **/
 	Date string `json:"date"`

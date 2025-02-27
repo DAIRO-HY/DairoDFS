@@ -15,14 +15,18 @@ import (
 // @exclude:/app/login**,/app/install**,/distributed**
 // @order:1
 func LoginValidate(writer http.ResponseWriter, request *http.Request) bool {
+	urlQuery := request.URL.Query()
+	token := urlQuery.Get("_token")
+	if token == "" { //如果url参数中没有token信息，则从cookie中获取
 
-	//获取APP登录票据
-	cookieToken, _ := request.Cookie("token")
-	if cookieToken == nil {
-		reject(writer, request)
-		return false
+		//获取登录票据
+		cookieToken, _ := request.Cookie("token")
+		if cookieToken == nil {
+			reject(writer, request)
+			return false
+		}
+		token = cookieToken.Value
 	}
-	token := cookieToken.Value
 	if len(token) == 0 {
 		reject(writer, request)
 		return false

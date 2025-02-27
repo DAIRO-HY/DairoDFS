@@ -66,11 +66,11 @@ func GetList() []form.MyShareForm {
 // 获取分享详细
 // id 分享id
 // @Post:/get_detail
-func GetDetail(id int64) any {
+func GetDetail(id int64) form.MyShareDetailForm {
 	loginId := LoginState.LoginId()
 	shareDto, _ := ShareDao.SelectOne(id)
 	if shareDto.UserId != loginId {
-		return exception.NOT_ALLOW()
+		panic(exception.NOT_ALLOW())
 	}
 	folder := shareDto.Folder
 	if folder == "" {

@@ -18,6 +18,7 @@ import (
 	"DairoDFS/util/VideoUtil"
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"math"
 	"os"
 	"path/filepath"
@@ -62,29 +63,45 @@ func start() {
 				break
 			}
 			for _, it := range dfsList {
-				startTime := time.Now().UnixMilli()
-
-				//设置文件属性
-				if err := makeProperty(it); err != nil {
-					DfsFileDao.SetState(it.Id, 2, err.Error())
-					continue
-				}
-
-				//生成附属文件，如标清视频，高清视频，raw预览图片
-				if err := makeExtra(it); err != nil {
-					DfsFileDao.SetState(it.Id, 2, err.Error())
-					continue
-				}
-
-				//耗时
-				measureTime := time.Now().UnixMilli() - startTime
-				DfsFileDao.SetState(it.Id, 1, "耗时:"+String.ValueOf(int(float64(measureTime)/1000/60))+"分")
+				handle(it)
 			}
 		}
 		cond.L.Lock()
 		hasData = false
 		cond.L.Unlock()
 	}
+}
+
+// 处理数据
+func handle(it dto.DfsFileDto) {
+	defer func() {
+		if r := recover(); r != nil { //处理错误
+			var errMsg string
+			switch rType := r.(type) {
+			case string:
+				errMsg = rType
+			case error:
+				errMsg = rType.Error()
+			default:
+				errMsg = fmt.Sprintf("%q", r)
+			}
+			DfsFileDao.SetState(it.Id, 2, errMsg)
+		}
+	}()
+	startTime := time.Now().UnixMilli()
+
+	//设置文件属性
+	if err := makeProperty(it); err != nil {
+		DfsFileDao.SetState(it.Id, 2, err.Error())
+		return
+	}
+
+	//生成附属文件，如标清视频，高清视频，raw预览图片
+	makeExtra(it)
+
+	//耗时
+	measureTime := time.Now().UnixMilli() - startTime
+	DfsFileDao.SetState(it.Id, 1, "耗时:"+String.ValueOf(int(float64(measureTime)/1000/60))+"分")
 }
 
 /**
@@ -148,7 +165,7 @@ func makeProperty(dfsFileDto dto.DfsFileDto) error {
 /**
  * 生成附属文件，如标清视频，高清视频，raw预览图片
  */
-func makeExtra(dfsFileDto dto.DfsFileDto) error {
+func makeExtra(dfsFileDto dto.DfsFileDto) {
 	existsExtraList := DfsFileDao.SelectExtraFileByStorageId(dfsFileDto.StorageId)
 	if len(existsExtraList) > 0 { //该文件已经存在了附属文件,直接使用
 		for _, it := range existsExtraList {
@@ -166,17 +183,14 @@ func makeExtra(dfsFileDto dto.DfsFileDto) error {
 			}
 			DfsFileDao.Add(extraDto)
 		}
-		return nil
+		return
 	}
 
 	//获取缩略图
-	makeThumbErr := makeThumb(dfsFileDto)
-	if makeThumbErr != nil {
-		return makeThumbErr
-	}
+	makeThumb(dfsFileDto)
 	localDto, isExistsStorageFile := StorageFileDao.SelectOne(dfsFileDto.StorageId)
 	if !isExistsStorageFile { //理论上没有不存在的本地文件
-		return exception.Biz("文件：" + String.ValueOf(dfsFileDto.StorageId) + "不存在")
+		panic(exception.Biz("文件：" + String.ValueOf(dfsFileDto.StorageId) + "不存在"))
 	}
 	path := localDto.Path
 	lowerName := strings.ToLower(dfsFileDto.Name)
@@ -204,11 +218,11 @@ func makeExtra(dfsFileDto dto.DfsFileDto) error {
 		//获取已经存在的附属文件
 		_, isExists := DfsFileDao.SelectExtra(dfsFileDto.Id, "preview")
 		if isExists { //已经存在附属文件,则跳过  重新生成附属文件时用到
-			return nil
+			return
 		}
 		pngData, err := PSDUtil.ToPng(path)
 		if err != nil {
-			return err
+			return
 		}
 		md5 := File.ToMd5ByBytes(pngData)
 
@@ -237,7 +251,7 @@ func makeExtra(dfsFileDto dto.DfsFileDto) error {
 		strings.HasSuffix(lowerName, ".3gp") {
 		videoInfo, err := VideoUtil.GetInfo(path)
 		if err != nil {
-			return err
+			panic(err)
 		}
 
 		//要转换的目标尺寸
@@ -292,7 +306,7 @@ func makeExtra(dfsFileDto dto.DfsFileDto) error {
 			targetPathRelative := application.DataPath + "/temp/" + String.ValueOf(time.Now().UnixMicro())
 			targetPath, _ := filepath.Abs(targetPathRelative)
 			if err := VideoUtil.Transfer(path, targetW, targetH, targetFps, targetPath); err != nil {
-				return err
+				panic(err)
 			}
 			md5 := File.ToMd5(targetPath)
 
@@ -323,11 +337,11 @@ func makeExtra(dfsFileDto dto.DfsFileDto) error {
 		//获取已经存在的附属文件
 		_, isExists := DfsFileDao.SelectExtra(dfsFileDto.Id, "preview")
 		if isExists { //已经存在附属文件,则跳过  重新生成附属文件时用到
-			return nil
+			return
 		}
 		jpgData, err := RawUtil.ToJpg(path)
 		if err != nil {
-			return err
+			return
 		}
 		md5 := File.ToMd5ByBytes(jpgData)
 
@@ -348,16 +362,15 @@ func makeExtra(dfsFileDto dto.DfsFileDto) error {
 		DfsFileDao.Add(extraDto)
 	} else {
 	}
-	return nil
 }
 
 /**
  * 生成缩略图
  */
-func makeThumb(dfsFileDto dto.DfsFileDto) error {
+func makeThumb(dfsFileDto dto.DfsFileDto) {
 	localDto, isExists := StorageFileDao.SelectOne(dfsFileDto.StorageId)
 	if !isExists {
-		return exception.Biz("本地文件ID:" + String.ValueOf(dfsFileDto.StorageId) + "不存在")
+		panic(exception.Biz("本地文件ID:" + String.ValueOf(dfsFileDto.StorageId) + "不存在"))
 	}
 	path := localDto.Path
 
@@ -404,10 +417,10 @@ func makeThumb(dfsFileDto dto.DfsFileDto) error {
 		//专业相机RAW图片
 		data, makeThumbErr = RawUtil.Thumb(path, width, height)
 	} else { //无需生成缩略图
-		return nil
+		return
 	}
 	if makeThumbErr != nil {
-		return makeThumbErr
+		panic(makeThumbErr)
 	}
 
 	//计算缩略图的md5
@@ -429,5 +442,5 @@ func makeThumb(dfsFileDto dto.DfsFileDto) error {
 		State:       1,
 		ContentType: DfsFileUtil.DfsContentType("jpeg"),
 	}
-	return DfsFileDao.Add(extraDto)
+	DfsFileDao.Add(extraDto)
 }

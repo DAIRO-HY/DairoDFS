@@ -6,6 +6,7 @@ import (
 	"DairoDFS/dao/StorageFileDao"
 	"DairoDFS/dao/dto"
 	"DairoDFS/exception"
+	"DairoDFS/extension/String"
 	"bufio"
 	"embed"
 	_ "embed"
@@ -225,6 +226,9 @@ func DownloadDfs(dfsFile dto.DfsFileDto, writer http.ResponseWriter, request *ht
 		writer.WriteHeader(http.StatusNotFound)
 		return
 	}
+
+	//为了方式防止暴露文件真正的MD5，这里将MD5再次加密
+	writer.Header().Set("Content-MD5", String.ToMd5(storageFile.Md5))
 	Download(storageFile.Path, writer, request)
 }
 
@@ -291,6 +295,9 @@ func Download(path string, writer http.ResponseWriter, request *http.Request) {
 		writer.WriteHeader(http.StatusOK)
 	} else {
 		writer.WriteHeader(http.StatusPartialContent)
+	}
+	if request.Method == http.MethodHead { //只需要请求头部信息
+		return
 	}
 
 	//跳过前面部分数据

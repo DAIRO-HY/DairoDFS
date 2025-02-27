@@ -9,8 +9,8 @@ import (
 /**
  * 添加一条数据
  */
-func Add(fileDto dto.DfsFileDto) error {
-	_, err := DBUtil.Insert("insert into dfs_file(id, userId, parentId, name, size, contentType, storageId, date, isExtra, property, state) values (?,?,?,?,?,?,?,?,?,?,?)",
+func Add(fileDto dto.DfsFileDto) {
+	DBUtil.InsertIgnoreError("insert into dfs_file(id, userId, parentId, name, size, contentType, storageId, date, isExtra, property, state) values (?,?,?,?,?,?,?,?,?,?,?)",
 		fileDto.Id,
 		fileDto.UserId,
 		fileDto.ParentId,
@@ -22,7 +22,6 @@ func Add(fileDto dto.DfsFileDto) error {
 		fileDto.IsExtra,
 		fileDto.Property,
 		fileDto.State)
-	return err
 }
 
 /**

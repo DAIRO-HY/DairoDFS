@@ -45,15 +45,12 @@ func GetList(folder string) []form.FileForm {
 	return forms
 }
 
-//
-//    @Operation(summary = "获取扩展文件的所有key值")
-//    @PostMapping("/get_extra_keys")
-//    @ResponseBody
-//    fun getExtraKeys(
-//        @Parameter(name = "文件id") @RequestParam("id", required = true) id: Long
-//    ): List<String> {
-//        return this.dfsFileDao.selectExtraNames(id)
-//    }
+// 获取扩展文件的所有key值
+// id 文件id
+// @Post:/get_extra_keys
+func GetExtraKeys(id int64) []string {
+	return DfsFileDao.SelectExtraNames(id)
+}
 
 // 创建文件夹
 // @Post:/create_folder
@@ -241,7 +238,7 @@ func DownloadByHistory(writer http.ResponseWriter, request *http.Request, id int
 // dfsId dfs文件ID
 // name 文件名
 // extra 要预览的附属文件名
-// @Get:/preview/{dfsId}/{name}
+// @Request:/preview/{dfsId}/{name}
 func Preview(writer http.ResponseWriter, request *http.Request, dfsId int64, name string, extra string) {
 	loginId := LoginState.LoginId()
 	dfsDto, isExists := DfsFileDao.SelectOne(dfsId)
@@ -276,7 +273,7 @@ func Preview(writer http.ResponseWriter, request *http.Request, dfsId int64, nam
 // name 文件名
 // folder 所在文件夹
 // @TODO:这里应该改成文件id访问，防止客户端缓存冲突
-// @Get:/download/
+// @Request:/download/
 func Download(writer http.ResponseWriter, request *http.Request) {
 	loginId := LoginState.LoginId()
 	filePath := request.URL.Path

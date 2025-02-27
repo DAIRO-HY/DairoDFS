@@ -19,9 +19,9 @@ import (
  * 文件操作Service
  */
 
-/**
- * 添加一个文件或文件夹
- */
+// 添加一个文件或文件夹
+// fileDto 文件信息
+// isOverWrite 是否覆盖，true时，将原来的文件设置为历史文件
 func AddFile(fileDto dto.DfsFileDto, isOverWrite bool) {
 	if fileDto.StorageId == 0 {
 		panic(exception.Biz("本地存储文件ID不能为空"))
@@ -40,12 +40,12 @@ func AddFile(fileDto dto.DfsFileDto, isOverWrite bool) {
 	}
 	fileDto.Date = time.Now().UnixMilli()
 	fileDto.Id = Number.ID()
-
-	//添加文件
-	DfsFileDao.Add(fileDto)
 	if isExists && isOverWrite { //将已经存在的文件标记为历史版本
 		DfsFileDao.SetHistory(existDto.Id)
 	}
+
+	//添加文件
+	DfsFileDao.Add(fileDto)
 }
 
 /**
