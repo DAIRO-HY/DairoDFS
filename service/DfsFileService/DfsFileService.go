@@ -15,9 +15,13 @@ import (
 	"time"
 )
 
-/**
- * 文件操作Service
- */
+// 往数据库添加一条数据
+func Add(fileDto dto.DfsFileDto) {
+	if fileDto.IsFile() { // 判断是否相册数据
+		fileDto.IsAlbum = DfsFileUtil.IsAlbum(fileDto.Name)
+	}
+	DfsFileDao.Add(fileDto)
+}
 
 // 添加一个文件或文件夹
 // fileDto 文件信息
@@ -45,12 +49,10 @@ func AddFile(fileDto dto.DfsFileDto, isOverWrite bool) {
 	}
 
 	//添加文件
-	DfsFileDao.Add(fileDto)
+	Add(fileDto)
 }
 
-/**
- * 添加文件夹
- */
+// 添加文件夹
 func AddFolder(folderDto dto.DfsFileDto) {
 	_, isExists := DfsFileDao.SelectByParentIdAndName(folderDto.UserId, folderDto.ParentId, folderDto.Name)
 	if isExists {
@@ -58,7 +60,7 @@ func AddFolder(folderDto dto.DfsFileDto) {
 	}
 	folderDto.StorageId = 0
 	folderDto.Date = time.Now().UnixMilli()
-	DfsFileDao.Add(folderDto)
+	Add(folderDto)
 }
 
 /**

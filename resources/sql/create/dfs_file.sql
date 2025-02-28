@@ -11,6 +11,7 @@ CREATE TABLE dfs_file
     date        INT8                        NOT NULL,           -- 创建日期
     property    TEXT                        NULL,               -- 文件属性，比如图片尺寸，视频分辨率等信息，JSON字符串
     isExtra     INT1                        NOT NULL DEFAULT 0, -- 是否附属文件，比如视频的标清文件，高清文件，PSD图片的预览图片，cr3的预览图片等
+    isAlbum     INT1                        NOT NULL DEFAULT 0, -- 是否相册专用文件(视频、图片)
     isHistory   INT1                        NOT NULL DEFAULT 0, -- 是否历史版本(文件专用),1:历史版本 0:当前版本
     deleteDate  INT8                        NULL,               -- 删除日期
     state       INT1                        NOT NULL DEFAULT 0, -- 文件处理状态，0：待处理 1：处理完成 2：处理出错，比如视频文件，需要转码；图片需要获取尺寸等信息
@@ -18,6 +19,7 @@ CREATE TABLE dfs_file
 );
 CREATE INDEX idx_userId ON dfs_file (userId);
 CREATE INDEX idx_isExtra ON dfs_file (isExtra);
+CREATE INDEX idx_isAlbum ON dfs_file (isAlbum);
 
 -- 非历史文件且未删除时，同一文件夹下文件名不允许重复
 CREATE UNIQUE INDEX idx_name

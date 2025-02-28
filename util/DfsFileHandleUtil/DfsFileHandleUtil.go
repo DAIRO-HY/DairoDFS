@@ -181,7 +181,7 @@ func makeExtra(dfsFileDto dto.DfsFileDto) {
 				State:       1,
 				ContentType: it.ContentType,
 			}
-			DfsFileDao.Add(extraDto)
+			DfsFileService.Add(extraDto)
 		}
 		return
 	}
@@ -240,7 +240,7 @@ func makeExtra(dfsFileDto dto.DfsFileDto) {
 			State:       1,
 			ContentType: "image/png",
 		}
-		DfsFileDao.Add(extraDto)
+		DfsFileService.Add(extraDto)
 	} else if strings.HasSuffix(lowerName, ".mp4") ||
 		strings.HasSuffix(lowerName, ".mov") ||
 		strings.HasSuffix(lowerName, ".avi") ||
@@ -330,7 +330,7 @@ func makeExtra(dfsFileDto dto.DfsFileDto) {
 				ContentType: "video/mp4",
 				State:       1,
 			}
-			DfsFileDao.Add(extraDto)
+			DfsFileService.Add(extraDto)
 		}
 	} else if strings.HasSuffix(lowerName, ".cr3") || strings.HasSuffix(lowerName, ".cr2") {
 
@@ -359,7 +359,7 @@ func makeExtra(dfsFileDto dto.DfsFileDto) {
 			ContentType: "image/jpeg",
 			State:       1,
 		}
-		DfsFileDao.Add(extraDto)
+		DfsFileService.Add(extraDto)
 	} else {
 	}
 }
@@ -442,5 +442,5 @@ func makeThumb(dfsFileDto dto.DfsFileDto) {
 		State:       1,
 		ContentType: DfsFileUtil.DfsContentType("jpeg"),
 	}
-	DfsFileDao.Add(extraDto)
+	DfsFileService.Add(extraDto)
 }

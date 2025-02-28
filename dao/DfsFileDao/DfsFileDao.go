@@ -10,7 +10,7 @@ import (
  * 添加一条数据
  */
 func Add(fileDto dto.DfsFileDto) {
-	DBUtil.InsertIgnoreError("insert into dfs_file(id, userId, parentId, name, size, contentType, storageId, date, isExtra, property, state) values (?,?,?,?,?,?,?,?,?,?,?)",
+	DBUtil.InsertIgnoreError("insert into dfs_file(id, userId, parentId, name, size, contentType, storageId, date, isExtra, isAlbum, property, state) values (?,?,?,?,?,?,?,?,?,?,?,?)",
 		fileDto.Id,
 		fileDto.UserId,
 		fileDto.ParentId,
@@ -20,6 +20,7 @@ func Add(fileDto dto.DfsFileDto) {
 		fileDto.StorageId,
 		fileDto.Date,
 		fileDto.IsExtra,
+		fileDto.IsAlbum,
 		fileDto.Property,
 		fileDto.State)
 }
@@ -95,8 +96,8 @@ func SelectSubFileIdAndName(userId int64, parentId int64) []dto.DfsFileDto {
  * @param parentId 文件夹id
  * @return 子文件列表
  */
-func SelectSubFile(userId int64, parentId int64) []dto.DfsFileThumbDto {
-	return DBUtil.SelectList[dto.DfsFileThumbDto](`select df.id, df.name, df.size, df.date, df.storageId, thumbDf.id > 0 as hasThumb
+func SelectSubFile(userId int64, parentId int64) []dto.DfsFileDto {
+	return DBUtil.SelectList[dto.DfsFileDto](`select df.id, df.name, df.size, df.date, df.storageId, thumbDf.id > 0 as hasThumb
         from dfs_file as df
                  left join dfs_file as thumbDf
                            on thumbDf.parentId = df.id and df.storageId > 0 and thumbDf.name = 'thumb'
@@ -106,12 +107,24 @@ func SelectSubFile(userId int64, parentId int64) []dto.DfsFileThumbDto {
           and df.deleteDate is null`, userId, parentId)
 }
 
+// 获取相册数据
+func SelectAlbum(userId int64) []dto.DfsFileDto {
+	return DBUtil.SelectList[dto.DfsFileDto](`select df.id, df.name, df.size, df.date, df.storageId, thumbDf.id > 0 as hasThumb
+        from dfs_file as df
+                 left join dfs_file as thumbDf
+                           on thumbDf.parentId = df.id and df.storageId > 0 and thumbDf.name = 'thumb'
+        where df.userId = ?
+          and df.isHistory = 0
+          and df.isAlbum = 1
+          and df.deleteDate is null`, userId)
+}
+
 /**
  * 获取全部已经删除的文件
  * @param userId 用户ID
  * @return 已删除的文件
  */
-func SelectDelete(userId int64) []dto.DfsFileThumbDto {
+func SelectDelete(userId int64) []dto.DfsFileDto {
 	sql := `select df.id, df.name, df.size, df.storageId, df.deleteDate, thumbDf.id > 0 as hasThumb
         from dfs_file as df
                  left join dfs_file as thumbDf
@@ -119,7 +132,7 @@ func SelectDelete(userId int64) []dto.DfsFileThumbDto {
         where df.userId = ?
           and df.isHistory = 0
           and df.deleteDate is not null`
-	return DBUtil.SelectList[dto.DfsFileThumbDto](sql, userId)
+	return DBUtil.SelectList[dto.DfsFileDto](sql, userId)
 }
 
 /**

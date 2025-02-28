@@ -65,7 +65,7 @@ func findThumb(userId int64, folder string, names []string) int64 {
 	subFiles := DfsFileDao.SelectSubFile(userId, folderId)
 
 	//文件名对应的文件信息
-	name2file := make(map[string]dto.DfsFileThumbDto)
+	name2file := make(map[string]dto.DfsFileDto)
 	for _, it := range subFiles {
 		if it.HasThumb {
 			name2file[it.Name] = it

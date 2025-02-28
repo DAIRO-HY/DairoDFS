@@ -50,7 +50,7 @@ func reject(writer http.ResponseWriter, request *http.Request) {
 		writer.WriteHeader(http.StatusInternalServerError) // 设置状态码
 		jsonData, _ := json.Marshal(exception.NO_LOGIN())
 		writer.Write(jsonData)
-	} else {
+	} else { //TODO：这里可能需要为客户端做一些处理
 		http.Redirect(writer, request, "/app/login", http.StatusFound)
 		//if (request.getHeader("range") != null) {//可能来自客户端下载
 		//    response.status = 500

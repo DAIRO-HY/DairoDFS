@@ -113,7 +113,7 @@ func GetList(request *http.Request, eid string, folder string) any {
 	userId := shareDto.UserId
 
 	//文件列表
-	fileList := make([]dto.DfsFileThumbDto, 0)
+	fileList := make([]dto.DfsFileDto, 0)
 	if folder == "" { //所分享目录的根目录，并非用户跟目录
 
 		//得到分享的父文件夹ID

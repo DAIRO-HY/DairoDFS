@@ -69,6 +69,38 @@ func DfsContentType(ext string) string {
 	return "application/octet-stream" //未知文件类型
 }
 
+// 是否相册数据
+func IsAlbum(name string) bool {
+	lowerName := strings.ToLower(name)
+	return strings.HasSuffix(lowerName, ".jpg") ||
+		strings.HasSuffix(lowerName, ".jpeg") ||
+		strings.HasSuffix(lowerName, ".png") ||
+		strings.HasSuffix(lowerName, ".bmp") ||
+		strings.HasSuffix(lowerName, ".gif") ||
+		strings.HasSuffix(lowerName, ".ico") ||
+		strings.HasSuffix(lowerName, ".svg") ||
+		strings.HasSuffix(lowerName, ".tiff") ||
+		strings.HasSuffix(lowerName, ".webp") ||
+		strings.HasSuffix(lowerName, ".wmf") ||
+		strings.HasSuffix(lowerName, ".wmz") ||
+		strings.HasSuffix(lowerName, ".jp2") ||
+		strings.HasSuffix(lowerName, ".eps") ||
+		strings.HasSuffix(lowerName, ".tga") ||
+		strings.HasSuffix(lowerName, ".jfif") ||
+		strings.HasSuffix(lowerName, ".psb") ||
+		strings.HasSuffix(lowerName, ".ai") ||
+		strings.HasSuffix(lowerName, ".mp4") ||
+		strings.HasSuffix(lowerName, ".mov") ||
+		strings.HasSuffix(lowerName, ".avi") ||
+		strings.HasSuffix(lowerName, ".mkv") ||
+		strings.HasSuffix(lowerName, ".flv") ||
+		strings.HasSuffix(lowerName, ".rm") ||
+		strings.HasSuffix(lowerName, ".rmvb") ||
+		strings.HasSuffix(lowerName, ".3gp") ||
+		strings.HasSuffix(lowerName, ".cr3") ||
+		strings.HasSuffix(lowerName, ".cr2")
+}
+
 /**
  * 判断储存路径的磁盘剩余容量,选择合适的目录
  */
