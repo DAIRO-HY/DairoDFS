@@ -15,7 +15,7 @@ type AlbumForm struct {
 	FileFlag bool `json:"fileFlag"`
 
 	/** 创建日期 **/
-	Date string `json:"date"`
+	Date int64 `json:"date"`
 
 	/** 缩率图 **/
 	Thumb string `json:"thumb"`
@@ -23,8 +23,8 @@ type AlbumForm struct {
 	/** 属性 **/
 	//Property string `json:"property"`
 
-	/** 拍摄时间 **/
-	CameraDate int64 `json:"cameraDate"`
+	///** 拍摄时间 **/
+	//CameraDate int64 `json:"cameraDate"`
 
 	/** 相机名 **/
 	CameraName string `json:"cameraName"`
