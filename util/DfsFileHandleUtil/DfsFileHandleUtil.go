@@ -315,8 +315,8 @@ func makeExtra(dfsFileDto dto.DfsFileDto) {
 
 			//保存到本地文件
 			storageFileDto := DfsFileService.SaveToStorageFile(md5, targetFile)
-			targetFile.Close()
-			os.Remove(targetPath)
+			_ = targetFile.Close()
+			_ = os.Remove(targetPath)
 
 			extraDto := dto.DfsFileDto{
 				Id:          Number.ID(),
@@ -380,8 +380,9 @@ func makeThumb(dfsFileDto dto.DfsFileDto) {
 	//生成缩略图过程中出现的错误
 	var makeThumbErr error
 	lowerName := strings.ToLower(dfsFileDto.Name)
-	width := 300
-	height := 300
+
+	//生成目标图片最大边
+	targetMaxSize := 360
 	if strings.HasSuffix(lowerName, ".jpg") ||
 		strings.HasSuffix(lowerName, ".jpeg") ||
 		strings.HasSuffix(lowerName, ".png") ||
@@ -397,11 +398,11 @@ func makeThumb(dfsFileDto dto.DfsFileDto) {
 		strings.HasSuffix(lowerName, ".eps") ||
 		strings.HasSuffix(lowerName, ".tga") ||
 		strings.HasSuffix(lowerName, ".jfif") {
-		data, makeThumbErr = ImageUtil.ThumbByFile(path, width, height)
+		data, makeThumbErr = ImageUtil.ThumbByFile(path, targetMaxSize)
 	} else if strings.HasSuffix(lowerName, ".psd") ||
 		strings.HasSuffix(lowerName, ".psb") ||
 		strings.HasSuffix(lowerName, ".ai") {
-		data, makeThumbErr = PSDUtil.Thumb(path, width, height)
+		data, makeThumbErr = PSDUtil.Thumb(path, targetMaxSize)
 	} else if strings.HasSuffix(lowerName, ".mp4") ||
 		strings.HasSuffix(lowerName, ".mov") ||
 		strings.HasSuffix(lowerName, ".avi") ||
@@ -410,12 +411,12 @@ func makeThumb(dfsFileDto dto.DfsFileDto) {
 		strings.HasSuffix(lowerName, ".rm") ||
 		strings.HasSuffix(lowerName, ".rmvb") ||
 		strings.HasSuffix(lowerName, ".3gp") {
-		data, makeThumbErr = VideoUtil.Thumb(path, width, height)
+		data, makeThumbErr = VideoUtil.Thumb(path, targetMaxSize)
 	} else if strings.HasSuffix(lowerName, ".cr3") ||
 		strings.HasSuffix(lowerName, ".cr2") {
 
 		//专业相机RAW图片
-		data, makeThumbErr = RawUtil.Thumb(path, width, height)
+		data, makeThumbErr = RawUtil.Thumb(path, targetMaxSize)
 	} else { //无需生成缩略图
 		return
 	}

@@ -56,3 +56,6 @@ func TestMakeRandNumber(t *testing.T) {
 func TestMakeRandStr(t *testing.T) {
 	fmt.Println(MakeRandStr(32))
 }
+func TestFileExt(t *testing.T) {
+	fmt.Println(FileExt("sfsdfsd.txt"))
+}

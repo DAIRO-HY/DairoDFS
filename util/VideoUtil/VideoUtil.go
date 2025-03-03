@@ -19,14 +19,14 @@ import (
  * @param maxHeight 图片最大高度
  * @return 图片字节数组
  */
-func Thumb(path string, maxWidth int, maxHeight int) ([]byte, error) {
+func Thumb(path string, tagetMaxSize int) ([]byte, error) {
 
 	//获取视频第一帧作为缩略图
 	jpgData, cmdErr := ShellUtil.ExecToOkData("\"" + application.FfmpegPath + "/ffmpeg\" -i \"" + path + "\" -vf select=eq(n\\,0) -q:v 1 -f image2pipe -vcodec mjpeg -")
 	if cmdErr != nil {
 		return nil, cmdErr
 	}
-	return ImageUtil.ThumbByData(jpgData, maxWidth, maxHeight)
+	return ImageUtil.ThumbByData(jpgData, tagetMaxSize)
 }
 
 /**

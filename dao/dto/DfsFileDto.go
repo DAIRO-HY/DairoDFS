@@ -14,6 +14,9 @@ type DfsFileDto struct {
 	// 名称
 	Name string
 
+	//文件扩展名（方便查询指定扩展名的文件，比如电影，图片等）
+	Ext string
+
 	// 大小
 	Size int64
 
@@ -31,9 +34,6 @@ type DfsFileDto struct {
 
 	// 是否附属文件，比如视频的标清文件，高清文件，PSD图片的预览图片，cr3的预览图片等
 	IsExtra bool
-
-	//是否相册专用文件(视频、图片)
-	IsAlbum bool
 
 	// 是否历史版本(文件专用),1:历史版本 0:当前版本
 	IsHistory bool

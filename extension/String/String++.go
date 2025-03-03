@@ -34,9 +34,7 @@ func FileName(path string) string {
 	return path[splitIndex+1:]
 }
 
-/**
- * 获取文件后缀名
- */
+// 获取文件后缀名
 func FileExt(path string) string {
 	splitIndex := strings.LastIndex(path, ".")
 	if splitIndex == -1 { //根目录文件,没有父级文件夹

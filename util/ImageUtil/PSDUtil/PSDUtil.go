@@ -9,12 +9,12 @@ import (
 /**
  * 生成图片缩略图
  */
-func Thumb(path string, maxWidth int, maxHeight int) ([]byte, error) {
+func Thumb(path string, tagetMaxSize int) ([]byte, error) {
 	pngData, err := ToPng(path)
 	if err != nil {
 		return nil, err
 	}
-	return ImageUtil.ThumbByData(pngData, maxWidth, maxHeight)
+	return ImageUtil.ThumbByData(pngData, tagetMaxSize)
 }
 
 /**

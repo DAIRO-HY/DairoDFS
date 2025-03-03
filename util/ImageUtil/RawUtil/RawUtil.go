@@ -28,12 +28,12 @@ import (
  * @param maxHeight 图片最大高度
  * @return 图片字节数组
  */
-func Thumb(path string, maxWidth int, maxHeight int) ([]byte, error) {
+func Thumb(path string, tagetMaxSize int) ([]byte, error) {
 	tiffData, err := ToTiff(path)
 	if err != nil {
 		return nil, err
 	}
-	return ImageUtil.ThumbByData(tiffData, maxWidth, maxHeight)
+	return ImageUtil.ThumbByData(tiffData, tagetMaxSize)
 }
 
 /**

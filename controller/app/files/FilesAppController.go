@@ -13,6 +13,7 @@ import (
 	"DairoDFS/util/DfsFileHandleUtil"
 	"DairoDFS/util/DfsFileUtil"
 	"DairoDFS/util/LoginState"
+	"encoding/json"
 	"net/http"
 	"strings"
 )
@@ -45,6 +46,35 @@ func GetList(folder string) []form.FileForm {
 	return forms
 }
 
+// 获取相册列表
+// @Post:/get_album_list
+func GetAlbumList() []form.AlbumForm {
+	loginId := LoginState.LoginId()
+	list := DfsFileDao.SelectAlbum(loginId)
+	forms := make([]form.AlbumForm, 0)
+	for _, it := range list {
+		dataMap := make(map[string]any)
+		var CameraDate int64
+		if it.Property != "" {
+			_ = json.Unmarshal([]byte(it.Property), &dataMap)
+			if date, ok := dataMap["date"]; ok {
+				CameraDate = int64(date.(float64))
+			}
+		}
+		outForm := form.AlbumForm{
+			Id:         it.Id,
+			Name:       it.Name,
+			Size:       it.Size,
+			Date:       Date.FormatByTimespan(it.Date),
+			FileFlag:   it.StorageId != 0,
+			Thumb:      Bool.Is(it.HasThumb, "/app/files/thumb/"+String.ValueOf(it.Id), ""),
+			CameraDate: CameraDate,
+		}
+		forms = append(forms, outForm)
+	}
+	return forms
+}
+
 // 获取扩展文件的所有key值
 // id 文件id
 // @Post:/get_extra_keys
@@ -70,6 +100,15 @@ func Delete(paths []string) {
 	loginId := LoginState.LoginId()
 	for _, it := range paths {
 		DfsFileService.SetDelete(loginId, it)
+	}
+}
+
+// 删除文件
+// @Post:/delete_by_ids
+func DeleteByIds(ids []int64) {
+	loginId := LoginState.LoginId()
+	for _, it := range ids {
+		DfsFileService.DeleteById(loginId, it)
 	}
 }
 

@@ -17,8 +17,8 @@ import (
 
 // 往数据库添加一条数据
 func Add(fileDto dto.DfsFileDto) {
-	if fileDto.IsFile() { // 判断是否相册数据
-		fileDto.IsAlbum = DfsFileUtil.IsAlbum(fileDto.Name)
+	if fileDto.IsFile() { // 获取文件后缀名
+		fileDto.Ext = strings.ToLower(String.FileExt(fileDto.Name))
 	}
 	DfsFileDao.Add(fileDto)
 }
@@ -288,6 +288,17 @@ func SetDelete(userId int64, path string) {
 		panic(exception.Biz("找不到指定目录:" + path))
 	}
 	dsfFileDto, _ := DfsFileDao.SelectOne(dfsFileId)
+	DfsFileDao.SetDelete(dsfFileDto.Id, time.Now().UnixMilli())
+}
+
+// 通过id删除
+// userId 用户ID
+// ids id列表
+func DeleteById(userId int64, id int64) {
+	dsfFileDto, _ := DfsFileDao.SelectOne(id)
+	if dsfFileDto.UserId != userId {
+		panic(exception.NOT_ALLOW())
+	}
 	DfsFileDao.SetDelete(dsfFileDto.Id, time.Now().UnixMilli())
 }
 
