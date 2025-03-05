@@ -34,6 +34,7 @@ type ProfileForm struct {
 	DeleteStorageTimeout int64 `json:"deleteStorageTimeout"`
 
 	/** 缩略图最大边尺寸 **/
+	//@Limit(min = 100, max = 1024)
 	ThumbMaxSize int `json:"thumbMaxSize"`
 }
 
