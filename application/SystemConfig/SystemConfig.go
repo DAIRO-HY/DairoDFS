@@ -37,6 +37,9 @@ type SystemConfig struct {
 
 	// 删除没有被使用的文件超时设置(单位：天)
 	DeleteStorageTimeout int64
+
+	// 缩略图最大边尺寸
+	ThumbMaxSize int
 }
 
 // 读取文件锁
@@ -60,6 +63,7 @@ func Instance() *SystemConfig {
 				DistributedToken:     String.MakeRandStr(32),
 				TrashTimeout:         30,
 				DeleteStorageTimeout: 30,
+				ThumbMaxSize:         360,
 			}
 			Save()
 		} else {

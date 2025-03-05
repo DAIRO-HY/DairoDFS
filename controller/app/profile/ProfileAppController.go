@@ -28,6 +28,7 @@ func Init() form.ProfileForm {
 	inForm.Token = systemConfig.DistributedToken
 	inForm.TrashTimeout = systemConfig.TrashTimeout
 	inForm.DeleteStorageTimeout = systemConfig.DeleteStorageTimeout
+	inForm.ThumbMaxSize = systemConfig.ThumbMaxSize
 	return inForm
 }
 
@@ -53,6 +54,7 @@ func Update(form form.ProfileForm) error {
 	systemConfig.IsReadOnly = form.HasReadOnly
 	systemConfig.TrashTimeout = form.TrashTimeout
 	systemConfig.DeleteStorageTimeout = form.DeleteStorageTimeout
+	systemConfig.ThumbMaxSize = form.ThumbMaxSize
 
 	if form.SyncDomains == "" {
 		systemConfig.SyncDomains = []string{}

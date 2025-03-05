@@ -9,6 +9,15 @@
 <div class="m-3 p-2 rounded shadow bg-content">
     <form id="form" action="/app/profile/update">
         <div class="row">
+            <label class="col-2 col-form-label text-end">缩略图尺寸</label>
+            <div class="col-10">
+                <div class="input-group" style="width: 150px;">
+                    <input class="form-control" name="thumbMaxSize" autocomplete="off">
+                    <span class="input-group-text">像素</span>
+                </div>
+            </div>
+        </div>
+        <div class="row mt-2">
             <label class="col-2 col-form-label text-end">文件大小限制</label>
             <div class="col-10">
                 <div class="input-group" style="width: 160px;">

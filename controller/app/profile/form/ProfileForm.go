@@ -32,6 +32,9 @@ type ProfileForm struct {
 
 	// 删除没有被使用的文件超时设置(单位：天)
 	DeleteStorageTimeout int64 `json:"deleteStorageTimeout"`
+
+	/** 缩略图最大边尺寸 **/
+	ThumbMaxSize int `json:"thumbMaxSize"`
 }
 
 // 目录正确性检查

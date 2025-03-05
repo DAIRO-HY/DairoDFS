@@ -2,6 +2,7 @@ package DfsFileHandleUtil
 
 import (
 	"DairoDFS/application"
+	"DairoDFS/application/SystemConfig"
 	"DairoDFS/dao/DfsFileDao"
 	"DairoDFS/dao/StorageFileDao"
 	"DairoDFS/dao/dto"
@@ -382,7 +383,7 @@ func makeThumb(dfsFileDto dto.DfsFileDto) {
 	lowerName := strings.ToLower(dfsFileDto.Name)
 
 	//生成目标图片最大边
-	targetMaxSize := 360
+	targetMaxSize := SystemConfig.Instance().ThumbMaxSize
 	if strings.HasSuffix(lowerName, ".jpg") ||
 		strings.HasSuffix(lowerName, ".jpeg") ||
 		strings.HasSuffix(lowerName, ".png") ||
