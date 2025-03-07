@@ -52,30 +52,27 @@ func GetAlbumList() []form.AlbumForm {
 	loginId := LoginState.LoginId()
 	list := DfsFileDao.SelectAlbum(loginId)
 	forms := make([]form.AlbumForm, 0)
-
-	for i := 0; i < 10; i++ {
-		for _, it := range list {
-			dataMap := make(map[string]any)
-			var CameraDate int64
-			if it.Property != "" {
-				_ = json.Unmarshal([]byte(it.Property), &dataMap)
-				if date, ok := dataMap["date"]; ok {
-					CameraDate = int64(date.(float64))
-				}
+	for _, it := range list {
+		dataMap := make(map[string]any)
+		var CameraDate int64
+		if it.Property != "" {
+			_ = json.Unmarshal([]byte(it.Property), &dataMap)
+			if date, ok := dataMap["date"]; ok {
+				CameraDate = int64(date.(float64))
 			}
-			if CameraDate == 0 {
-				CameraDate = it.Date
-			}
-			outForm := form.AlbumForm{
-				Id:       it.Id,
-				Name:     it.Name,
-				Size:     it.Size,
-				Date:     CameraDate,
-				FileFlag: it.StorageId != 0,
-				Thumb:    Bool.Is(it.HasThumb, "/app/files/thumb/"+String.ValueOf(it.Id), ""),
-			}
-			forms = append(forms, outForm)
 		}
+		if CameraDate == 0 {
+			CameraDate = it.Date
+		}
+		outForm := form.AlbumForm{
+			Id:       it.Id,
+			Name:     it.Name,
+			Size:     it.Size,
+			Date:     CameraDate,
+			FileFlag: it.StorageId != 0,
+			Thumb:    Bool.Is(it.HasThumb, "/app/files/thumb/"+String.ValueOf(it.Id), ""),
+		}
+		forms = append(forms, outForm)
 	}
 	return forms
 }
