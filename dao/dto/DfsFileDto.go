@@ -8,7 +8,7 @@ type DfsFileDto struct {
 	// 所属用户ID
 	UserId int64
 
-	// 目录ID
+	// 父目录ID,当isExtra=1时，则标识所属文件的id
 	ParentId int64
 
 	// 名称

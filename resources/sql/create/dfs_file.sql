@@ -24,4 +24,4 @@ CREATE INDEX idx_ext ON dfs_file (ext);
 -- 非历史文件且未删除时，同一文件夹下文件名不允许重复
 CREATE UNIQUE INDEX idx_name
     ON dfs_file (parentId, name)
-    WHERE isHistory = 0 and deleteDate is null;
+    WHERE parentId != 0 and isHistory = 0 and deleteDate is null;

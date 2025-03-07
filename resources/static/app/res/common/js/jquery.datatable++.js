@@ -60,7 +60,6 @@
             //const $table = this.find(".dataTables_scrollBody > table")
             const $table = this.find("table")
             const datatable = $table.DataTable()
-            debugger
 
             //セルを更新
             datatable.cell(row, col + 1).data(value).draw()
