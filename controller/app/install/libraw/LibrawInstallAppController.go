@@ -33,7 +33,7 @@ var librawInstallSH embed.FS
 func url() string {
 	switch runtime.GOOS {
 	case "linux":
-		return "https://github.com/LibRaw/LibRaw/archive/refs/tags/0.21.2.zip"
+		return "https://github.com/DAIRO-HY/DairoDfsLib/raw/refs/heads/main/LibRaw-0.21.2-source.zip"
 	case "windows":
 		return "https://github.com/DAIRO-HY/DairoDfsLib/raw/refs/heads/main/LibRaw-0.21.2-Win64.zip"
 	case "darwin":
