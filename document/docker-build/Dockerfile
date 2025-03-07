@@ -2,6 +2,10 @@ FROM ubuntu:24.10
 
 RUN apt update
 
+# 解决https更证书的问题
+RUN apt install -y ca-certificates
+RUN update-ca-certificates
+
 #安装curl
 RUN yes|apt install curl
 
