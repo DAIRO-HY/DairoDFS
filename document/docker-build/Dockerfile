@@ -50,4 +50,4 @@ COPY build-linux.sh build-linux.sh
 RUN chmod +x build-linux.sh
 
 #运行程序
-#ENTRYPOINT "./build-linux.sh"
+ENTRYPOINT "./build-linux.sh"
