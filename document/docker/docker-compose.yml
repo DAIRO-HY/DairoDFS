@@ -21,4 +21,6 @@ services:
       LANG: C.UTF-8
     volumes:
       #使用宿主机时区,解决时区不一致的问题
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
       - ./data:/app/data
