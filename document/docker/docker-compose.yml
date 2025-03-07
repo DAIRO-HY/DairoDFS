@@ -1,15 +1,17 @@
 version: '3.1'
 services:
-  dairo-nps:
-    image: dairopapa/dairo-nps:1.1.0
+  dairo-dfs:
+    image: dairopapa/dairo-dfs:2.0.0
 #    build: .
     restart: always
-    container_name: dairo-nps
-    network_mode: host
-
+    container_name: dairo-dfs
+    #network_mode: host
 
     #使用真root权限进入,某些linux系统需要改权限才能运行
     privileged: true
+
+    ports:
+      - 8031:8031
 
     environment:
       #时区,解决时间不一致的bug
@@ -17,29 +19,6 @@ services:
 
       #解决控制台输出中文乱码
       LANG: C.UTF-8
-
-      #后台管理用户
-      NPS_LOGIN_NAME: admin
-
-      #后台管理密码
-      NPS_LOGIN_PWD:
-
-      #后台管理端口
-      NPS_WEB_PORT: 1780
-
-      #客户端连接TCP端口
-      NPS_TCP_PORT: 1781
-
-      #客户端连接UDP端口
-      NPS_UDP_PORT: 1782
-
-      #日志类型
-      NPS_LOG_TYPE: 2
-
-      #日志级别
-      NPS_LOG_LEVEL: error
     volumes:
       #使用宿主机时区,解决时区不一致的问题
-      - /etc/localtime:/etc/localtime:ro
-      - /etc/timezone:/etc/timezone:ro
       - ./data:/app/data

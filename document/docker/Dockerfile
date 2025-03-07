@@ -1,4 +1,4 @@
-FROM frolvlad/alpine-glibc:glibc-2.34
+FROM ubuntu:24.10
 
 RUN mkdir /app
 WORKDIR /app
