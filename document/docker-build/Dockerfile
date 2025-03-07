@@ -33,13 +33,13 @@ RUN chmod +x /usr/local/bin/docker-compose
 WORKDIR /opt
 
 #下载go
-ADD https://go.dev/dl/go1.23.1.linux-amd64.tar.gz /opt
+ADD https://go.dev/dl/go1.24.1.linux-amd64.tar.gz /opt
 
 #解压
-RUN tar -xzvf go1.23.1.linux-amd64.tar.gz
+RUN tar -xzvf go1.24.1.linux-amd64.tar.gz
 
 #删除安装包
-RUN rm go1.23.1.linux-amd64.tar.gz
+RUN rm go1.24.1.linux-amd64.tar.gz
 
 # 追加到PATH环境变量
 ENV PATH="/opt/go/bin:${PATH}"
