@@ -2,10 +2,6 @@ FROM ubuntu:24.10
 
 RUN apt update
 
-# 解决https更证书的问题
-RUN apt install -y ca-certificates
-RUN update-ca-certificates
-
 #安装curl
 RUN yes|apt install curl
 
@@ -17,6 +13,10 @@ RUN yes|apt-get install libsqlite3-dev
 
 #安装gcc,编译sqlite需要
 RUN yes|apt-get install gcc
+
+# 解决https更证书的问题
+RUN apt install -y ca-certificates
+RUN update-ca-certificates
 
 
 #####################################################################安装docker开始#######################################
