@@ -11,7 +11,7 @@ docker_pwd=$DOCKER_PWD
 projectName="DairoDFS"
 
 repo="DAIRO-HY/$projectName"
-branch="main"
+branch="release"
 
 #最终编译好的二进制文件
 exec_name=dairo-dfs-linux-amd64
