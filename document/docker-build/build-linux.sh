@@ -10,6 +10,9 @@ docker_pwd=$DOCKER_PWD
 #项目名
 projectName="DairoDFS"
 
+#Docker镜像名
+dockerImageName="dairo-dfs"
+
 repo="DAIRO-HY/$projectName"
 branch="release"
 
@@ -84,9 +87,9 @@ echo "上传文件结果:${upload_file_api_response}"
 #---------------------------------------上传Docker镜像-----------------------------------------
 mv $exec_file ./document/docker/
 cd ./document/docker/
-docker build -t $docker_user/$projectName:$version .
+docker build -t $docker_user/$dockerImageName:$version .
 docker login -u $docker_user --password $docker_pwd
-docker push $docker_user/$projectName:$version
+docker push $docker_user/$dockerImageName:$version
 docker logout
 
 echo "---------------------------------------docker镜像推送完成--------------------------------------"
