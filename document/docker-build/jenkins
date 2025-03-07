@@ -2,27 +2,27 @@ pipeline {
     agent any
 
     environment {
-        REPO = "DAIRO-HY/DairoNPS"
+        REPO = "DAIRO-HY/DairoDFS"
         BRANCH = "release"
     }
     stages {
         stage("拉取代码") {
             steps {
                 script{
-                    if(!fileExists("DairoNPS")){
+                    if(!fileExists("DairoDFS")){
                         def cloneUrl = "https://${env.GITHUB_TOKEN}@github.com/${env.REPO}.git"
                         echo "克隆地址:${cloneUrl}"
                         sh "git clone --branch ${env.BRANCH} ${cloneUrl}"
                     }
                 }
-                dir("DairoNPS"){
+                dir("DairoDFS"){
                     sh "git pull"
                 }
             }
         }
         stage("构建镜像") {
             steps {
-                dir("DairoNPS/document/docker-build"){
+                dir("DairoDFS/document/docker-build"){
                     sh "docker build -t dairo-nps-build ."
                     sh "yes|docker image prune"
                 }

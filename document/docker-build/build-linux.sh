@@ -28,7 +28,7 @@ if [ -d $projectName ]; then
     git reset --hard
     git pull
 else
-    CLONE_URL="https://github.com/${repo}.git"
+    CLONE_URL="https://${github_token}@github.com/${repo}.git"
     git clone --branch $branch $CLONE_URL
     cd $projectName
 fi
@@ -70,23 +70,23 @@ echo "本地发布ID:${release_id}"
 
 
 #---------------------------------------上传编译好的二进制文件----------------------------------
-#upload_file_api_response=$(curl -s -X POST \
-#                            -H "Accept: application/vnd.github+json" \
-#                            -H "Authorization: Bearer ${github_token}" \
-#                            -H "X-GitHub-Api-Version: 2022-11-28" \
-#                            -H "Content-Type: application/octet-stream" \
-#                            --data-binary "@${exec_file}" \
-#                            "https://uploads.github.com/repos/${repo}/releases/${release_id}/assets?name=${exec_name}")
-#
-#echo "上传文件结果:${upload_file_api_response}"
-#
-#
-##---------------------------------------上传Docker镜像-----------------------------------------
-#mv $exec_file ./document/docker/
-#cd ./document/docker/
-#docker build -t $docker_user/dairo-nps:$version .
-#docker login -u $docker_user --password $docker_pwd
-#docker push $docker_user/dairo-nps:$version
-#docker logout
-#
-#echo "---------------------------------------docker镜像推送完成--------------------------------------"
+upload_file_api_response=$(curl -s -X POST \
+                            -H "Accept: application/vnd.github+json" \
+                            -H "Authorization: Bearer ${github_token}" \
+                            -H "X-GitHub-Api-Version: 2022-11-28" \
+                            -H "Content-Type: application/octet-stream" \
+                            --data-binary "@${exec_file}" \
+                            "https://uploads.github.com/repos/${repo}/releases/${release_id}/assets?name=${exec_name}")
+
+echo "上传文件结果:${upload_file_api_response}"
+
+
+#---------------------------------------上传Docker镜像-----------------------------------------
+mv $exec_file ./document/docker/
+cd ./document/docker/
+docker build -t $docker_user/$projectName:$version .
+docker login -u $docker_user --password $docker_pwd
+docker push $docker_user/$projectName:$version
+docker logout
+
+echo "---------------------------------------docker镜像推送完成--------------------------------------"
