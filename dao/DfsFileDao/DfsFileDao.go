@@ -246,13 +246,13 @@ func ValidStorageId(userId int64, storageId int64) bool {
 
 /**
  * 获取附属文件
- * @param parentId dfs文件ID
+ * @param id dfs文件ID
  * @param name 附属文件标题
  * @return 附属文件信息
  */
-func SelectExtra(parentId int64, name string) (dto.DfsFileDto, bool) {
+func SelectExtra(id int64, name string) (dto.DfsFileDto, bool) {
 	sql := `select * from dfs_file where parentId = ? and name = ? and isExtra = 1`
-	return DBUtil.SelectOne[dto.DfsFileDto](sql, parentId, name)
+	return DBUtil.SelectOne[dto.DfsFileDto](sql, id, name)
 }
 
 /**
@@ -275,14 +275,21 @@ func SelectPropertyByStorageId(storageId int64) string {
 	return DBUtil.SelectSingleOneIgnoreError[string](sql, storageId)
 }
 
-/**
- * 通过本地存储ID查询文件附属文件
- * @param storageId 本地存储id
- * @return 附属文件列表
- */
+// SelectExtraFileByStorageId 通过本地存储ID查询文件附属文件
+// storageId 本地存储id
+// return 附属文件列表
 func SelectExtraFileByStorageId(storageId int64) []dto.DfsFileDto {
 	sql := `select * from dfs_file where parentId = (select id from dfs_file where storageId = ? and state = 1 limit 1) and isExtra = 1`
 	return DBUtil.SelectList[dto.DfsFileDto](sql, storageId)
+}
+
+// SelectExtraFileByStorageId 通过本地存储ID和附属文件名称查询文件附属文件
+// storageId 本地存储id
+// name 附属文件名称
+// return 附属文件
+func SelectExtraFileByStorageIdAndName(storageId int64, name string) (dto.DfsFileDto, bool) {
+	sql := `select * from dfs_file where name = ? and parentId = (select id from dfs_file where storageId = ? and state = 1 limit 1) and isExtra = 1`
+	return DBUtil.SelectOne[dto.DfsFileDto](sql, name, storageId)
 }
 
 /**
