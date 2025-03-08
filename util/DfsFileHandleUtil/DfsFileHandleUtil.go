@@ -201,9 +201,11 @@ func makeThumb(dfsFileDto dto.DfsFileDto) {
 	if _, isExists := DfsFileDao.SelectExtra(dfsFileDto.Id, "thumb"); isExists { //缩略图已经存在,则跳过
 		return
 	}
-	if existsThumb, isExists := DfsFileDao.SelectExtraFileByStorageIdAndName(dfsFileDto.Id, "thumb"); isExists {
+
+	if existsThumb, isExists := DfsFileDao.SelectExtraFileByStorageIdAndName(dfsFileDto.StorageId, "thumb"); isExists {
 
 		//该文件缩略图在其他文件中已经生成
+		existsThumb.Id = Number.ID()
 		existsThumb.ParentId = dfsFileDto.Id
 		existsThumb.UserId = dfsFileDto.UserId
 		DfsFileService.Add(existsThumb)
@@ -295,9 +297,10 @@ func makePreview(dfsFileDto dto.DfsFileDto) {
 		return
 	}
 
-	if existsPreview, isExists := DfsFileDao.SelectExtraFileByStorageIdAndName(dfsFileDto.Id, "preview"); isExists {
+	if existsPreview, isExists := DfsFileDao.SelectExtraFileByStorageIdAndName(dfsFileDto.StorageId, "preview"); isExists {
 
 		//该文件预览图在其他文件中已经生成
+		existsPreview.Id = Number.ID()
 		existsPreview.ParentId = dfsFileDto.Id
 		existsPreview.UserId = dfsFileDto.UserId
 		DfsFileService.Add(existsPreview)
@@ -391,9 +394,10 @@ func makeVideo(dfsFileDto dto.DfsFileDto) {
 				//已经存在附属文件,则跳过  重新生成附属文件时用到
 				continue
 			}
-			if existsVideo, isExists := DfsFileDao.SelectExtraFileByStorageIdAndName(dfsFileDto.Id, String.ValueOf(targetSize)); isExists {
+			if existsVideo, isExists := DfsFileDao.SelectExtraFileByStorageIdAndName(dfsFileDto.StorageId, String.ValueOf(targetSize)); isExists {
 
 				//该文件预览图在其他文件中已经生成
+				existsVideo.Id = Number.ID()
 				existsVideo.ParentId = dfsFileDto.Id
 				existsVideo.UserId = dfsFileDto.UserId
 				DfsFileService.Add(existsVideo)
