@@ -28,4 +28,7 @@ type AlbumForm struct {
 
 	/** 相机名 **/
 	CameraName string `json:"cameraName"`
+
+	/** 视频时长 **/
+	Duration string `json:"duration"`
 }

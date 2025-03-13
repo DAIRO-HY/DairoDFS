@@ -54,11 +54,19 @@ func GetAlbumList() []form.AlbumForm {
 	forms := make([]form.AlbumForm, 0)
 	for _, it := range list {
 		dataMap := make(map[string]any)
+
+		//拍摄时间
 		var CameraDate int64
+
+		//视频时长
+		var duration = ""
 		if it.Property != "" {
 			_ = json.Unmarshal([]byte(it.Property), &dataMap)
 			if date, ok := dataMap["date"]; ok {
 				CameraDate = int64(date.(float64))
+			}
+			if durationValue, ok := dataMap["duration"]; ok {
+				duration = Number.ToTimeFormat(durationValue.(float64) / 1000)
 			}
 		}
 		if CameraDate == 0 {
@@ -70,6 +78,7 @@ func GetAlbumList() []form.AlbumForm {
 			Size:     it.Size,
 			Date:     CameraDate,
 			FileFlag: it.StorageId != 0,
+			Duration: duration,
 			Thumb:    Bool.Is(it.HasThumb, "/app/files/thumb/"+String.ValueOf(it.Id), ""),
 		}
 		forms = append(forms, outForm)

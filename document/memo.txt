@@ -1,2 +1,7 @@
 GCC下载安装
 https://github.com/niXman/mingw-builds-binaries
+
+
+
+docker pull ;
+;

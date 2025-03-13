@@ -63,48 +63,48 @@ func ToDataSize(input any) string {
 // 转换成时间格式
 func ToTimeFormat(input any) string {
 
-	var senconds int64
+	var seconds int64
 	switch v := input.(type) {
 	case int:
-		senconds = int64(v)
+		seconds = int64(v)
 	case int8:
-		senconds = int64(v)
+		seconds = int64(v)
 	case int16:
-		senconds = int64(v)
+		seconds = int64(v)
 	case int32:
-		senconds = int64(v)
+		seconds = int64(v)
 	case int64:
-		senconds = v
+		seconds = v
 	case uint:
-		senconds = int64(v)
+		seconds = int64(v)
 	case uint8:
-		senconds = int64(v)
+		seconds = int64(v)
 	case uint16:
-		senconds = int64(v)
+		seconds = int64(v)
 	case uint32:
-		senconds = int64(v)
+		seconds = int64(v)
 	case uint64:
-		senconds = int64(v)
+		seconds = int64(v)
 	case float32:
-		senconds = int64(v)
+		seconds = int64(v)
 	case float64:
-		senconds = int64(v)
+		seconds = int64(v)
 	default:
-		senconds = 0.0
+		seconds = 0.0
 	}
 
 	//小时
-	h := fmt.Sprintf("%02d", senconds/(60*60))
+	h := fmt.Sprintf("%02d", seconds/(60*60))
 
 	//分
-	m := fmt.Sprintf("%02d", senconds%(60*60)/60)
+	m := fmt.Sprintf("%02d", seconds%(60*60)/60)
 
 	//秒
-	s := fmt.Sprintf("%02d", senconds%60)
-	if senconds >= 60*60 {
+	s := fmt.Sprintf("%02d", seconds%60)
+	if seconds >= 60*60 {
 		return h + ":" + m + ":" + s
 	}
-	if senconds >= 60 {
+	if seconds >= 60 {
 		return m + ":" + s
 	}
 	return "00:" + s
