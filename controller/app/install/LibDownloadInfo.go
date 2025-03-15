@@ -80,6 +80,10 @@ func (mine *LibDownloadInfo) DownloadAndUnzip(validate func() error, doInstall f
 		mine.IsRuning = false
 		lock.Unlock()
 	}()
+	if mine.Url == "" { //无需下载,直接安装
+		doInstall()
+		return
+	}
 
 	//删除之前的安装目录
 	os.RemoveAll(mine.SavePath)

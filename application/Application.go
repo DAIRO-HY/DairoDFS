@@ -66,6 +66,9 @@ var FfprobePath = DataPath + "/ffprobe"
 // libraw安装目录
 var LibrawPath = DataPath + "/libraw"
 
+// imagemagick安装目录
+var ImageMagickPath = DataPath + "/imagemagick"
+
 // libraw中的Dcraw模拟器存放路径
 var LIBRAW_BIN = LibrawPath + "/LibRaw-0.21.2/bin"
 
@@ -90,6 +93,9 @@ func Init() {
 
 	//创建临时目录
 	os.MkdirAll(TEMP_PATH, 0644)
+
+	//创建目录
+	os.MkdirAll(ImageMagickPath, os.ModePerm)
 }
 
 // 解析参数
