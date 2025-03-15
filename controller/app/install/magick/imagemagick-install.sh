@@ -1,5 +1,15 @@
 #!/bin/bash
 
+
+# 获取当前脚本文件的完整路径
+SCRIPT_PATH=$(realpath "$0")
+
+# 提取目录部分
+SCRIPT_DIR=$(dirname "$SCRIPT_PATH")
+
+# 进入当前目录
+cd $SCRIPT_DIR
+
 # pkg-config のパスを通す
 export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:/usr/local/lib64/pkgconfig:$PKG_CONFIG_PATH
 
@@ -39,13 +49,13 @@ yes|apt-get install libraw-dev
 
 
 # 下载libheif源码
-curl -L -o 1.tar.gz https://github.com/strukturag/libheif/releases/download/v1.19.7/libheif-1.19.7.tar.gz
-tar -xzvf 1.tar.gz
-cd ./libheif-1.19.7
+curl -L -o libheif-1.19.7.tar.gz https://github.com/strukturag/libheif/releases/download/v1.19.7/libheif-1.19.7.tar.gz
+tar -xzvf libheif-1.19.7.tar.gz
+cd libheif-1.19.7
 
 # 编译安装
 mkdir build
-cd ./build
+cd build
 cmake --preset=release .. \
   -DCMAKE_BUILD_TYPE=Release \
   -DWITH_JPEG_DECODER=ON \
@@ -56,14 +66,18 @@ cmake --preset=release .. \
   -DWITH_PNG_ENCODER=ON
 make
 make install
-
-
 cd ../..
-curl -L -o temp.tar.gz https://github.com/ImageMagick/ImageMagick/archive/refs/tags/7.1.1-45.tar.gz
-tar -xzvf temp.tar.gz
+rm libheif-1.19.7.tar.gz
+rm -rf libheif-1.19.7
+
+
+curl -L -o 7.1.1-45.tar.gz https://github.com/ImageMagick/ImageMagick/archive/refs/tags/7.1.1-45.tar.gz
+tar -xzvf 7.1.1-45.tar.gz
 cd ImageMagick-7.1.1-45
 ./configure
 make
 make install
 ldconfig /usr/local/lib
-cd /home
+cd ..
+rm 7.1.1-45.tar.gz
+rm -rf ImageMagick-7.1.1-45

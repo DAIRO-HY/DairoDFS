@@ -87,7 +87,7 @@ func doInstall() {
 	case "darwin":
 		cache := make([]byte, 128)
 		installResultSize := 0
-		const installTotalSize = 210820
+		const installTotalSize = 302021
 		_, installCmdErr := ShellUtil.ExecToOkReader("brew install imagemagick", func(rc io.ReadCloser) {
 			for {
 				n, err := rc.Read(cache)
