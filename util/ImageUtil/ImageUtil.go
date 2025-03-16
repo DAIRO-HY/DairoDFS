@@ -2,7 +2,9 @@ package ImageUtil
 
 import (
 	"bytes"
+	"fmt"
 	"github.com/nfnt/resize"
+	"github.com/rwcarlsen/goexif/exif"
 	_ "golang.org/x/image/bmp"
 	_ "golang.org/x/image/tiff"
 	_ "golang.org/x/image/webp"
@@ -11,6 +13,7 @@ import (
 	"image/draw"
 	"image/jpeg"
 	_ "image/png"
+	"log"
 	"os"
 )
 
@@ -231,4 +234,66 @@ func GetInfoByData(data []byte) (*ImageInfo, error) {
 		Width:  imageConfig.Width,
 		Height: imageConfig.Height,
 	}, nil
+}
+
+/**
+ * 获取图片信息
+ */
+func GetInfo2(path string) (*ImageInfo, error) {
+
+	// 打开 JPEG 文件
+	file, err := os.Open(path)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
+
+	// 解析 EXIF 数据
+	x, err := exif.Decode(file)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// 获取拍摄时间
+	datetime, err := x.DateTime()
+	if err == nil {
+		fmt.Println("拍摄时间:", datetime)
+	}
+
+	// 获取相机制造商
+	manufacturer, err := x.Get(exif.Make)
+	if err == nil {
+		fmt.Println("相机制造商:", manufacturer)
+	}
+
+	// 获取相机型号
+	model, err := x.Get(exif.Model)
+	if err == nil {
+		fmt.Println("相机型号:", model)
+	}
+
+	// 获取光圈值
+	aperture, err := x.Get(exif.FNumber)
+	if err == nil {
+		fmt.Println("光圈值:", aperture.String())
+	}
+
+	// 获取快门速度
+	shutterSpeed, err := x.Get(exif.ShutterSpeedValue)
+	if err == nil {
+		fmt.Println("快门速度:", shutterSpeed.String())
+	}
+
+	// 获取 ISO
+	iso, err := x.Get(exif.ISOSpeedRatings)
+	if err == nil {
+		fmt.Println("ISO:", iso.String())
+	}
+
+	// 获取 GPS 信息（如果有）
+	lat, long, err := x.LatLong()
+	if err == nil {
+		fmt.Printf("GPS 坐标: 纬度 %.6f, 经度 %.6f\n", lat, long)
+	}
+	return nil, nil
 }

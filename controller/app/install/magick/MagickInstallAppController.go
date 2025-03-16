@@ -119,7 +119,7 @@ func doInstall() {
 		cache := make([]byte, 128)
 		abs, _ := filepath.Abs(application.ImageMagickPath + "/imagemagick-install.sh")
 		installResultSize := 0
-		const installTotalSize = 210820
+		const installTotalSize = 320820
 		_, installCmdErr := ShellUtil.ExecToOkReader(abs, func(rc io.ReadCloser) {
 			for {
 				n, err := rc.Read(cache)

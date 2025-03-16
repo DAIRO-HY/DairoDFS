@@ -9,7 +9,7 @@ import (
  * 生成图片缩略图
  */
 func TestThumbByFile(t *testing.T) {
-	thumb, err := ThumbByFile("C:\\Users\\user\\Desktop\\test\\tt.cr3.tiff", 100, 100)
+	thumb, err := ThumbByFile("C:\\Users\\user\\Desktop\\test\\tt.cr3.tiff", 100)
 	if err != nil {
 		fmt.Println(err)
 		return

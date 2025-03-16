@@ -71,13 +71,13 @@ rm libheif-1.19.7.tar.gz
 rm -rf libheif-1.19.7
 
 
-curl -L -o 7.1.1-45.tar.gz https://github.com/ImageMagick/ImageMagick/archive/refs/tags/7.1.1-45.tar.gz
-tar -xzvf 7.1.1-45.tar.gz
+curl -L -o ImageMagick-7.1.1-45 https://github.com/ImageMagick/ImageMagick/archive/refs/tags/7.1.1-45.tar.gz
+tar -xzvf ImageMagick-7.1.1-45
 cd ImageMagick-7.1.1-45
 ./configure
 make
 make install
 ldconfig /usr/local/lib
 cd ..
-rm 7.1.1-45.tar.gz
+rm ImageMagick-7.1.1-45
 rm -rf ImageMagick-7.1.1-45

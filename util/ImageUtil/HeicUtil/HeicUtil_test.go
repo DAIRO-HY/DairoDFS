@@ -14,7 +14,7 @@ import (
 //}
 
 func TestToJpegByWindows(t *testing.T) {
-	data, err := toJpegByWindows("C:\\Users\\user\\Desktop\\test\\heic-linux-diff\\1.heic", 100)
+	data, err := ToJpeg("C:\\Users\\user\\Desktop\\test\\heic-linux-diff\\1.heic", 100)
 	if err != nil {
 		panic(err)
 	}

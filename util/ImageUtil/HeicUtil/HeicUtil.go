@@ -32,12 +32,7 @@ func Thumb(path string, targetMaxSize int) ([]byte, error) {
 	return ImageUtil.ThumbByData(buf.Bytes(), targetMaxSize)
 }
 
-// windos环境下，转换成JPEG图片
-func toJpegByWindows(path string, quality int8) ([]byte, error) {
+// 转换成JPEG图片
+func ToJpeg(path string, quality int8) ([]byte, error) {
 	return ShellUtil.ExecToOkData(fmt.Sprintf("magick \""+path+"\" -quality %d JPEG:-", quality))
-}
-
-// windos环境下，转换成JPEG图片
-func toPngByWindows(path string, quality int8) ([]byte, error) {
-	return ShellUtil.ExecToOkData(fmt.Sprintf("magick \""+path+"\" -quality %d PNG:-", quality))
 }
