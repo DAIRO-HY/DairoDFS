@@ -7,10 +7,10 @@ import (
 )
 
 func TestGetInfo2(t *testing.T) {
-	data, err := HeicUtil.ToJpeg("/Users/zhoulq/dev/java/idea/DairoDFS/data/test/1.jpeg", 100)
+	data, err := HeicUtil.ToJpeg("/Users/zhoulq/dev/java/idea/DairoDFS/data/test/1.heic", 1)
 	if err != nil {
 		panic(err)
 	}
-	info, _ := GetInfoByData2(data)
-	fmt.Println(*info)
+	info, _ := GetInfoByData(data)
+	fmt.Println(info)
 }
