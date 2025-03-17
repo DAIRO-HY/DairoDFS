@@ -20,17 +20,11 @@ pipeline {
                 }
             }
         }
-        stage("构建镜像") {
-            steps {
-                dir("DairoDFS/document/docker-build"){
-                    sh "docker build -t dairo-dfs-build ."
-                    sh "yes|docker image prune"
-                }
-            }
-        }
         stage("编译") {
             steps {
-                sh "docker run -e GITHUB_TOKEN=$GITHUB_TOKEN -e DOCKER_USER=$DOCKER_USER -e DOCKER_PWD=$DOCKER_PASSWORD -v /var/run/docker.sock:/var/run/docker.sock --rm dairo-dfs-build"
+                dir("DairoDFS"){
+                    sh "./build-linux.sh"
+                }
             }
         }
     }
