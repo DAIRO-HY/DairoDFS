@@ -23,7 +23,6 @@ exec_file="./$exec_name"
 
 #--------------------------------------配置编译环境-------------------------------------
 if [ ! -d "/opt/go-1.24.1" ]; then
-    cd /opt
 
     #下载go
     curl -L -o go1.24.1.linux-amd64.tar.gz https://go.dev/dl/go1.24.1.linux-amd64.tar.gz
@@ -34,7 +33,7 @@ if [ ! -d "/opt/go-1.24.1" ]; then
     #删除安装包
     rm go1.24.1.linux-amd64.tar.gz
 
-    mv go go-1.24.1
+    mv go /opt/go-1.24.1
 else
   echo "go-1.24.1 is exists"
 fi
@@ -43,21 +42,21 @@ fi
 export PATH="/opt/go-1.24.1/bin:${PATH}"
 
 #--------------------------------------获取代码-----------------------------------------
-cd /home
-if [ -d $projectName ]; then
-    cd $projectName
-
-    #删除所有新添加的文件
-    git clean -f
-
-    #取消所有更改
-    git reset --hard
-    git pull
-else
-    CLONE_URL="https://${github_token}@github.com/${repo}.git"
-    git clone --branch $branch $CLONE_URL
-    cd $projectName
-fi
+#cd /home
+#if [ -d $projectName ]; then
+#    cd $projectName
+#
+#    #删除所有新添加的文件
+#    git clean -f
+#
+#    #取消所有更改
+#    git reset --hard
+#    git pull
+#else
+#    CLONE_URL="https://${github_token}@github.com/${repo}.git"
+#    git clone --branch $branch $CLONE_URL
+#    cd $projectName
+#fi
 
 #---------------------------------------编译-----------------------------------------
 CGO_ENABLED=1 go build -ldflags="-s -w" -o $exec_file
