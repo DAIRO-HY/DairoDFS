@@ -11,7 +11,7 @@ import (
 )
 
 // VERSION 版本号
-const VERSION = "2.0.1"
+const VERSION = "2.0.2"
 
 /**
  * 基准时间戳
@@ -92,10 +92,7 @@ func Init() {
 	parseArgs()
 
 	//创建临时目录
-	os.MkdirAll(TEMP_PATH, 0644)
-
-	//创建目录
-	os.MkdirAll(ImageMagickPath, os.ModePerm)
+	os.MkdirAll(TEMP_PATH, os.ModePerm)
 }
 
 // 解析参数

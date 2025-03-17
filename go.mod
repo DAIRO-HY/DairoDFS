@@ -18,6 +18,7 @@ require (
 	github.com/hashicorp/go-plugin v1.6.1 // indirect
 	github.com/hashicorp/yamux v0.1.1 // indirect
 	github.com/klippa-app/go-libheif v1.3.0 // indirect
+	github.com/kolesa-team/go-webp v1.0.4 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.19 // indirect
 	github.com/mitchellh/go-testing-interface v1.14.1 // indirect

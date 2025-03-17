@@ -5,15 +5,10 @@ import (
 	"DairoDFS/util/ImageUtil"
 	"DairoDFS/util/ShellUtil"
 	"bytes"
-	"fmt"
 	_ "golang.org/x/image/tiff"
 	"image"
 	"image/jpeg"
 	"image/png"
-	"regexp"
-	"strconv"
-	"strings"
-	"time"
 )
 
 /**
@@ -28,12 +23,12 @@ import (
  * @param maxHeight 图片最大高度
  * @return 图片字节数组
  */
-func Thumb(path string, tagetMaxSize int) ([]byte, error) {
+func Thumb(path string, targetMaxSize int) ([]byte, error) {
 	tiffData, err := ToTiff(path)
 	if err != nil {
 		return nil, err
 	}
-	return ImageUtil.ThumbByData(tiffData, tagetMaxSize)
+	return ImageUtil.ThumbByData(tiffData, targetMaxSize)
 }
 
 /**
@@ -121,63 +116,66 @@ func ToJpg(path string) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-/**
- * 获取图片信息
- */
+// 获取图片信息
 func GetInfo(path string) (ImageUtil.ImageInfo, error) {
-	okRs, cmdErr :=
-		ShellUtil.ExecToOkResult("\"" + application.LIBRAW_BIN + "/raw-identify\" -v \"" + path + "\"")
-	if cmdErr != nil { //如果发生了异常，异常信息记录在了错误流数据中
-		return ImageUtil.ImageInfo{}, cmdErr
+	data, err := ToTiff(path)
+	if err != nil {
+		return ImageUtil.ImageInfo{}, err
 	}
-
-	//拍摄时间
-	date := func() int64 {
-		defer application.StopRuntimeError() // 防止程序终止
-		durationStr := regexp.MustCompile("Timestamp:.*").FindAllString(okRs, -1)[0]
-		durationStr = durationStr[11 : len(durationStr)-1]
-		durationArr := strings.Split(durationStr, " ")
-		montnMap := map[string]string{
-			"Jan": "01",
-			"Feb": "02",
-			"Mar": "03",
-			"Apr": "04",
-			"May": "05",
-			"Jun": "06",
-			"Jul": "07",
-			"Aug": "08",
-			"Sep": "09",
-			"Oct": "10",
-			"Nov": "11",
-			"Dec": "12",
-		}
-		month := montnMap[durationArr[1]]
-		day, _ := strconv.Atoi(durationArr[3])
-		dateStr := durationArr[5] + month + fmt.Sprintf("%02d", day) + durationArr[4]
-		date, _ := time.Parse("2006010215:04:05", dateStr)
-		return date.UnixMilli()
-	}()
-
-	//获取宽高
-	width, height := func() (int, int) {
-		imageSizeStr := regexp.MustCompile("Image size:.*").FindAllString(okRs, -1)[0]
-		imageSizeStr = imageSizeStr[11 : len(imageSizeStr)-1]
-		imageSizeStr = strings.ReplaceAll(imageSizeStr, " ", "")
-		imageSizeArr := strings.Split(imageSizeStr, "x")
-		width, _ := strconv.Atoi(imageSizeArr[0])  //宽
-		height, _ := strconv.Atoi(imageSizeArr[1]) //高
-		return width, height
-	}()
-
-	//相机名
-	camera := func() string {
-		var cameraStr = regexp.MustCompile("Camera:.*").FindAllString(okRs, -1)[0]
-		return cameraStr[8 : len(cameraStr)-1]
-	}()
-	return ImageUtil.ImageInfo{
-		Width:  width,
-		Height: height,
-		Camera: camera,
-		Date:   date,
-	}, nil
+	return ImageUtil.GetInfoByData(data)
+	//okRs, cmdErr :=
+	//	ShellUtil.ExecToOkResult("\"" + application.LIBRAW_BIN + "/raw-identify\" -v \"" + path + "\"")
+	//if cmdErr != nil { //如果发生了异常，异常信息记录在了错误流数据中
+	//	return ImageUtil.ImageInfo{}, cmdErr
+	//}
+	//
+	////拍摄时间
+	//date := func() int64 {
+	//	defer application.StopRuntimeError() // 防止程序终止
+	//	durationStr := regexp.MustCompile("Timestamp:.*").FindAllString(okRs, -1)[0]
+	//	durationStr = durationStr[11 : len(durationStr)-1]
+	//	durationArr := strings.Split(durationStr, " ")
+	//	montnMap := map[string]string{
+	//		"Jan": "01",
+	//		"Feb": "02",
+	//		"Mar": "03",
+	//		"Apr": "04",
+	//		"May": "05",
+	//		"Jun": "06",
+	//		"Jul": "07",
+	//		"Aug": "08",
+	//		"Sep": "09",
+	//		"Oct": "10",
+	//		"Nov": "11",
+	//		"Dec": "12",
+	//	}
+	//	month := montnMap[durationArr[1]]
+	//	day, _ := strconv.Atoi(durationArr[3])
+	//	dateStr := durationArr[5] + month + fmt.Sprintf("%02d", day) + durationArr[4]
+	//	date, _ := time.Parse("2006010215:04:05", dateStr)
+	//	return date.UnixMilli()
+	//}()
+	//
+	////获取宽高
+	//width, height := func() (int, int) {
+	//	imageSizeStr := regexp.MustCompile("Image size:.*").FindAllString(okRs, -1)[0]
+	//	imageSizeStr = imageSizeStr[11 : len(imageSizeStr)-1]
+	//	imageSizeStr = strings.ReplaceAll(imageSizeStr, " ", "")
+	//	imageSizeArr := strings.Split(imageSizeStr, "x")
+	//	width, _ := strconv.Atoi(imageSizeArr[0])  //宽
+	//	height, _ := strconv.Atoi(imageSizeArr[1]) //高
+	//	return width, height
+	//}()
+	//
+	////相机名
+	//camera := func() string {
+	//	var cameraStr = regexp.MustCompile("Camera:.*").FindAllString(okRs, -1)[0]
+	//	return cameraStr[8 : len(cameraStr)-1]
+	//}()
+	//return ImageUtil.ImageInfo{
+	//	Width:  width,
+	//	Height: height,
+	//	Model:  camera,
+	//	Date:   date,
+	//}, nil
 }

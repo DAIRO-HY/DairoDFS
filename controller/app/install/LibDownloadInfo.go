@@ -1,6 +1,7 @@
 package install
 
 import (
+	"DairoDFS/application"
 	"DairoDFS/extension/Number"
 	"DairoDFS/extension/String"
 	"archive/zip"
@@ -140,6 +141,13 @@ func (mine *LibDownloadInfo) DownloadAndUnzip(validate func() error, doInstall f
 
 // unzip 解压 zip 文件到目标目录
 func (mine *LibDownloadInfo) unzip() error {
+	if !strings.HasSuffix(mine.Url, ".zip") { //如果这不是一个压缩文件，则保存文件
+
+		//创建目录
+		os.MkdirAll(application.ImageMagickPath, os.ModePerm)
+		saveFilePath := mine.SavePath + "/" + mine.Url[strings.LastIndex(mine.Url, "/")+1:]
+		return os.WriteFile(saveFilePath, mine.Data.Bytes(), 0644)
+	}
 
 	// 创建一个 zip.Reader 来读取缓冲区中的 zip 数据
 	r, err := zip.NewReader(bytes.NewReader(mine.Data.Bytes()), int64(mine.Data.Len()))

@@ -2,7 +2,6 @@ package ImageUtil
 
 import (
 	"bytes"
-	"fmt"
 	"github.com/nfnt/resize"
 	"github.com/rwcarlsen/goexif/exif"
 	_ "golang.org/x/image/bmp"
@@ -13,8 +12,8 @@ import (
 	"image/draw"
 	"image/jpeg"
 	_ "image/png"
-	"log"
 	"os"
+	"strconv"
 )
 
 /**
@@ -92,15 +91,20 @@ func ThumbByData(data []byte, targetMaxSize int) ([]byte, error) {
 	//重新设置图片尺寸
 	zoomImg := resize.Resize(uint(targetW), uint(targetH), img, resize.Lanczos3)
 
+	// 创建一个 bytes.Buffer 用于保存 JPEG 数据
+	var buf bytes.Buffer
+
+	////编码信息
+	//options := &encoder.Options{
+	//	Quality: 100,
+	//}
+	//// 将裁剪后的图片编码并保存
+	//webp.Encode(&buf, zoomImg, options)
+
 	// 设置 JPEG 编码选项
 	options := &jpeg.Options{
 		Quality: 85, // 设定 JPEG 质量 1-100
 	}
-
-	// 创建一个 bytes.Buffer 用于保存 JPEG 数据
-	var buf bytes.Buffer
-
-	// 将裁剪后的图片编码并保存
 	err = jpeg.Encode(&buf, zoomImg, options)
 	if err != nil {
 		return nil, err
@@ -209,91 +213,76 @@ func ThumbByDataToSquare(data []byte, maxWidth int, maxHeight int) ([]byte, erro
 	return buf.Bytes(), nil
 }
 
-/**
- * 获取图片信息
- */
-func GetInfo(path string) (*ImageInfo, error) {
+// 获取照片信息
+func GetInfo(path string) (ImageInfo, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return nil, err
+		return ImageInfo{}, err
 	}
 	return GetInfoByData(data)
 }
 
-/**
- * 获取图片信息
- */
-func GetInfoByData(data []byte) (*ImageInfo, error) {
+// 获取照片信息
+func GetInfoByData(data []byte) (ImageInfo, error) {
+	var imageInfo ImageInfo
 
 	//加载图片信息
 	imageConfig, _, err := image.DecodeConfig(bytes.NewReader(data))
 	if err != nil {
-		return nil, err
+		return imageInfo, err
 	}
-	return &ImageInfo{
-		Width:  imageConfig.Width,
-		Height: imageConfig.Height,
-	}, nil
-}
 
-/**
- * 获取图片信息
- */
-func GetInfo2(path string) (*ImageInfo, error) {
-
-	// 打开 JPEG 文件
-	file, err := os.Open(path)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file.Close()
+	// 设置图片尺寸
+	imageInfo.Width = imageConfig.Width
+	imageInfo.Height = imageConfig.Height
 
 	// 解析 EXIF 数据
-	x, err := exif.Decode(file)
+	x, err := exif.Decode(bytes.NewReader(data))
 	if err != nil {
-		log.Fatal(err)
+		return imageInfo, err
 	}
 
 	// 获取拍摄时间
 	datetime, err := x.DateTime()
 	if err == nil {
-		fmt.Println("拍摄时间:", datetime)
+		imageInfo.Date = datetime.UnixMilli()
 	}
 
 	// 获取相机制造商
 	manufacturer, err := x.Get(exif.Make)
 	if err == nil {
-		fmt.Println("相机制造商:", manufacturer)
+		imageInfo.Make = manufacturer.String()
 	}
 
 	// 获取相机型号
 	model, err := x.Get(exif.Model)
 	if err == nil {
-		fmt.Println("相机型号:", model)
+		imageInfo.Make = model.String()
 	}
 
 	// 获取光圈值
 	aperture, err := x.Get(exif.FNumber)
 	if err == nil {
-		fmt.Println("光圈值:", aperture.String())
+		imageInfo.FNumber = aperture.String()
 	}
 
 	// 获取快门速度
 	shutterSpeed, err := x.Get(exif.ShutterSpeedValue)
 	if err == nil {
-		fmt.Println("快门速度:", shutterSpeed.String())
+		imageInfo.ShutterSpeed = shutterSpeed.String()
 	}
 
 	// 获取 ISO
 	iso, err := x.Get(exif.ISOSpeedRatings)
 	if err == nil {
-		fmt.Println("ISO:", iso.String())
+		imageInfo.ISO, _ = strconv.Atoi(iso.String())
 	}
 
 	// 获取 GPS 信息（如果有）
 	lat, long, err := x.LatLong()
 	if err == nil {
-		fmt.Printf("GPS 坐标: 纬度 %.6f, 经度 %.6f\n", lat, long)
+		imageInfo.Lat = lat
+		imageInfo.Long = long
 	}
-	return nil, nil
+	return imageInfo, nil
 }

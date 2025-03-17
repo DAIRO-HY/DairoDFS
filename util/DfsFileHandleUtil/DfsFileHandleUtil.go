@@ -14,6 +14,7 @@ import (
 	"DairoDFS/service/DfsFileService"
 	"DairoDFS/util/DfsFileUtil"
 	"DairoDFS/util/ImageUtil"
+	"DairoDFS/util/ImageUtil/HeicUtil"
 	"DairoDFS/util/ImageUtil/PSDUtil"
 	"DairoDFS/util/ImageUtil/RawUtil"
 	"DairoDFS/util/VideoUtil"
@@ -103,25 +104,6 @@ func handle(it dto.DfsFileDto) {
  * 生成附属文件，如标清视频，高清视频，raw预览图片
  */
 func makeExtra(dfsFileDto dto.DfsFileDto) {
-	//existsExtraList := DfsFileDao.SelectExtraFileByStorageId(dfsFileDto.StorageId)
-	//if len(existsExtraList) > 0 { //该文件已经存在了附属文件,直接使用
-	//	for _, it := range existsExtraList {
-	//		extraDto := dto.DfsFileDto{
-	//			Id:          Number.ID(),
-	//			Name:        it.Name,
-	//			Size:        it.Size,
-	//			StorageId:   it.StorageId,
-	//			IsExtra:     true,
-	//			ParentId:    dfsFileDto.Id,
-	//			UserId:      it.UserId,
-	//			Date:        dfsFileDto.Date,
-	//			State:       1,
-	//			ContentType: it.ContentType,
-	//		}
-	//		DfsFileService.Add(extraDto)
-	//	}
-	//	return
-	//}
 	if _, isExistsStorageFile := StorageFileDao.SelectOne(dfsFileDto.StorageId); !isExistsStorageFile {
 
 		//理论上没有不存在的本地文件
@@ -151,41 +133,41 @@ func makeProperty(dfsFileDto dto.DfsFileDto) {
 	}
 	localDto, _ := StorageFileDao.SelectOne(dfsFileDto.StorageId)
 	storagePath := localDto.Path
-	lowerName := strings.ToLower(dfsFileDto.Name)
 	var property any
 	var makePropertyErr error
-	if strings.HasSuffix(lowerName, ".jpg") ||
-		strings.HasSuffix(lowerName, ".jpeg") ||
-		strings.HasSuffix(lowerName, ".png") ||
-		strings.HasSuffix(lowerName, ".bmp") ||
-		strings.HasSuffix(lowerName, ".gif") ||
-		strings.HasSuffix(lowerName, ".ico") ||
-		strings.HasSuffix(lowerName, ".svg") ||
-		strings.HasSuffix(lowerName, ".tiff") ||
-		strings.HasSuffix(lowerName, ".webp") ||
-		strings.HasSuffix(lowerName, ".wmf") ||
-		strings.HasSuffix(lowerName, ".wmz") ||
-		strings.HasSuffix(lowerName, ".jp2") ||
-		strings.HasSuffix(lowerName, ".eps") ||
-		strings.HasSuffix(lowerName, ".tga") ||
-		strings.HasSuffix(lowerName, ".jfif") { //图片处理
+	if dfsFileDto.Ext == ".jpg" ||
+		dfsFileDto.Ext == "jpeg" ||
+		dfsFileDto.Ext == "png" ||
+		dfsFileDto.Ext == "bmp" ||
+		dfsFileDto.Ext == "gif" ||
+		dfsFileDto.Ext == "ico" ||
+		dfsFileDto.Ext == "svg" ||
+		dfsFileDto.Ext == "tiff" ||
+		dfsFileDto.Ext == "webp" ||
+		dfsFileDto.Ext == "wmf" ||
+		dfsFileDto.Ext == "wmz" ||
+		dfsFileDto.Ext == "jp2" ||
+		dfsFileDto.Ext == "eps" ||
+		dfsFileDto.Ext == "tga" ||
+		dfsFileDto.Ext == "jfif" { //图片处理
 		property, makePropertyErr = ImageUtil.GetInfo(storagePath)
-	} else if strings.HasSuffix(lowerName, ".psd") ||
-		strings.HasSuffix(lowerName, ".psb") ||
-		strings.HasSuffix(lowerName, ".ai") {
+	} else if dfsFileDto.Ext == "psd" || dfsFileDto.Ext == "psb" || dfsFileDto.Ext == "ai" {
 		property, makePropertyErr = PSDUtil.GetInfo(storagePath)
-	} else if strings.HasSuffix(lowerName, ".mp4") ||
-		strings.HasSuffix(lowerName, ".mov") ||
-		strings.HasSuffix(lowerName, ".avi") ||
-		strings.HasSuffix(lowerName, ".mkv") ||
-		strings.HasSuffix(lowerName, ".flv") ||
-		strings.HasSuffix(lowerName, ".rm") ||
-		strings.HasSuffix(lowerName, ".rmvb") ||
-		strings.HasSuffix(lowerName, ".3gp") {
-		property, makePropertyErr = VideoUtil.GetInfo(storagePath)
-	} else if strings.HasSuffix(lowerName, ".cr3") || strings.HasSuffix(lowerName, ".cr2") { //专业相机RAW图片
+	} else if dfsFileDto.Ext == "cr3" || dfsFileDto.Ext == "cr2" { //专业相机RAW图片
 		property, makePropertyErr = RawUtil.GetInfo(storagePath)
+	} else if dfsFileDto.Ext == "heic" { //Iphone手机拍摄的照片
+		property, makePropertyErr = HeicUtil.GetInfo(storagePath)
+	} else if dfsFileDto.Ext == "mp4" ||
+		dfsFileDto.Ext == "mov" ||
+		dfsFileDto.Ext == "avi" ||
+		dfsFileDto.Ext == "mkv" ||
+		dfsFileDto.Ext == "flv" ||
+		dfsFileDto.Ext == "rm" ||
+		dfsFileDto.Ext == "rmvb" ||
+		dfsFileDto.Ext == "3gp" {
+		property, makePropertyErr = VideoUtil.GetInfo(storagePath)
 	} else {
+		return
 	}
 	if makePropertyErr != nil {
 		panic(makePropertyErr)
@@ -258,6 +240,8 @@ func makeThumb(dfsFileDto dto.DfsFileDto) {
 
 		//专业相机RAW图片
 		data, makeThumbErr = RawUtil.Thumb(storagePath, targetMaxSize)
+	} else if strings.HasSuffix(lowerName, ".heic") { //Iphone手机拍摄的照片
+		data, makeThumbErr = HeicUtil.Thumb(storagePath, targetMaxSize)
 	} else { //无需生成缩略图
 		return
 	}
@@ -310,69 +294,54 @@ func makePreview(dfsFileDto dto.DfsFileDto) {
 	localDto, _ := StorageFileDao.SelectOne(dfsFileDto.StorageId)
 	storagePath := localDto.Path
 	lowerName := strings.ToLower(dfsFileDto.Name)
+
+	var thumbData []byte
+	var err error
 	if strings.HasSuffix(lowerName, ".psd") ||
 		strings.HasSuffix(lowerName, ".psb") ||
 		strings.HasSuffix(lowerName, ".ai") {
-		pngData, err := PSDUtil.ToPng(storagePath)
-		if err != nil {
-			return
-		}
-		md5 := File.ToMd5ByBytes(pngData)
-
-		//保存文件
-		storageFileDto := DfsFileService.SaveToStorageFile(md5, bytes.NewReader(pngData))
-		extraDto := dto.DfsFileDto{
-			Id:          Number.ID(),
-			Name:        "preview",
-			Size:        int64(len(pngData)),
-			StorageId:   storageFileDto.Id,
-			IsExtra:     true,
-			ParentId:    dfsFileDto.Id,
-			UserId:      dfsFileDto.UserId,
-			Date:        dfsFileDto.Date,
-			State:       1,
-			ContentType: "image/png",
-		}
-		DfsFileService.Add(extraDto)
+		thumbData, err = PSDUtil.ToJpeg(storagePath)
 	} else if strings.HasSuffix(lowerName, ".cr3") || strings.HasSuffix(lowerName, ".cr2") {
-		jpgData, err := RawUtil.ToJpg(storagePath)
-		if err != nil {
-			return
-		}
-		md5 := File.ToMd5ByBytes(jpgData)
-
-		//保存文件
-		storageFileDto := DfsFileService.SaveToStorageFile(md5, bytes.NewReader(jpgData))
-		extraDto := dto.DfsFileDto{
-			Id:          Number.ID(),
-			Name:        "preview",
-			Size:        int64(len(jpgData)),
-			StorageId:   storageFileDto.Id,
-			IsExtra:     true,
-			ParentId:    dfsFileDto.Id,
-			UserId:      dfsFileDto.UserId,
-			Date:        dfsFileDto.Date,
-			ContentType: "image/jpeg",
-			State:       1,
-		}
-		DfsFileService.Add(extraDto)
+		thumbData, err = RawUtil.ToJpg(storagePath)
+	} else if strings.HasSuffix(lowerName, ".heic") {
+		thumbData, err = HeicUtil.ToJpeg(storagePath, 100)
 	} else {
+		return
 	}
+	if err != nil {
+		return
+	}
+	md5 := File.ToMd5ByBytes(thumbData)
+
+	//保存文件
+	storageFileDto := DfsFileService.SaveToStorageFile(md5, bytes.NewReader(thumbData))
+	extraDto := dto.DfsFileDto{
+		Id:          Number.ID(),
+		Name:        "preview",
+		Size:        int64(len(thumbData)),
+		StorageId:   storageFileDto.Id,
+		IsExtra:     true,
+		ParentId:    dfsFileDto.Id,
+		UserId:      dfsFileDto.UserId,
+		Date:        dfsFileDto.Date,
+		ContentType: "image/jpeg",
+		State:       1,
+	}
+	DfsFileService.Add(extraDto)
 }
 
 // 生成视频,如标清视频，高清视频
 func makeVideo(dfsFileDto dto.DfsFileDto) {
 	localDto, _ := StorageFileDao.SelectOne(dfsFileDto.StorageId)
 	storagePath := localDto.Path
-	lowerName := strings.ToLower(dfsFileDto.Name)
-	if strings.HasSuffix(lowerName, ".mp4") ||
-		strings.HasSuffix(lowerName, ".mov") ||
-		strings.HasSuffix(lowerName, ".avi") ||
-		strings.HasSuffix(lowerName, ".mkv") ||
-		strings.HasSuffix(lowerName, ".flv") ||
-		strings.HasSuffix(lowerName, ".rm") ||
-		strings.HasSuffix(lowerName, ".rmvb") ||
-		strings.HasSuffix(lowerName, ".3gp") {
+	if dfsFileDto.Ext == "mp4" ||
+		dfsFileDto.Ext == "mov" ||
+		dfsFileDto.Ext == "avi" ||
+		dfsFileDto.Ext == "mkv" ||
+		dfsFileDto.Ext == "flv" ||
+		dfsFileDto.Ext == "rm" ||
+		dfsFileDto.Ext == "rmvb" ||
+		dfsFileDto.Ext == "3gp" {
 
 		videoInfo, err := VideoUtil.GetInfo(storagePath)
 		if err != nil {
