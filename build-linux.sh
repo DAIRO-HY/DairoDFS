@@ -5,7 +5,7 @@ github_token=$GITHUB_TOKEN
 
 #docker用户名
 docker_user=$DOCKER_USER
-docker_pwd=$DOCKER_PWD
+docker_pwd=$DOCKER_PASSWORD
 
 #项目名
 projectName="DairoDFS"
