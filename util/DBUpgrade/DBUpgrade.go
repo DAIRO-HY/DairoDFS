@@ -8,7 +8,7 @@ import (
 )
 
 // VERSION 数据库版本号
-const _VERSION = 3
+const _VERSION = 4
 
 /**
 * 更新表结构
@@ -18,8 +18,13 @@ func Upgrade(db *sql.DB) {
 	db.QueryRow("PRAGMA USER_VERSION").Scan(&version)
 	if version == 0 {
 		create(db)
-	}
-	if version > 0 {
+	} else if version < 4 {
+
+		//删除附属文件
+		db.Exec("delete from dfs_file where isExtra = 1")
+
+		//将所有文件标记为未处理
+		db.Exec("update dfs_file set state = 0 where 1 = 1")
 	}
 
 	//设置数据库版本号
