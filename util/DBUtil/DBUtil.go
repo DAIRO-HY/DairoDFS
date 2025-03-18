@@ -94,7 +94,7 @@ func SelectOne[T any](query string, args ...any) (T, bool) {
 
 // SelectList 查询列表
 func SelectListBk[T any](query string, args ...any) []*T {
-	list := SelectToListMap(query, args...)
+	list, _ := SelectToListMap(query, args...)
 
 	// 创建一个空切片
 	dtoList := make([]*T, 0) // 初始化空切片
@@ -399,19 +399,19 @@ func SelectListNull[T any](query string, args ...any) []T {
 }
 
 // SelectToListMap 将查询结果以List<Map>的类型返回
-func SelectToListMap(query string, args ...any) []map[string]any {
-	rows, err := DBConnection.Query(query, args...)
-	if err != nil {
-		LogUtil.Error(fmt.Sprintf("查询数据失败:%s: err:%q", query, err))
-		return nil
+func SelectToListMap(query string, args ...any) ([]map[string]any, []string) {
+	rows, queryErr := DBConnection.Query(query, args...)
+	if queryErr != nil {
+		LogUtil.Error(fmt.Sprintf("查询数据失败:%s: err:%q", query, queryErr))
+		return nil, nil
 	}
 	defer rows.Close()
 
 	// 获取列的名称
-	columns, err := rows.Columns()
-	if err != nil {
-		LogUtil.Error(fmt.Sprintf("%q: %s\n", err, query))
-		return nil
+	columns, columnsErr := rows.Columns()
+	if columnsErr != nil {
+		LogUtil.Error(fmt.Sprintf("%q: %s\n", columnsErr, query))
+		return nil, nil
 	}
 
 	// 创建一个[]interface{}的slice, 每个元素指向values中的对应位置
@@ -430,7 +430,7 @@ func SelectToListMap(query string, args ...any) []map[string]any {
 		// 将当前行的数据扫描到valuePtrs中
 		if err := rows.Scan(valuePtrs...); err != nil {
 			LogUtil.Error(fmt.Sprintf("数据扫描失败:%s: err:%q", query, err))
-			return nil
+			return nil, columns
 		}
 
 		// 使用map将列名和对应的值关联起来
@@ -441,7 +441,7 @@ func SelectToListMap(query string, args ...any) []map[string]any {
 		}
 		list = append(list, rowMap)
 	}
-	return list
+	return list, columns
 }
 
 // 通过反射的方式给结构体设置值

@@ -1,16 +1,11 @@
 ﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
+    {{template "head" .}}
     <title>高级功能</title>
 </head>
 <body>
 {{template "top-bar" .}}
-
-<div class="mx-3 mt-3 px-3 row g-0 rounded shadow bg-content-bar" style="line-height: 44px;">
-    <div class="col-6 fs-5">执行SQL</div>
-    <div class="col-6 text-end" style="font-size: 0;">
-    </div>
-</div>
 <div class="mx-3 mt-2 p-2 rounded shadow bg-content">
     <textarea class="form-control" id="sql"></textarea>
     <div class="text-end">
@@ -40,7 +35,7 @@
      * @param data 要填充的数据
      */
     function fillDataTable(data) {
-        if (!Array.isArray(data)) {
+        if (!isNaN(data)) {
             $("#table").empty()
             $("#result").text("执行结果:" + data)
             return
@@ -48,17 +43,16 @@
         $("#result").empty()
 
         const columns = []
-        if (data.length > 0) {
-            const first = data[0]
-            for (let key in first) {
+        if (data.columns.length > 0) {
+            for (let index in data.columns) {
                 columns.push({
-                    data: key,
-                    title: key
+                    data: data.columns[index],
+                    title: data.columns[index]
                 })
             }
         }
         $("#table").createTable({
-            data: data,
+            data: data.data,
             columns: columns
         })
     }

@@ -151,7 +151,7 @@ func Write(query string, args ...any) (sql.Result, error) {
 		}
 	}
 	isAutoCommit := IsAutoCommit()
-	if !isAutoCommit { //手动提交表单的话，在开启事务
+	if !isAutoCommit { //手动提交表单的话，开启事务
 		StartTransaction()
 	}
 	switch value := getConnection().(type) {

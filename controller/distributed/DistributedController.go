@@ -114,7 +114,8 @@ func GetTableData(tbName string, ids string) []map[string]any {
 	//if (SyncByTable.isRuning || SyncByLog.isRunning) {
 	//   throw BusinessException("主机正在同步数据中，请等待完成后继续。")
 	//}
-	return DBUtil.SelectToListMap("select * from " + tbName + " where id in (" + ids + ")")
+	list, _ := DBUtil.SelectToListMap("select * from " + tbName + " where id in (" + ids + ")")
+	return list
 }
 
 /**

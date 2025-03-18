@@ -26,5 +26,6 @@ func LastID() int64 {
 
 // 获取sql日志
 func GetLog(lastId int64) []map[string]any {
-	return DBUtil.SelectToListMap("select id,date,sql,param from sql_log where id > ? order by id limit 100", lastId)
+	list, _ := DBUtil.SelectToListMap("select id,date,sql,param from sql_log where id > ? order by id limit 100", lastId)
+	return list
 }
