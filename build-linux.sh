@@ -76,7 +76,7 @@ echo "获取到版本号:$version"
 git tag -d $version
 
 #删除远程标签
-git push origin --delete tag $version
+#git push origin --delete tag $version
 
 git tag $version
 
