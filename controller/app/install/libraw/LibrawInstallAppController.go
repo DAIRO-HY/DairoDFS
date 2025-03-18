@@ -101,7 +101,7 @@ func doInstall() {
 
 		abs, _ := filepath.Abs(application.LibrawPath + "/libraw-install.sh")
 		installResultSize := 0
-		const installTotalSize = 210820
+		const installTotalSize = 250820
 		_, installCmdErr := ShellUtil.ExecToOkReader(abs, func(rc io.ReadCloser) {
 			for {
 				n, err := rc.Read(cache)
