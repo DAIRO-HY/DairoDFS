@@ -2,6 +2,7 @@
 
 #github登录票据
 github_token=$GITHUB_TOKEN
+echo "当前TOKEN:$github_token"
 
 #docker用户名
 docker_user=$DOCKER_USER
