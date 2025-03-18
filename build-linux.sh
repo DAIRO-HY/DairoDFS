@@ -79,8 +79,11 @@ git tag -d $version
 git push origin --delete tag $version
 
 git tag $version
+
+echo "推送版本 $version"
 git push origin $version
 
+echo "正在创建标签 $version"
 release_message="本次发布版本:$version"
 create_release_api_response=$(curl -L -X POST "https://api.github.com/repos/$repo/releases" \
                         -H "Accept: application/vnd.github.v3+json" \
