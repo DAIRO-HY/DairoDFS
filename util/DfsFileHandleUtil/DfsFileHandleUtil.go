@@ -33,6 +33,10 @@ import (
 // 标记是否有新的数据
 var hasData = false
 
+func HasData() bool {
+	return hasData
+}
+
 var cond = sync.NewCond(&sync.Mutex{}) // 条件变量
 
 func init() {

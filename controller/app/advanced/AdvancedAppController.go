@@ -1,7 +1,9 @@
 package advanced
 
 import (
+	"DairoDFS/extension/Bool"
 	"DairoDFS/util/DBUtil"
+	"DairoDFS/util/DfsFileHandleUtil"
 	"strings"
 )
 
@@ -15,6 +17,13 @@ import (
  */
 //@Html:.html
 func Html() {}
+
+// @Post:/init
+func Init() map[string]any {
+	return map[string]any{
+		"fileHandling": Bool.Is(DfsFileHandleUtil.HasData(), "正在处理", "空闲中"),
+	}
+}
 
 // 页面数据初始化
 // @Post:/exec_sql
@@ -32,4 +41,10 @@ func ExecSql(sql string) any {
 		DBUtil.Exec(sql)
 	}
 	return nil
+}
+
+// 开始处理线程
+// @Post:/re_handle
+func ReHandle() {
+	DfsFileHandleUtil.NotifyWorker()
 }
