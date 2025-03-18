@@ -75,13 +75,13 @@ echo "获取到版本号:$version"
 echo "删除本地已经存在的标签 $version"
 git tag -d $version
 
-#删除远程标签
-#git push origin --delete tag $version
+echo "删除远程标签 $version"
+git push origin --delete tag $version
 
 echo "创建标签 $version"
 git tag $version
 
-echo "推送版本 $version"
+echo "正在推送版本 $version"
 git push origin $version
 
 echo "正在创建标签 $version"
