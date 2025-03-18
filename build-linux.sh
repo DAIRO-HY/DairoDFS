@@ -72,12 +72,13 @@ fi
 version=$(grep -oP '(?<=VERSION = ")[^"]+' application/Application.go)
 echo "获取到版本号:$version"
 
-#删除本地已经存在的标签
+echo "删除本地已经存在的标签 $version"
 git tag -d $version
 
 #删除远程标签
 #git push origin --delete tag $version
 
+echo "创建标签 $version"
 git tag $version
 
 echo "推送版本 $version"
