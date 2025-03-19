@@ -2,6 +2,7 @@ package inerceptor
 
 import (
 	application "DairoDFS/application"
+	"DairoDFS/dao/UserDao"
 	"DairoDFS/dao/UserTokenDao"
 	"DairoDFS/exception"
 	"DairoDFS/util/GoroutineLocal"
@@ -32,6 +33,9 @@ func LoginValidate(writer http.ResponseWriter, request *http.Request) bool {
 		return false
 	}
 	userId := UserTokenDao.GetByUserIdByToken(token)
+	if userId == 0 { //从api-token获取用户id
+		userId = UserDao.SelectIdByApiToken(token)
+	}
 	if userId == 0 { //用户未登录
 		reject(writer, request)
 		return false

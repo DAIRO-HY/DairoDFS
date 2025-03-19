@@ -8,21 +8,47 @@
 {{template "top-bar" .}}
 <div class="mx-3 mt-2 p-2 rounded shadow bg-content">
     <div class="row">
-        <div class="col-auto"><div class="alert alert-primary">文件处理状态：<span id="fileHandling"></span></div></div>
+        <div class="col-auto">
+            <div class="alert alert-primary">文件处理状态：<span id="fileHandling"></span></div>
+        </div>
     </div>
     <textarea class="form-control" id="sql"></textarea>
-    <div class="text-end">
-        <button type="button" class="btn btn-info mt-2" onclick="onDeleteExtraClick()">重置附属文件</button>
-        <button type="button" class="btn btn-danger mt-2" onclick="onDeletePreVideoClick()">重置预览视频</button>
-        <button type="button" class="btn btn-primary mt-2" onclick="onDeletePreviewClick()">重置预览图片</button>
-        <button type="button" class="btn btn-success mt-2" onclick="onDeleteThumbClick()">重置缩略图片</button>
-        <button type="button" class="btn btn-dark mt-2" onclick="onClearPropertyClick()">重置属性</button>
-        <button type="button" class="btn btn-info mt-2" onclick="onHandlingClick()">未处理的文件</button>
-        <button type="button" class="btn btn-danger mt-2" onclick="onHandlingErrorClick()">处理失败的文件</button>
-        <button type="button" class="btn btn-primary mt-2" onclick="onExecClick()">执行</button>
-    </div>
-    <div class="text-end">
-        <button type="button" class="btn btn-success mt-2" onclick="onReHandleClick()">开启文件处理</button>
+    <div class="row row-cols-xl-6 row-cols-lg-5 row-cols-md-4 row-cols-sm-3 row-cols-2">
+        <div class="col">
+            <button type="button" class="btn w-100 btn-primary mt-2" onclick="onExecClick()">执行</button>
+        </div>
+        <div class="col">
+            <button type="button" class="btn w-100 btn-dark mt-2" onclick="onDeleteExtraClick()">重置附属文件</button>
+        </div>
+        <div class="col">
+            <button type="button" class="btn w-100 btn-info mt-2" onclick="onDeletePreVideoClick()">重置预览视频
+            </button>
+        </div>
+        <div class="col">
+            <button type="button" class="btn w-100 btn-danger mt-2" onclick="onDeletePreviewClick()">重置预览图片
+            </button>
+        </div>
+        <div class="col">
+            <button type="button" class="btn w-100 btn-success mt-2" onclick="onDeleteThumbClick()">重置缩略图片
+            </button>
+        </div>
+        <div class="col">
+            <button type="button" class="btn w-100 btn-primary mt-2" onclick="onClearPropertyClick()">重置属性</button>
+        </div>
+        <div class="col">
+            <button type="button" class="btn w-100 btn-dark mt-2" onclick="onHandlingClick()">未处理的文件</button>
+        </div>
+        <div class="col">
+            <button type="button" class="btn w-100 btn-info mt-2" onclick="onHandlingErrorClick()">处理失败的文件
+            </button>
+        </div>
+        <div class="col">
+            <button type="button" class="btn w-100 btn-danger mt-2" onclick="onHandErrorRetryClick()">处理失败全部重试
+            </button>
+        </div>
+        <div class="col">
+            <button type="button" class="btn w-100 btn-success mt-2" onclick="onReHandleClick()">开启文件处理</button>
+        </div>
     </div>
     <div class="text-start">
         <div id="result"></div>
@@ -31,11 +57,11 @@
 </div>
 <script>
 
-    $(function(){
+    $(function () {
         init()
     })
 
-    function init(){
+    function init() {
         $.ajaxByData("advanced/init").success(data => {
             $("#fileHandling").text(data.fileHandling)
         }).post()
@@ -56,7 +82,7 @@
     /**
      * 查看正在处理中的文件
      */
-    function onHandlingClick(){
+    function onHandlingClick() {
         $("#sql").text("select count(*) from dfs_file where state = 0 and storageId > 0")
         onExecClick()
     }
@@ -64,7 +90,7 @@
     /**
      * 查看处理失败
      */
-    function onHandlingErrorClick(){
+    function onHandlingErrorClick() {
         $("#sql").text("select * from dfs_file where state = 2 limit 100")
         onExecClick()
     }
@@ -72,9 +98,19 @@
     /**
      * 重置文件属性
      */
-    function onClearPropertyClick(){
-        if(confirm("重置文件属性")){
+    function onClearPropertyClick() {
+        if (confirm("重置文件属性")) {
             $("#sql").text("update dfs_file set property = null,state = 0 where storageId > 0 and isExtra = 0")
+            onExecClick()
+        }
+    }
+
+    /**
+     * 处理失败全部重试
+     */
+    function onHandErrorRetryClick() {
+        if (confirm("确定要处理失败全部重试")) {
+            $("#sql").text("update dfs_file set state = 0 where state = 2")
             onExecClick()
         }
     }
@@ -82,8 +118,8 @@
     /**
      * 重新生成缩略图片
      */
-    function onDeleteThumbClick(){
-        if(confirm("确定要重新生成缩略图片")){
+    function onDeleteThumbClick() {
+        if (confirm("确定要重新生成缩略图片")) {
             $("#sql").text("delete from dfs_file where isExtra = 1 and name = 'thumb';update dfs_file set state = 0 where storageId > 0 and isExtra = 0")
             onExecClick()
         }
@@ -92,8 +128,8 @@
     /**
      * 重新生成预览图片
      */
-    function onDeletePreviewClick(){
-        if(confirm("确定要重新生成预览图片")){
+    function onDeletePreviewClick() {
+        if (confirm("确定要重新生成预览图片")) {
             $("#sql").text("delete from dfs_file where isExtra = 1 and name = 'preview';update dfs_file set state = 0 where storageId > 0 and isExtra = 0")
             onExecClick()
         }
@@ -102,8 +138,8 @@
     /**
      * 重新生成预览视频
      */
-    function onDeletePreVideoClick(){
-        if(confirm("重新生成预览视频")){
+    function onDeletePreVideoClick() {
+        if (confirm("重新生成预览视频")) {
             $("#sql").text("delete from dfs_file where isExtra = 1 and name in ('1920','1280','640');update dfs_file set state = 0 where storageId > 0 and isExtra = 0")
             onExecClick()
         }
@@ -112,15 +148,15 @@
     /**
      * 重置附属文件
      */
-    function onDeleteExtraClick(){
-        if(confirm("重新生成预览视频")){
+    function onDeleteExtraClick() {
+        if (confirm("重新生成预览视频")) {
             $("#sql").text("delete from dfs_file where isExtra = 1;update dfs_file set state = 0 where storageId > 0 and isExtra = 0")
             onExecClick()
         }
     }
 
     //开始处理线程
-    function onReHandleClick(){
+    function onReHandleClick() {
         $.ajaxByData("advanced/re_handle").success().post()
     }
 
