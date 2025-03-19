@@ -111,18 +111,19 @@ function computeUploadTotal() {
  */
 function drawUploadList() {
     $("#uploadingTable").createTable({
-        data: uploadList, iconBtns: {
-            "bi-x": function (item) {
-                location.href = "/app/user_edit?id=" + item.id
-            }
-        },
         columns: [{
             data: "name", title: "文件名"
         }, {
             data: "dataSize", title: "大小", className: "text-end", width: 50
         }, {
             data: "progress", title: "进度", className: "text-end", width: 60
-        }]
+        }],
+        data: uploadList,
+        iconBtns: {
+            "bi-x": function (item) {
+                location.href = "/app/user_edit?id=" + item.id
+            }
+        }
     })
 }
 
@@ -198,11 +199,18 @@ function loopUpload() {
             reload()
             loopUpload()
         },
-        error: function () {
+        error: function (res) {
+            let errorMsg = ""
+            try {
+                errorMsg = JSON.parse(res.responseText).msg
+            }catch{
+                errorMsg = res.responseText
+            }
             $("#retryDiv").show()
-            reshowProgressUploadTable(fileIndex, "失败")
+            reshowProgressUploadTable(fileIndex, errorMsg)
             file.isFinish = true
             file.isFail = true
+            file.progress = errorMsg
             isUploading = false
             loopUpload()
         }

@@ -72,8 +72,7 @@ func DfsContentType(ext string) string {
 /**
  * 判断储存路径的磁盘剩余容量,选择合适的目录
  */
-func SelectDriverFolder() string {
-	//maxSize := SystemConfig.Instance().UploadMaxSize
+func SelectDriverFolder(fileSize int64) string {
 	saveFolderList := SystemConfig.Instance().SaveFolderList
 	if len(saveFolderList) == 0 {
 		panic(exception.Biz("没有配置存储目录"))
@@ -87,20 +86,20 @@ func SelectDriverFolder() string {
 		if usageErr != nil {
 			panic(usageErr)
 		}
-		if usage.Free > uint64(1*1024*1024*1024) { //空间足够
+		if usage.Free > uint64(fileSize) { //空间足够
 			return folder
 		}
 	}
-	panic(exception.Biz("文件夹不存在或没有足够存储空间"))
+	panic(exception.Biz("设置的存储文件夹不存在或没有足够存储空间"))
 }
 
 /**
  * 获取本地文件存储路径
  */
-func LocalPath() string {
+func LocalPath(fileSize int64) string {
 
 	//选择合适的文件夹储存
-	localSaveFolder := SelectDriverFolder()
+	localSaveFolder := SelectDriverFolder(fileSize)
 	dateFormat := time.Now().Format("2006-01")
 	folder := localSaveFolder + "/" + dateFormat
 	_, statErr := os.Stat(folder)
@@ -113,7 +112,6 @@ func LocalPath() string {
 	makePathLock.Lock()
 	var path string
 	for i := 0; i < 5; i++ {
-		time.Sleep(1 * time.Microsecond)
 
 		//拼接文件名
 		path = folder + "/" + strconv.FormatInt(time.Now().UnixMicro(), 10)
@@ -121,6 +119,7 @@ func LocalPath() string {
 		if os.IsNotExist(pathErr) {
 			break
 		}
+		time.Sleep(1 * time.Microsecond)
 	}
 	makePathLock.Unlock()
 	_, pathErr := os.Stat(path)

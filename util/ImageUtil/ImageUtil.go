@@ -239,7 +239,10 @@ func GetInfoByData(data []byte) (ImageInfo, error) {
 	// 解析 EXIF 数据
 	x, err := exif.Decode(bytes.NewReader(data))
 	if err != nil {
-		return imageInfo, err
+		//	return imageInfo, err
+
+		//即使出错，也要返回已经生成的属性
+		return imageInfo, nil
 	}
 
 	// 获取拍摄时间

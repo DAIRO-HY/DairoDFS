@@ -11,6 +11,12 @@
         <div class="col-auto">
             <div class="alert alert-primary">文件处理状态：<span id="fileHandling"></span></div>
         </div>
+        <div class="col-auto">
+            <div class="alert alert-success"><span id="recycleStorageTimerState"></span></div>
+        </div>
+        <div class="col-auto">
+            <div class="alert alert-info"><span id="storageState"></span></div>
+        </div>
     </div>
     <textarea class="form-control" id="sql"></textarea>
     <div class="row row-cols-xl-6 row-cols-lg-5 row-cols-md-4 row-cols-sm-3 row-cols-2">
@@ -49,6 +55,15 @@
         <div class="col">
             <button type="button" class="btn w-100 btn-success mt-2" onclick="onReHandleClick()">开启文件处理</button>
         </div>
+        <div class="col">
+            <button type="button" class="btn w-100 btn-primary mt-2" onclick="onNotUseCountClick()">未使用文件数量</button>
+        </div>
+        <div class="col">
+            <button type="button" class="btn w-100 btn-dark mt-2" onclick="onRecycleNowClick()">回收未使用文件</button>
+        </div>
+        <div class="col">
+            <button type="button" class="btn w-100 btn-info mt-2" onclick="onWithoutStorageClick()">储存丢失的文件</button>
+        </div>
     </div>
     <div class="text-start">
         <div id="result"></div>
@@ -63,7 +78,9 @@
 
     function init() {
         $.ajaxByData("advanced/init").success(data => {
-            $("#fileHandling").text(data.fileHandling)
+            for(let key in data){
+                $("#" + key).text(data[key])
+            }
         }).post()
     }
 
@@ -91,7 +108,7 @@
      * 查看处理失败
      */
     function onHandlingErrorClick() {
-        $("#sql").text("select * from dfs_file where state = 2 limit 100")
+        $("#sql").text("select * from dfs_file where state = 2")
         onExecClick()
     }
 
@@ -155,9 +172,36 @@
         }
     }
 
-    //开始处理线程
+    /**
+     * 未使用文件数量
+     */
+    function onNotUseCountClick() {
+        $("#sql").text("select count(*) from storage_file where id not in (select storageId from dfs_file where storageId > 0) and id not in (select storageId from dfs_file_delete)")
+        onExecClick()
+    }
+
+    /**
+     * 开始处理线程
+     */
     function onReHandleClick() {
         $.ajaxByData("advanced/re_handle").success().post()
+    }
+
+    /**
+     * 立即回收未使用的文件
+     */
+    function onRecycleNowClick() {
+        if (confirm("确定要立即回收未使用的文件")) {
+            $.ajaxByData("advanced/recycle_now").success().post()
+        }
+    }
+
+    /**
+     * 储存丢失的文件
+     */
+    function onWithoutStorageClick(){
+        $("#sql").text("select * from dfs_file where storageId > 0 and storageId not in (select id from storage_file)")
+        onExecClick()
     }
 
 

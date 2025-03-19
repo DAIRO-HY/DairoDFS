@@ -53,7 +53,10 @@ func download(info *DistributedUtil.SyncServerInfo, md5 string, masterStorageFil
 		if md5 != tempFileMd5 {
 			return "", exception.Biz("同步的文件数据不完整，目标文件MD5:" + md5 + "，实际文件MD5:" + tempFileMd5)
 		}
-		saveLocalPath := DfsFileUtil.LocalPath()
+
+		//获取文件信息
+		stat, _ := os.Stat(tmpFilePath)
+		saveLocalPath := DfsFileUtil.LocalPath(stat.Size())
 
 		//移动文件
 		moveErr := os.Rename(tmpFilePath, saveLocalPath)

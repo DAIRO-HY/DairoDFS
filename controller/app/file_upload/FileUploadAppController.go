@@ -57,7 +57,7 @@ func Upload(request *http.Request, folder string, contentType string) error {
 	defer file.Close()
 
 	//将文件存放到指定目录
-	storageFileDto := DfsFileService.SaveToStorageFile(md5, file)
+	storageFileDto := DfsFileService.SaveToStorageReader(md5, file, header.Size)
 	addDfsFile(LoginState.LoginId(), storageFileDto, path, contentType)
 
 	//立即提交事务，否则可能导致文件处理任务获取不到数据
@@ -112,7 +112,7 @@ func ByStream(request *http.Request, md5 string) {
 	}
 
 	//将文件存放到指定目录
-	DfsFileService.SaveToStorageFileByPath(md5, tempPath)
+	DfsFileService.SaveToStorageByFile(tempPath, md5)
 
 	//文件上传成功，删除临时文件
 	writeFile.Close()

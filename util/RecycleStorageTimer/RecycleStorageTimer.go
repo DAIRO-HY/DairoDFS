@@ -109,7 +109,7 @@ func recycleDeletedFile() {
 		//删除文件不需要同步日志,所以不使用mybatis提交,让每个分机端走各自的删除逻辑,防止文件误删
 		DBConnection.DBConn.Exec("delete from dfs_file_delete where id in (" + deleteIds + ")")
 		for it, _ := range storageIds {
-			deleteStorage(it)
+			DeleteNotUseStorage(it)
 		}
 	}
 }
@@ -127,12 +127,14 @@ func recycleNotUseStorage() {
 		if err := rows.Scan(&id); err != nil {
 			panic(err)
 		}
-		deleteStorage(id)
+
+		//判断文件是否还在被使用，没有使用则删除文件
+		DeleteNotUseStorage(id)
 	}
 }
 
 // 删除本地文件
-func deleteStorage(id int64) {
+func DeleteNotUseStorage(id int64) {
 	if DfsFileDao.IsFileUsing(id) { //文件还在使用中
 		return
 	}

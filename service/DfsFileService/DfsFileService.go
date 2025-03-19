@@ -5,9 +5,11 @@ import (
 	"DairoDFS/dao/StorageFileDao"
 	"DairoDFS/dao/dto"
 	"DairoDFS/exception"
+	"DairoDFS/extension/File"
 	"DairoDFS/extension/Number"
 	"DairoDFS/extension/String"
 	"DairoDFS/util/DfsFileUtil"
+	"bytes"
 	"fmt"
 	"io"
 	"os"
@@ -427,16 +429,13 @@ func ShareSaveTo(shareUserId int64, userId int64, sourcePaths []string, targetFo
 	}
 }
 
-// 保存文件到本地磁盘
-// md5 文件md5
-// path 文件路径
-func SaveToStorageFileByPath(md5 string, path string) dto.StorageFileDto {
-	file, err := os.Open(path)
-	if err != nil {
-		panic(err)
-	}
-	defer file.Close()
-	return SaveToStorageFile(md5, file)
+/**
+ * 保存文件到本地磁盘
+ * @param data 要保存的数据
+ */
+func SaveToStorageByData(data []byte) dto.StorageFileDto {
+	md5 := File.ToMd5ByBytes(data)
+	return SaveToStorageReader(md5, bytes.NewBuffer(data), int64(len(data)))
 }
 
 /**
@@ -444,14 +443,32 @@ func SaveToStorageFileByPath(md5 string, path string) dto.StorageFileDto {
  * @param md5 文件md5
  * @param iStream 文件流
  */
-func SaveToStorageFile(md5 string, reader io.Reader) dto.StorageFileDto {
+func SaveToStorageByFile(path string, md5 string) dto.StorageFileDto {
+	file, err := os.Open(path)
+	if err != nil {
+		panic(err)
+	}
+	if md5 == "" { //如果调用的地方没有传递md5
+		md5 = File.ToMd5(path)
+	}
+	stat, _ := os.Stat(path)
+	return SaveToStorageReader(md5, file, stat.Size())
+}
+
+/**
+ * 保存文件到本地磁盘
+ * @param md5 文件md5
+ * @param iStream 文件流
+ * @param size 文件大小
+ */
+func SaveToStorageReader(md5 string, reader io.Reader, size int64) dto.StorageFileDto {
 	existsStorageDto, isExists := StorageFileDao.SelectByFileMd5(md5)
 	if isExists { //该文件已经存在
 		return existsStorageDto
 	}
 
 	//获取本地文件存储路径
-	localPath := DfsFileUtil.LocalPath()
+	localPath := DfsFileUtil.LocalPath(size)
 
 	// 打开文件（如果不存在则创建）
 	file, createErr := os.Create(localPath) // 如果文件已存在，它将被覆盖
@@ -462,7 +479,11 @@ func SaveToStorageFile(md5 string, reader io.Reader) dto.StorageFileDto {
 
 	//将文件保存到指定目录
 	if _, saveErr := io.Copy(file, reader); saveErr != nil {
-		panic(exception.Biz("保存文件失败：" + saveErr.Error()))
+		errMsg := saveErr.Error()
+		if errMsg == "There is not enough space on the disk." {
+			panic(exception.Biz("保存文件失败：磁盘空间不足"))
+		}
+		panic(exception.Biz("保存文件失败：" + errMsg))
 	}
 	addStorageFileDto := dto.StorageFileDto{
 		Path: localPath,

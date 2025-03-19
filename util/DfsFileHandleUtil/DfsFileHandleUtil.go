@@ -8,7 +8,6 @@ import (
 	"DairoDFS/dao/dto"
 	"DairoDFS/exception"
 	"DairoDFS/extension/Bool"
-	"DairoDFS/extension/File"
 	"DairoDFS/extension/Number"
 	"DairoDFS/extension/String"
 	"DairoDFS/service/DfsFileService"
@@ -18,7 +17,6 @@ import (
 	"DairoDFS/util/ImageUtil/PSDUtil"
 	"DairoDFS/util/ImageUtil/RawUtil"
 	"DairoDFS/util/VideoUtil"
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"math"
@@ -253,11 +251,8 @@ func makeThumb(dfsFileDto dto.DfsFileDto) {
 		panic(makeThumbErr)
 	}
 
-	//计算缩略图的md5
-	md5 := File.ToMd5ByBytes(data)
-
 	//保存文件
-	storageFileDto := DfsFileService.SaveToStorageFile(md5, bytes.NewReader(data))
+	storageFileDto := DfsFileService.SaveToStorageByData(data)
 
 	//添加缩率图附属文件
 	extraDto := dto.DfsFileDto{
@@ -315,10 +310,9 @@ func makePreview(dfsFileDto dto.DfsFileDto) {
 	if err != nil {
 		return
 	}
-	md5 := File.ToMd5ByBytes(thumbData)
 
 	//保存文件
-	storageFileDto := DfsFileService.SaveToStorageFile(md5, bytes.NewReader(thumbData))
+	storageFileDto := DfsFileService.SaveToStorageByData(thumbData)
 	extraDto := dto.DfsFileDto{
 		Id:          Number.ID(),
 		Name:        "preview",
@@ -416,13 +410,12 @@ func makeVideo(dfsFileDto dto.DfsFileDto) {
 			if err := VideoUtil.Transfer(storagePath, targetW, targetH, targetFps, targetPath); err != nil {
 				panic(err)
 			}
-			md5 := File.ToMd5(targetPath)
 
 			targetFileInfo, _ := os.Stat(targetPath)
 			targetFile, _ := os.Open(targetPath)
 
 			//保存到本地文件
-			storageFileDto := DfsFileService.SaveToStorageFile(md5, targetFile)
+			storageFileDto := DfsFileService.SaveToStorageByFile(targetPath, "")
 			_ = targetFile.Close()
 			_ = os.Remove(targetPath)
 
