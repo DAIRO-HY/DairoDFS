@@ -11,7 +11,7 @@ import (
 )
 
 // VERSION 版本号
-const VERSION = "2.0.11"
+const VERSION = "2.0.12"
 
 /**
  * 基准时间戳
