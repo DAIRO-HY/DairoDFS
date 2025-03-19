@@ -3,7 +3,7 @@ package magick
 import (
 	"DairoDFS/application"
 	"DairoDFS/controller/app/install"
-	"DairoDFS/controller/app/install/ffprobe"
+	"DairoDFS/controller/app/install/libraw"
 	"DairoDFS/extension/String"
 	"DairoDFS/util/ShellUtil"
 	"embed"
@@ -49,7 +49,7 @@ func url() string {
 func Html() {
 
 	//清除上一步的缓存
-	ffprobe.Recycle()
+	libraw.Recycle()
 	if downloadInfo == nil {
 		downloadInfo = &install.LibDownloadInfo{
 			Url:      url(),
