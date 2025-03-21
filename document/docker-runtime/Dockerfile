@@ -12,7 +12,7 @@ WORKDIR /app
 
 #--------------------------------------------------------------------------------------------------------------安装LibRaw
 #构建工具和依赖项
-RUN apt update && yes|apt install zlib1g-dev
+RUN yes|apt install zlib1g-dev
 RUN yes|apt install pkg-config
 RUN yes|apt install build-essential cmake autoconf
 
