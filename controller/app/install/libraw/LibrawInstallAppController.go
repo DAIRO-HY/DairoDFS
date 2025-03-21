@@ -123,7 +123,13 @@ func doInstall() {
 
 // 验证安装结果
 func validate() error {
-	_, cmdErr := ShellUtil.ExecToOkResult("\"" + application.LIBRAW_BIN + "/dcraw_emu\" -version")
+	var cmd string
+	if runtime.GOOS == "linux" {
+		cmd = "dcraw_emu"
+	} else {
+		cmd = "\"" + application.LIBRAW_BIN + "/dcraw_emu\""
+	}
+	_, cmdErr := ShellUtil.ExecToOkResult(cmd + " -version")
 	if cmdErr != nil && strings.Contains(cmdErr.Error(), "Unknown option \"-version\".") {
 		downloadInfo.Info = "安装完成"
 		downloadInfo.IsInstalled = true

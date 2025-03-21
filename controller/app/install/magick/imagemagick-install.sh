@@ -18,34 +18,23 @@ export LD_LIBRARY_PATH=/usr/local/lib:/usr/local/lib64:$LD_LIBRARY_PATH
 
 # yum でインストール可能な依存関係をインストール
 apt-get update
-#apt-get install -y \
-#    gcc \
-#    gcc-c++ \
-#    git \
 yes|apt-get install make
 yes|apt-get install cmake
 yes|apt-get install curl
 
 
 yes|apt-get install gcc
-#yes|apt-get install gcc-c++
-#yes|apt-get install git
 yes|apt-get install gzip
 yes|apt-get install pkg-config
 yes|apt-get install libtool
 
 # 安装g++
 yes|apt install build-essential
-#    pkg-config \
-#    libtool \
 
 # 安装jpeg解码器
 yes|apt-get install libde265-dev libjpeg-dev libpng-dev
 yes|apt-get install libtiff-dev libwebp-dev
-#yes|apt-get install libheif-dev
 yes|apt-get install libraw-dev
-#yes|apt-get install dcraw
-
 
 
 # 下载libheif源码
@@ -71,13 +60,13 @@ rm libheif-1.19.7.tar.gz
 rm -rf libheif-1.19.7
 
 
-curl -L -o ImageMagick-7.1.1-45 https://github.com/ImageMagick/ImageMagick/archive/refs/tags/7.1.1-45.tar.gz
-tar -xzvf ImageMagick-7.1.1-45
+curl -L -o ImageMagick-7.1.1-45.tar.gz https://github.com/ImageMagick/ImageMagick/archive/refs/tags/7.1.1-45.tar.gz
+tar -xzvf ImageMagick-7.1.1-45.tar.gz
 cd ImageMagick-7.1.1-45
 ./configure
 make
 make install
 ldconfig /usr/local/lib
 cd ..
-rm ImageMagick-7.1.1-45
+rm ImageMagick-7.1.1-45.tar.gz
 rm -rf ImageMagick-7.1.1-45

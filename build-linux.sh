@@ -110,10 +110,17 @@ upload_file_api_response=$(curl -s -X POST \
 echo "上传文件结果:${upload_file_api_response}"
 
 
-#---------------------------------------上传Docker镜像-----------------------------------------
+#---------------------------------------构建Docker运行时镜像-----------------------------------------
+cd ./document/docker-runtime/
+docker build -t dairo-dfs-runtime .
+cd ../..
+
+#---------------------------------------构建Docker镜像-----------------------------------------
 mv $exec_file ./document/docker/
 cd ./document/docker/
 docker build -t $docker_user/$dockerImageName:$version .
+
+#---------------------------------------上传Docker镜像-----------------------------------------
 docker login -u $docker_user --password $docker_pwd
 docker push $docker_user/$dockerImageName:$version
 docker logout

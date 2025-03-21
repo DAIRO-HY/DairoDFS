@@ -1,18 +1,16 @@
-FROM ubuntu:24.10
 
-RUN apt update
-
-#安装curl
-RUN yes|apt install curl
+#请先构建镜像 ../docker-runtime/Dockerfile
+FROM dairo-dfs-runtime
+#FROM ubuntu:24.10
 
 #安装git
 RUN yes|apt install git
 
-#安装sqlite编译环境
-RUN yes|apt-get install libsqlite3-dev
-
-#安装gcc,编译sqlite需要
-RUN yes|apt-get install gcc
+##安装sqlite编译环境
+#RUN yes|apt-get install libsqlite3-dev
+#
+##安装gcc,编译sqlite需要
+#RUN yes|apt-get install gcc
 
 WORKDIR /opt
 
