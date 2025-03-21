@@ -1,6 +1,6 @@
 
 #请先构建镜像 ../docker-runtime/Dockerfile
-FROM dairopapa/dairo-dfs-runtime:1.0.0
+FROM dairo-dfs-runtime
 #FROM ubuntu:24.10
 
 #安装git
