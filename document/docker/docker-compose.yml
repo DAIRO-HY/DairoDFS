@@ -1,7 +1,7 @@
 version: '3.1'
 services:
   dairo-dfs:
-    image: dairopapa/dairo-dfs:2.0.0
+    image: dairopapa/dairo-dfs:1.0.0
 #    build: .
     restart: always
     container_name: dairo-dfs
