@@ -43,8 +43,8 @@ mkdir ~/dairo-dfs
 #进入刚刚创建的文件夹
 cd ~/dairo-dfs
 
-#下载安装包
-curl -L -o dairo-dfs https://dsdsfsdf.sdfsdf.sdf/sdfs/dsf/sd/fsd/f
+#下载安装包，其中1.0.0为版本号，请根据实际情况选择您所需要的版本
+curl -L -o dairo-dfs https://github.com/DAIRO-HY/DairoDFS/releases/download/1.0.0/dairo-dfs-mac-amd64
 
 #赋予可执行权限
 chmod +x dairo-dfs
@@ -64,8 +64,8 @@ mkdir ~/dairo-dfs
 #进入刚刚创建的文件夹
 cd ~/dairo-dfs
 
-#下载安装包
-curl -L -o dairo-dfs https://dsdsfsdf.sdfsdf.sdf/sdfs/dsf/sd/fsd/f
+#下载安装包，其中1.0.0为版本号，请根据实际情况选择您所需要的版本
+curl -L -o dairo-dfs https://github.com/DAIRO-HY/DairoDFS/releases/download/1.0.0/dairo-dfs-linux-amd64
 
 #赋予可执行权限
 chmod +x dairo-dfs
