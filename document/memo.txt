@@ -1,7 +1,5 @@
 GCC下载安装
 https://github.com/niXman/mingw-builds-binaries
 
-
-
-docker pull ;
-;
+#删除没有使用的依赖
+go mod tidy
