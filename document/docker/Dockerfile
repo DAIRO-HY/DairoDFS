@@ -1,5 +1,5 @@
 #请先构建镜像 ../docker-runtime/Dockerfile
-FROM dairo-dfs-runtime
+FROM dairopapa/dairo-dfs-runtime:1.0.0
 #FROM ubuntu:24.10
 
 #下载程序

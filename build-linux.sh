@@ -111,14 +111,14 @@ echo "上传文件结果:${upload_file_api_response}"
 
 
 #---------------------------------------构建Docker运行时镜像-----------------------------------------
-cd ./document/docker-runtime/
-docker build -t dairo-dfs-runtime .
-cd ../..
+#cd ./document/docker-runtime/
+#docker build --no-cache -t dairopapa/dairo-dfs-runtime:1.0.0 .
+#cd ../..
 
 #---------------------------------------构建Docker镜像-----------------------------------------
 mv $exec_file ./document/docker/
 cd ./document/docker/
-docker build -t $docker_user/$dockerImageName:$version .
+docker build --no-cache -t $docker_user/$dockerImageName:$version .
 
 #---------------------------------------上传Docker镜像-----------------------------------------
 docker login -u $docker_user --password $docker_pwd
