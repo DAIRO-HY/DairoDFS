@@ -111,9 +111,14 @@ echo "上传文件结果:${upload_file_api_response}"
 
 
 #---------------------------------------构建Docker运行时镜像-----------------------------------------
-#cd ./document/docker-runtime/
-#docker build --no-cache -t dairopapa/dairo-dfs-runtime:1.0.0 .
-#cd ../..
+if docker images --format "{{.Repository}}:{{.Tag}}" | grep -q "^dairo-dfs-runtime:latest"; then
+    echo "镜像dairo-dfs-runtime存在"
+else
+    echo "镜像dairo-dfs-runtime不存在"
+    cd ./document/docker-runtime/
+    docker build --no-cache -t dairo-dfs-runtime .
+    cd ../..
+fi
 
 #---------------------------------------构建Docker镜像-----------------------------------------
 mv $exec_file ./document/docker/
