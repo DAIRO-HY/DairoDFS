@@ -108,7 +108,7 @@
      * 查看处理失败
      */
     function onHandlingErrorClick() {
-        $("#sql").text("select * from dfs_file where state = 2")
+        $("#sql").text("select id,userId,name,size,date,property,state,stateMsg from dfs_file where state = 2")
         onExecClick()
     }
 
