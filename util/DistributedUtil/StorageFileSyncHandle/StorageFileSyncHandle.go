@@ -6,6 +6,7 @@ import (
 	"DairoDFS/util/DfsFileUtil"
 	"DairoDFS/util/DistributedUtil"
 	"DairoDFS/util/DistributedUtil/SyncDownloadUtil"
+	"fmt"
 	"io"
 	"os"
 	"strings"
@@ -70,30 +71,40 @@ func download(info *DistributedUtil.SyncServerInfo, md5 string, masterStorageFil
 // 移动文件到数据目录
 func moveFile(src string, target string) {
 
+	fmt.Println("-->1")
+
 	//移动文件
 	moveErr := os.Rename(src, target)
 	if moveErr == nil {
 		return
 	}
+	fmt.Println("-->1")
 
 	//不同的盘符之间不能使用Rename操作
 	if !strings.HasSuffix(moveErr.Error(), "The system cannot move the file to a different disk drive.") {
+		fmt.Println("-->2")
 		panic(moveErr)
 	}
+	fmt.Println("-->3")
 	source, _ := os.Open(src)
+	fmt.Println("-->4")
 	defer source.Close()
 	targetFile, _ := os.Create(target)
 	defer targetFile.Close()
+	fmt.Println("-->5")
 	if _, err := io.Copy(targetFile, source); err != nil {
 		os.Remove(target)
 		panic(err)
 	}
+	fmt.Println("-->6")
 
 	//确保文件已经写入到了磁盘，避免突然断电导致文件数据丢失
 	if err := targetFile.Sync(); err != nil {
 		os.Remove(target)
 		panic(err)
 	}
+	fmt.Println("-->7")
 	source.Close()
 	os.Remove(src)
+	fmt.Println("-->8")
 }
