@@ -16,7 +16,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -127,38 +126,6 @@ func LocalPath(fileSize int64) string {
 		panic(exception.Biz("准备创建的文件已经存在"))
 	}
 	return path
-}
-
-/**
- * 检查文件路径是否合法
- * @param path 文件路径
- */
-func CheckPath(path string) {
-	pattern := `[>,?,\\,:,|,<,*,"]`
-	matched, _ := regexp.MatchString(pattern, path)
-	if matched {
-		panic(exception.Biz("文件路径不能包含>,?,\\,:,|,<,*,\"字符"))
-	}
-	if strings.Contains(path, "//") {
-		panic(exception.Biz("文件路径不能包含两个连续的字符/"))
-	}
-}
-
-// 将路径分割成列表
-// filePath 文件或文件夹路径
-// return 拆分后的文件名数组
-func ToDfsFileNameList(filePath string) []string {
-	CheckPath(filePath)
-	if len(filePath) == 0 {
-		return []string{""}
-	}
-	if !strings.HasPrefix(filePath, "/") {
-		panic(exception.Biz("文件路径必须以/开头"))
-	}
-	if strings.HasSuffix(filePath, "/") {
-		filePath = filePath[:len(filePath)-1]
-	}
-	return strings.Split(filePath, "/")
 }
 
 /**

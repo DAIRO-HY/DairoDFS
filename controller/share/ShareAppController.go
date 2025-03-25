@@ -9,6 +9,7 @@ import (
 	"DairoDFS/exception"
 	"DairoDFS/extension/Bool"
 	"DairoDFS/extension/Date"
+	"DairoDFS/extension/File"
 	"DairoDFS/extension/String"
 	"DairoDFS/service/DfsFileService"
 	"DairoDFS/util/AESUtil"
@@ -175,10 +176,8 @@ func Download(writer http.ResponseWriter, request *http.Request, eid string, fol
 	//实际文件目录
 	truePath := shareDto.Folder + path
 
-	names := DfsFileUtil.ToDfsFileNameList(truePath)
-
 	//得到文件ID
-	fileId := DfsFileDao.SelectIdByPath(userId, names)
+	fileId := DfsFileDao.SelectIdByPath(userId, truePath)
 	DfsFileUtil.DownloadDfsId(fileId, writer, request)
 	return nil
 }
@@ -235,7 +234,7 @@ func validatePath(request *http.Request, eid string, paths ...string) (dto.Share
 		if it == "" {
 			continue
 		}
-		names := DfsFileUtil.ToDfsFileNameList(it)
+		names := File.ToSubNames(it)
 		if _, isExists := shareNameSet[names[1]]; !isExists {
 			return dto.ShareDto{}, exception.NO_FOLDER()
 		}

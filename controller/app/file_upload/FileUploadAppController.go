@@ -42,7 +42,7 @@ func Upload(request *http.Request, folder string, contentType string) error {
 	path := folder + "/" + name
 
 	//检查文件路径是否合法
-	DfsFileUtil.CheckPath(path)
+	File.CheckPath(path)
 
 	//文件MD5
 	md5File, openErr := header.Open()

@@ -73,8 +73,7 @@ func AddFolder(folderDto dto.DfsFileDto) {
  * @return 文件夹ID
  */
 func GetIdByFolder(userId int64, folder string, isCreate bool) int64 {
-	names := DfsFileUtil.ToDfsFileNameList(folder)
-	var folderId = DfsFileDao.SelectIdByPath(userId, names)
+	var folderId = DfsFileDao.SelectIdByPath(userId, folder)
 	if folderId != 0 {
 		return folderId
 	}
@@ -109,8 +108,7 @@ func Copy(userId int64, sourcePaths []string, targetFolder string, isOverWrite b
 		recursionMakeSourceToTargetMap(userId, sourcePath, targetPath, sourceToTargetMap)
 	}
 	for sourcePath, targetPath := range sourceToTargetMap {
-		nameList := DfsFileUtil.ToDfsFileNameList(sourcePath)
-		fileId := DfsFileDao.SelectIdByPath(userId, nameList)
+		fileId := DfsFileDao.SelectIdByPath(userId, sourcePath)
 		fileDto, _ := DfsFileDao.SelectOne(fileId)
 		if fileDto.IsFolder() { //源目录是一个文件夹
 			Mkdirs(userId, targetPath)
@@ -196,8 +194,7 @@ func Move(userId int64, sourcePaths []string, targetFolder string, isOverWrite b
 	//用来记录移动完成后要删除的文件夹
 	afterDeleteFolderList := make([]dto.DfsFileDto, 0)
 	for sourcePath, targetPath := range sourceToTargetMap {
-		nameList := DfsFileUtil.ToDfsFileNameList(sourcePath)
-		fileId := DfsFileDao.SelectIdByPath(userId, nameList)
+		fileId := DfsFileDao.SelectIdByPath(userId, sourcePath)
 		sourceFileDto, _ := DfsFileDao.SelectOne(fileId)
 		if sourceFileDto.IsFolder() { //源目录是一个文件夹
 			Mkdirs(userId, targetPath)
@@ -238,10 +235,9 @@ func Move(userId int64, sourcePaths []string, targetFolder string, isOverWrite b
  * 文件重命名
  */
 func Rename(userId int64, sourcePath string, name string) {
-	nameList := DfsFileUtil.ToDfsFileNameList(sourcePath)
 
 	//获取源目录文件id
-	fileId := DfsFileDao.SelectIdByPath(userId, nameList)
+	fileId := DfsFileDao.SelectIdByPath(userId, sourcePath)
 	if fileId == 0 {
 		panic(exception.Biz("移动源目录不存在"))
 	}
@@ -263,8 +259,7 @@ func Rename(userId int64, sourcePath string, name string) {
 func recursionMakeSourceToTargetMap(userId int64, sourcePath string, targetPath string, sourceToTargetMap map[string]string) {
 	sourceToTargetMap[sourcePath] = targetPath
 
-	nameList := DfsFileUtil.ToDfsFileNameList(sourcePath)
-	fileId := DfsFileDao.SelectIdByPath(userId, nameList)
+	fileId := DfsFileDao.SelectIdByPath(userId, sourcePath)
 	if fileId == 0 {
 		panic(exception.Biz("文件路径:[" + sourcePath + "]不存在"))
 	}
@@ -284,8 +279,7 @@ func recursionMakeSourceToTargetMap(userId int64, sourcePath string, targetPath 
  * @param path 文件夹路径
  */
 func SetDelete(userId int64, path string) {
-	nameList := DfsFileUtil.ToDfsFileNameList(path)
-	dfsFileId := DfsFileDao.SelectIdByPath(userId, nameList)
+	dfsFileId := DfsFileDao.SelectIdByPath(userId, path)
 	if dfsFileId == 0 {
 		panic(exception.Biz("找不到指定目录:" + path))
 	}
@@ -314,7 +308,7 @@ func Mkdirs(userId int64, path string) int64 {
 
 	//用来标记,以后所有文件夹都需要创建
 	var isCreatModel = false
-	nameList := DfsFileUtil.ToDfsFileNameList(path)
+	nameList := File.ToSubNames(path)
 
 	//记录当前文件路径
 	var curPathSB = ""
@@ -405,10 +399,9 @@ func ShareSaveTo(shareUserId int64, userId int64, sourcePaths []string, targetFo
 		recursionMakeSourceToTargetMap(userId, it, targetPath, sourceToTargetMap)
 	}
 	for sourcePath, targetPath := range sourceToTargetMap {
-		nameList := DfsFileUtil.ToDfsFileNameList(sourcePath)
 
 		//获取分享文件的ID
-		fileId := DfsFileDao.SelectIdByPath(shareUserId, nameList)
+		fileId := DfsFileDao.SelectIdByPath(shareUserId, sourcePath)
 		fileDto, _ := DfsFileDao.SelectOne(fileId)
 		if fileDto.IsFolder() { //源目录是一个文件夹
 			Mkdirs(userId, targetPath)

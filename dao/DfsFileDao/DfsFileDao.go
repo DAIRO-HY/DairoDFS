@@ -2,6 +2,7 @@ package DfsFileDao
 
 import (
 	"DairoDFS/dao/dto"
+	"DairoDFS/extension/File"
 	"DairoDFS/util/DBUtil"
 	"strconv"
 )
@@ -62,12 +63,12 @@ func SelectIdByParentIdAndName(userId int64, parentId int64, name string) int64 
           and deleteDate is null`, userId, parentId, name)
 }
 
-/**
- * 通过路径获取文件ID
- * @param names 文件名列表
- * @return 文件ID
- */
-func SelectIdByPath(userId int64, names []string) int64 {
+// 通过路径获取文件ID
+// userId 用户ID
+// path 文件路径
+// @return 文件ID
+func SelectIdByPath(userId int64, path string) int64 {
+	names := File.ToSubNames(path)
 	sql := ""
 	for range names {
 		sql += "select id from dfs_file where userId = " + strconv.FormatInt(userId, 10) + " and parentId = ("

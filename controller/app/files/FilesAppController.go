@@ -97,8 +97,7 @@ func GetExtraKeys(id int64) []string {
 // @Post:/create_folder
 func CreateFolder(folder string) {
 	loginId := LoginState.LoginId()
-	nameList := DfsFileUtil.ToDfsFileNameList(folder)
-	existsFileId := DfsFileDao.SelectIdByPath(loginId, nameList)
+	existsFileId := DfsFileDao.SelectIdByPath(loginId, folder)
 	if existsFileId != 0 { // 文件夹已经存在，终止程序
 		panic(exception.EXISTS(folder))
 	}
@@ -176,8 +175,7 @@ func GetProperty(paths []string) form.FilePropertyForm {
 	if len(paths) > 1 { //多个文件时
 		totalForm := form.ComputeSubTotalForm{}
 		for _, it := range paths {
-			nameList := DfsFileUtil.ToDfsFileNameList(it)
-			fileId := DfsFileDao.SelectIdByPath(loginId, nameList)
+			fileId := DfsFileDao.SelectIdByPath(loginId, it)
 			if fileId == 0 {
 				panic(exception.NO_EXISTS())
 			}
@@ -195,8 +193,7 @@ func GetProperty(paths []string) form.FilePropertyForm {
 		outForm.FolderCount = totalForm.FolderCount
 	} else { //单文件时
 		path := paths[0]
-		nameList := DfsFileUtil.ToDfsFileNameList(path)
-		fileId := DfsFileDao.SelectIdByPath(loginId, nameList)
+		fileId := DfsFileDao.SelectIdByPath(loginId, path)
 		if fileId == 0 {
 			panic(exception.NO_EXISTS())
 		}
@@ -249,8 +246,7 @@ func computeSubTotal(totalForm *form.ComputeSubTotalForm, loginId int64, folderI
 // @Post:/set_content_type
 func SetContentType(path string, contentType string) {
 	loginId := LoginState.LoginId()
-	nameList := DfsFileUtil.ToDfsFileNameList(path)
-	fileId := DfsFileDao.SelectIdByPath(loginId, nameList)
+	fileId := DfsFileDao.SelectIdByPath(loginId, path)
 	if fileId == 0 {
 		panic(exception.NO_EXISTS())
 	}
@@ -328,8 +324,7 @@ func Download(writer http.ResponseWriter, request *http.Request) {
 	loginId := LoginState.LoginId()
 	filePath := request.URL.Path
 	filePath = filePath[strings.Index(filePath, "/download")+9:]
-	nameList := DfsFileUtil.ToDfsFileNameList(filePath)
-	fileId := DfsFileDao.SelectIdByPath(loginId, nameList)
+	fileId := DfsFileDao.SelectIdByPath(loginId, filePath)
 	if fileId == 0 { //文件不存在
 		writer.WriteHeader(http.StatusNotFound)
 		return
