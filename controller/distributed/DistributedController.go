@@ -82,7 +82,7 @@ func GetAopId() int64 {
 }
 
 // 限制每次同步数据量，条数不宜过大,过大可能导致客户端请求失败
-const _MAX_SYNC_DATA_LIMIT = 100
+const _MAX_SYNC_DATA_LIMIT = 1000
 
 // 获取每个表的id
 // tbName 表名

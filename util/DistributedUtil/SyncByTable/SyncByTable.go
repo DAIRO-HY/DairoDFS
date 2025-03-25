@@ -106,6 +106,7 @@ func loopSync(info *DistributedUtil.SyncServerInfo, tbName string, lastId int64,
 
 		//再次同步
 		loopSync(info, tbName, currentLastId, aopId)
+		return
 	}
 
 	//得到需要同步的数据
