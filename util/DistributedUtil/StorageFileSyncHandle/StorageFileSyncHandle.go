@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"reflect"
 	"strings"
 )
 
@@ -78,14 +79,14 @@ func moveFile(src string, target string) {
 	if moveErr == nil {
 		return
 	}
-	fmt.Println("-->1")
+	fmt.Println("-->1:", reflect.TypeOf(moveErr))
 
 	//不同的盘符之间不能使用Rename操作
 	if !strings.HasSuffix(moveErr.Error(), "The system cannot move the file to a different disk drive.") {
 		fmt.Println("-->2:" + moveErr.Error())
 		panic(moveErr)
 	}
-	fmt.Println("-->3")
+	fmt.Println("-->3:" + moveErr.Error())
 	source, _ := os.Open(src)
 	fmt.Println("-->4")
 	defer source.Close()
