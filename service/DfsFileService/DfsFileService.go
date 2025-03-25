@@ -478,6 +478,11 @@ func SaveToStorageReader(md5 string, reader io.Reader, size int64) dto.StorageFi
 		}
 		panic(exception.Biz("保存文件失败：" + errMsg))
 	}
+
+	//确保文件已经写入到了磁盘，避免突然断电导致文件数据丢失
+	if err := file.Sync(); err != nil {
+		panic(exception.Biz("保存文件失败：" + err.Error()))
+	}
 	addStorageFileDto := dto.StorageFileDto{
 		Path: localPath,
 		Md5:  md5,

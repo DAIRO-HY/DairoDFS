@@ -56,10 +56,12 @@ func loopListen(info *DistributedUtil.SyncServerInfo) {
 		if r := recover(); r != nil { //如果发生了panic错误
 			switch rValue := r.(type) {
 			case error:
-				info.Msg = "panic:" + rValue.Error()
+				info.Msg = "日志同步失败:" + rValue.Error()
 			case string:
-				info.Msg = "panic:" + rValue
+				info.Msg = "日志同步失败:" + rValue
 			}
+			info.State = 2
+			info.Rollback()
 		}
 	}()
 
@@ -153,13 +155,7 @@ func requestSqlLog(info *DistributedUtil.SyncServerInfo) {
 	if string(logData) == "[]" { //已经没有sql日志
 
 		//执行日志sql
-		runSqlErr := runSql(info)
-		if runSqlErr != nil {
-			info.Rollback()
-			info.State = 2
-			info.Msg = runSqlErr.Error()
-			return
-		}
+		runSql(info)
 
 		info.State = 0 //同步完成，标记为待机中
 		info.Msg = ""
@@ -184,13 +180,7 @@ func requestSqlLog(info *DistributedUtil.SyncServerInfo) {
 	SaveLastId(info.Url, lastLog.Id)
 
 	//执行日志sql
-	runSqlErr := runSql(info)
-	if runSqlErr != nil {
-		info.Rollback()
-		info.State = 2
-		info.Msg = runSqlErr.Error()
-		return
-	}
+	runSql(info)
 
 	//递归调用，直到服务端日志同步完成
 	requestSqlLog(info)
@@ -218,12 +208,12 @@ func insertLog(host string, sqlLogList []dto.SqlLogDto) error {
 /**
 * 执行日志里的sql语句
  */
-func runSql(info *DistributedUtil.SyncServerInfo) error {
+func runSql(info *DistributedUtil.SyncServerInfo) {
 
 	//获取还未执行的sql语句
 	notRunList := SqlLogDao.GetNotRunList()
 	if len(notRunList) == 0 {
-		return nil
+		return
 	}
 	for _, it := range notRunList {
 
@@ -241,36 +231,30 @@ func runSql(info *DistributedUtil.SyncServerInfo) error {
 		//日志执行结束后执行sql
 		var afterSql string
 		if strings.HasPrefix(handleSql, "insertintostorage_file") { //如果当前sql语句是往本地文件表里添加一条数据
-			if err := StorageFileSyncHandle.ByLog(info, paramList); err != nil {
-				return err
-			}
+			StorageFileSyncHandle.ByLog(info, paramList)
 		} else if strings.HasPrefix(handleSql, "insertintodfs_file(") { //如果该sql语句是添加文件
-			sql, err := DfsFileSyncHandle.ByLog(info, paramList)
-			if err != nil {
-				return err
-			}
-			afterSql = sql
+			afterSql = DfsFileSyncHandle.ByLog(info, paramList)
 		} else {
 		}
 		if _, err := info.DbTx().Exec(it.Sql, paramList...); err != nil { //sql语句执行失败
-			return err
+			panic(err)
 		}
 		if afterSql != "" {
 			if _, err := info.DbTx().Exec(afterSql); err != nil {
-				return err
+				panic(err)
 			}
 		}
 
 		//最后一定要提交事务
 		if err := info.Commit(); err != nil {
-			return err
+			panic(err)
 		}
 		DBConnection.DBConn.Exec("update sql_log set state = 1 where id = ?", it.Id)
 	}
 
 	//记录当前同步的数据条数
 	info.SyncCount += len(notRunList)
-	return runSql(info)
+	runSql(info)
 }
 
 // 保存最后一次请求的日志ID
@@ -298,18 +282,3 @@ func getLastId(host string) int64 {
 	lastId, _ := strconv.ParseInt(string(data), 10, 64)
 	return lastId
 }
-
-///**
-// * 发送同步通知
-// */
-//fun sendNotify() {
-//    this.syncInfoList.forEach { info ->
-//        val url = "${info.url}/push_notify"
-//        try {
-//            SyncHttp.request(url)
-//        } catch (e: Exception) {
-//            info.state = 2//标记为同步失败
-//            info.msg = "发送同步通知失败：$e"
-//        }
-//    }
-//}

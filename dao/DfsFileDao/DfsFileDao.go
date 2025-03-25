@@ -11,7 +11,9 @@ import (
  * 添加一条数据
  */
 func Add(fileDto dto.DfsFileDto) {
-	DBUtil.InsertIgnoreError("insert into dfs_file(id, userId, parentId, name,ext, size, contentType, storageId, date, isExtra, property, state) values (?,?,?,?,?,?,?,?,?,?,?,?)",
+
+	//@TODO:该sql的四u该可能会影响日志同步
+	DBUtil.InsertIgnoreError("insert into dfs_file(id, userId, parentId, name, ext, size, contentType, storageId, date, isExtra, property, state) values (?,?,?,?,?,?,?,?,?,?,?,?)",
 		fileDto.Id,
 		fileDto.UserId,
 		fileDto.ParentId,
