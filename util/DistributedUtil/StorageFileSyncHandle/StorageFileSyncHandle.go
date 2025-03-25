@@ -71,7 +71,7 @@ func download(info *DistributedUtil.SyncServerInfo, md5 string, masterStorageFil
 // 移动文件到数据目录
 func moveFile(src string, target string) {
 
-	fmt.Println("-->1")
+	fmt.Println("-->01")
 
 	//移动文件
 	moveErr := os.Rename(src, target)
@@ -82,7 +82,7 @@ func moveFile(src string, target string) {
 
 	//不同的盘符之间不能使用Rename操作
 	if !strings.HasSuffix(moveErr.Error(), "The system cannot move the file to a different disk drive.") {
-		fmt.Println("-->2")
+		fmt.Println("-->2:" + moveErr.Error())
 		panic(moveErr)
 	}
 	fmt.Println("-->3")
