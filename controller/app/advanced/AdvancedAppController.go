@@ -5,10 +5,12 @@ import (
 	"DairoDFS/extension/Bool"
 	"DairoDFS/extension/Date"
 	"DairoDFS/extension/Number"
+	"DairoDFS/extension/String"
 	"DairoDFS/util/DBUtil"
 	"DairoDFS/util/DfsFileHandleUtil"
 	"DairoDFS/util/RecycleStorageTimer"
 	"github.com/shirou/gopsutil/disk"
+	"os"
 	"strings"
 )
 
@@ -71,6 +73,17 @@ func ExecSql(sql string) any {
 // @Post:/re_handle
 func ReHandle() {
 	DfsFileHandleUtil.NotifyWorker()
+}
+
+// 获取DFS正在使用的文件大小
+// @Post:/used_size
+func UsedSize() string {
+	var total int64
+	for _, it := range DBUtil.SelectList[string]("select path from main.storage_file") {
+		stat, _ := os.Stat(it)
+		total += stat.Size()
+	}
+	return Number.ToDataSize(total) + "(" + String.ValueOf(total) + "B" + ")"
 }
 
 // 立即回收未使用的文件

@@ -39,6 +39,9 @@
             </button>
         </div>
         <div class="col">
+            <button type="button" class="btn w-100 btn-warning mt-2" onclick="onUsedSizeClick()">DFS使用大小<span id="usedSize"></span></button>
+        </div>
+        <div class="col">
             <button type="button" class="btn w-100 btn-primary mt-2" onclick="onClearPropertyClick()">重置属性</button>
         </div>
         <div class="col">
@@ -56,13 +59,15 @@
             <button type="button" class="btn w-100 btn-success mt-2" onclick="onReHandleClick()">开启文件处理</button>
         </div>
         <div class="col">
-            <button type="button" class="btn w-100 btn-primary mt-2" onclick="onNotUseCountClick()">未使用文件数量</button>
+            <button type="button" class="btn w-100 btn-warning mt-2" onclick="onWithoutStorageClick()">储存丢失的文件
+            </button>
+        </div>
+        <div class="col">
+            <button type="button" class="btn w-100 btn-primary mt-2" onclick="onNotUseCountClick()">未使用文件数量
+            </button>
         </div>
         <div class="col">
             <button type="button" class="btn w-100 btn-dark mt-2" onclick="onRecycleNowClick()">回收未使用文件</button>
-        </div>
-        <div class="col">
-            <button type="button" class="btn w-100 btn-info mt-2" onclick="onWithoutStorageClick()">储存丢失的文件</button>
         </div>
     </div>
     <div class="text-start">
@@ -78,7 +83,7 @@
 
     function init() {
         $.ajaxByData("advanced/init").success(data => {
-            for(let key in data){
+            for (let key in data) {
                 $("#" + key).text(data[key])
             }
         }).post()
@@ -199,11 +204,19 @@
     /**
      * 储存丢失的文件
      */
-    function onWithoutStorageClick(){
+    function onWithoutStorageClick() {
         $("#sql").val("select * from dfs_file where storageId > 0 and storageId not in (select id from storage_file)")
         onExecClick()
     }
 
+    /**
+     * DFS使用大小点击事件
+     */
+    function onUsedSizeClick() {
+        $.ajaxByData("advanced/used_size").success(data => {
+            $("#usedSize").text(`(${data})`)
+        }).post()
+    }
 
     /**
      * 填充表格数据
