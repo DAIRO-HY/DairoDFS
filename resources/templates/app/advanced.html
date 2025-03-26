@@ -108,7 +108,7 @@
      * 查看处理失败
      */
     function onHandlingErrorClick() {
-        $("#sql").text("select id,userId,name,size,date,property,state,stateMsg from dfs_file where state = 2")
+        $("#sql").val("select id,userId,name,size,date,property,state,stateMsg from dfs_file where state = 2")
         onExecClick()
     }
 
@@ -117,7 +117,7 @@
      */
     function onClearPropertyClick() {
         if (confirm("重置文件属性")) {
-            $("#sql").text("update dfs_file set property = null,state = 0 where storageId > 0 and isExtra = 0")
+            $("#sql").val("update dfs_file set property = null,state = 0 where storageId > 0 and isExtra = 0")
             onExecClick()
         }
     }
@@ -127,7 +127,7 @@
      */
     function onHandErrorRetryClick() {
         if (confirm("确定要处理失败全部重试")) {
-            $("#sql").text("update dfs_file set state = 0 where state = 2")
+            $("#sql").val("update dfs_file set state = 0 where state = 2")
             onExecClick()
         }
     }
@@ -137,7 +137,7 @@
      */
     function onDeleteThumbClick() {
         if (confirm("确定要重新生成缩略图片")) {
-            $("#sql").text("delete from dfs_file where isExtra = 1 and name = 'thumb';update dfs_file set state = 0 where storageId > 0 and isExtra = 0")
+            $("#sql").val("delete from dfs_file where isExtra = 1 and name = 'thumb';update dfs_file set state = 0 where storageId > 0 and isExtra = 0")
             onExecClick()
         }
     }
@@ -147,7 +147,7 @@
      */
     function onDeletePreviewClick() {
         if (confirm("确定要重新生成预览图片")) {
-            $("#sql").text("delete from dfs_file where isExtra = 1 and name = 'preview';update dfs_file set state = 0 where storageId > 0 and isExtra = 0")
+            $("#sql").val("delete from dfs_file where isExtra = 1 and name = 'preview';update dfs_file set state = 0 where storageId > 0 and isExtra = 0")
             onExecClick()
         }
     }
@@ -157,7 +157,7 @@
      */
     function onDeletePreVideoClick() {
         if (confirm("重新生成预览视频")) {
-            $("#sql").text("delete from dfs_file where isExtra = 1 and name in ('1920','1280','640');update dfs_file set state = 0 where storageId > 0 and isExtra = 0")
+            $("#sql").val("delete from dfs_file where isExtra = 1 and name in ('1920','1280','640');update dfs_file set state = 0 where storageId > 0 and isExtra = 0")
             onExecClick()
         }
     }
@@ -167,7 +167,7 @@
      */
     function onDeleteExtraClick() {
         if (confirm("重新生成预览视频")) {
-            $("#sql").text("delete from dfs_file where isExtra = 1;update dfs_file set state = 0 where storageId > 0 and isExtra = 0")
+            $("#sql").val("delete from dfs_file where isExtra = 1;update dfs_file set state = 0 where storageId > 0 and isExtra = 0")
             onExecClick()
         }
     }
@@ -176,7 +176,7 @@
      * 未使用文件数量
      */
     function onNotUseCountClick() {
-        $("#sql").text("select count(*) from storage_file where id not in (select storageId from dfs_file where storageId > 0) and id not in (select storageId from dfs_file_delete)")
+        $("#sql").val("select count(*) from storage_file where id not in (select storageId from dfs_file where storageId > 0) and id not in (select storageId from dfs_file_delete)")
         onExecClick()
     }
 
@@ -200,7 +200,7 @@
      * 储存丢失的文件
      */
     function onWithoutStorageClick(){
-        $("#sql").text("select * from dfs_file where storageId > 0 and storageId not in (select id from storage_file)")
+        $("#sql").val("select * from dfs_file where storageId > 0 and storageId not in (select id from storage_file)")
         onExecClick()
     }
 
