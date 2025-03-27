@@ -109,26 +109,32 @@ func openValidateFileMD5() {
 				validateFileMd5Lock.Unlock()
 				break
 			}
-			if _, err := (*validateFileMd5Writer).Write([]byte("data:" + String.ValueOf(i+1) + "\n\n")); err != nil { //可能客户端已经被关闭
+			if validateFileMd5Writer == nil { //可能浏览器已经被关闭
 				validateFileMd5Lock.Unlock()
-				break
+				continue
 			}
-			(*validateFileMd5Writer).(http.Flusher).Flush()
+			if _, err := (*validateFileMd5Writer).Write([]byte("data:" + String.ValueOf(i+1) + "\n\n")); err != nil { //可能客户端已经被关闭
+				validateFileMd5Writer = nil
+			} else {
+				(*validateFileMd5Writer).(http.Flusher).Flush()
+			}
 		}
 		validateFileMd5Lock.Unlock()
 
 		//测试用
-		//time.Sleep(100 * time.Millisecond)
+		//time.Sleep(500 * time.Millisecond)
 	}
 
 	//资源回收
 	validateFileMd5Lock.Lock()
 	if !isStopFlag { //发送结束事件
 		if len(validateErrFile) == 0 {
-			validateErrFile = append(validateErrFile, "文件数据完成，检测时间："+Date.FormatDate(time.Now()))
+			validateErrFile = append(validateErrFile, "文件数据完成，检测时间："+Date.Format(time.Now()))
 		}
-		(*validateFileMd5Writer).Write([]byte("event:finish\ndata:\n\n"))
-		(*validateFileMd5Writer).(http.Flusher).Flush()
+		if validateFileMd5Writer != nil { //浏览器被关闭的情况，validateFileMd5Writer为nil
+			(*validateFileMd5Writer).Write([]byte("event:finish\ndata:\n\n"))
+			(*validateFileMd5Writer).(http.Flusher).Flush()
+		}
 	}
 	validateFileMd5Writer = nil
 
