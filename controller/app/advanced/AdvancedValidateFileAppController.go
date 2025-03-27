@@ -118,7 +118,7 @@ func openValidateFileMD5() {
 		validateFileMd5Lock.Unlock()
 
 		//测试用
-		time.Sleep(100 * time.Millisecond)
+		//time.Sleep(100 * time.Millisecond)
 	}
 
 	//资源回收
