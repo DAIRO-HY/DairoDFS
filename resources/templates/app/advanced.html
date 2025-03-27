@@ -7,14 +7,17 @@
 <body>
 {{template "top-bar" .}}
 <div class="mx-3 mt-2 p-2 rounded shadow bg-content">
-    <div class="row">
-        <div class="col-auto">
+    <div class="row row-cols-1 row-cols-sm-auto">
+        <div class="col" id="validateErrFileDiv" style="display: none;">
+            <div class="alert alert-danger"><span id="validateErrFile"></span></div>
+        </div>
+        <div class="col">
             <div class="alert alert-primary">文件处理状态：<span id="fileHandling"></span></div>
         </div>
-        <div class="col-auto">
+        <div class="col">
             <div class="alert alert-success"><span id="recycleStorageTimerState"></span></div>
         </div>
-        <div class="col-auto">
+        <div class="col">
             <div class="alert alert-info"><span id="storageState"></span></div>
         </div>
     </div>
@@ -39,7 +42,8 @@
             </button>
         </div>
         <div class="col">
-            <button type="button" class="btn w-100 btn-warning mt-2" onclick="onUsedSizeClick()">DFS使用大小<span id="usedSize"></span></button>
+            <button type="button" class="btn w-100 btn-warning mt-2" onclick="onUsedSizeClick()">DFS使用大小<span
+                    id="usedSize"></span></button>
         </div>
         <div class="col">
             <button type="button" class="btn w-100 btn-primary mt-2" onclick="onClearPropertyClick()">重置属性</button>
@@ -69,6 +73,11 @@
         <div class="col">
             <button type="button" class="btn w-100 btn-dark mt-2" onclick="onRecycleNowClick()">回收未使用文件</button>
         </div>
+        <div class="col">
+            <button type="button" class="btn w-100 btn-info mt-2" onclick="onValidateFileMd5Click()">验证文件完整(<span
+                    id="validateFileMd5Current">0</span>/<span id="validateFileMd5Total">0</span>)
+            </button>
+        </div>
     </div>
     <div class="text-start">
         <div id="result"></div>
@@ -79,12 +88,20 @@
 
     $(function () {
         init()
+        onValidateFileMd5Click(true)
     })
 
     function init() {
         $.ajaxByData("advanced/init").success(data => {
             for (let key in data) {
-                $("#" + key).text(data[key])
+                if (key === "validateErrFile") {
+                    if (data[key] != null) {
+                        $("#validateErrFileDiv").show()
+                        $("#" + key).html(data[key])
+                    }
+                } else {
+                    $("#" + key).text(data[key])
+                }
             }
         }).post()
     }
@@ -216,6 +233,26 @@
         $.ajaxByData("advanced/used_size").success(data => {
             $("#usedSize").text(`(${data})`)
         }).post()
+    }
+
+    /**
+     * 验证文件完整
+     */
+    function onValidateFileMd5Click(isInit = false) {
+        const eventSource = new EventSource("advanced/validate_file_md5?isInit=" + isInit)
+        eventSource.addEventListener("total", (e) => {
+            $("#validateFileMd5Total").text(e.data)
+        });
+        eventSource.addEventListener("finish", () => {
+            init()
+        });
+        eventSource.onmessage = function (e) {
+            $("#validateFileMd5Current").text(e.data)
+        }
+        eventSource.onerror = (e) => {
+            // console.log("onerror:" + e)
+            eventSource.close()
+        }
     }
 
     /**

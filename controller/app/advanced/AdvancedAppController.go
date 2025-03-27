@@ -14,9 +14,7 @@ import (
 	"strings"
 )
 
-/**
- * 数据同步状态
- */
+// 高级功能
 //@Group:/app/advanced
 
 /**
@@ -48,6 +46,7 @@ func Init() map[string]any {
 		"fileHandling":             Bool.Is(DfsFileHandleUtil.HasData(), "正在处理", "空闲中"),
 		"recycleStorageTimerState": recycleStorageTimerState,
 		"storageState":             storageState,
+		"validateErrFile":          validateErrFile,
 	}
 }
 
