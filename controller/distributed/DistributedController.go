@@ -20,7 +20,11 @@ import (
 
 // 记录分机端的请求
 var waitingRequestMap = make(map[string]int64)
+
 var waitingRequestLock sync.Mutex
+
+// 限制每次同步数据量，条数不宜过大,过大可能导致客户端请求时，url太长导致请求失败
+const _MAX_SYNC_DATA_LIMIT = 100
 
 /**
  * 分机端同步监听请求
@@ -80,9 +84,6 @@ func pushNotify() {
 func GetAopId() int64 {
 	return Number.ID()
 }
-
-// 限制每次同步数据量，条数不宜过大,过大可能导致客户端请求失败
-const _MAX_SYNC_DATA_LIMIT = 1000
 
 // 获取每个表的id
 // tbName 表名
