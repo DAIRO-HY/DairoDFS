@@ -103,7 +103,7 @@ func Download(info *DistributedUtil.SyncServerInfo, md5 string, retryTimes int) 
 		if n > 0 {
 			downloadedSize += int64(n)
 			file.Write(cache[:n])
-			info.Msg = "正在同步文件：" + Number.ToDataSize(downloadedSize) + "(" + String.ValueOf(downloadedSize/1024) + "KB)/" + Number.ToDataSize(total)
+			info.Msg = "正在同步文件：" + Number.ToDataSize(downloadedSize) + "/" + Number.ToDataSize(total)
 		}
 		if readErr != nil {
 			if readErr == io.EOF { //数据已经读取完毕
