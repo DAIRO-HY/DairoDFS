@@ -8,11 +8,11 @@ import (
 )
 
 func init() {
-	application.LibrawPath = "C:/develop/project/idea/DairoDFS-JAVA/data/lib/libraw/LibRaw-0.21.3/bin"
+	application.LIBRAW_BIN = "C:\\develop\\project\\idea\\DairoDFS\\data\\libraw\\LibRaw-0.21.2\\bin"
 }
 
 func TestThumb(t *testing.T) {
-	data, err := Thumb("./data/test.cr3", "cr3", 300, 300)
+	data, err := Thumb("C:\\Users\\user\\Desktop\\dairo-dfs-test\\bb.cr3", 6000)
 	if err != nil {
 		t.Error(err)
 		return
@@ -21,7 +21,7 @@ func TestThumb(t *testing.T) {
 }
 
 func TestToTiff(t *testing.T) {
-	data, err := ToTiff("./data/test.cr3", "cr3")
+	data, err := ToTiff("C:\\Users\\user\\Desktop\\dairo-dfs-test\\bb.cr3")
 	if err != nil {
 		t.Error(err)
 		return
@@ -30,7 +30,7 @@ func TestToTiff(t *testing.T) {
 }
 
 func TestToPng(t *testing.T) {
-	data, err := ToPng("./data/test.cr3", "cr3")
+	data, err := ToPng("C:\\Users\\user\\Desktop\\dairo-dfs-test\\bb.cr3")
 	if err != nil {
 		t.Error(err)
 		return
@@ -39,7 +39,7 @@ func TestToPng(t *testing.T) {
 }
 
 func TestToJpg(t *testing.T) {
-	data, err := ToJpg("./data/test.cr3", "cr3")
+	data, err := ToJpg("C:\\Users\\user\\Desktop\\dairo-dfs-test\\bb.cr3")
 	if err != nil {
 		t.Error(err)
 		return

@@ -81,7 +81,7 @@ func ThumbByData(data []byte, targetMaxSize int) ([]byte, error) {
 
 	// 设置 JPEG 编码选项
 	options := &jpeg.Options{
-		Quality: 85, // 设定 JPEG 质量 1-100
+		Quality: 100, // 设定 JPEG 质量 1-100
 	}
 	err = jpeg.Encode(&buf, zoomImg, options)
 	if err != nil {

@@ -48,7 +48,7 @@ func ToTiff(path string) ([]byte, error) {
 
 	//将图片转换成TIFF图片
 	okData, cmdErr :=
-		ShellUtil.ExecToOkData(cmd + " -T -w -Z - -mem -mmap \"" + path + "\"")
+		ShellUtil.ExecToOkData(cmd + " -T -w -b 1.4 -g 10.4 12.92 -Z - -mem -mmap \"" + path + "\"")
 	if cmdErr != nil {
 		return nil, cmdErr
 	}
