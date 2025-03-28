@@ -3,6 +3,7 @@ package VideoUtil
 import (
 	application "DairoDFS/application"
 	"DairoDFS/exception"
+	"DairoDFS/extension/String"
 	"DairoDFS/util/ImageUtil"
 	"DairoDFS/util/ShellUtil"
 	"fmt"
@@ -12,21 +13,43 @@ import (
 	"time"
 )
 
-/**
- * 生成视频缩略图
- * @param path 视频文件路径
- * @param maxWidth 图片最大宽度
- * @param maxHeight 图片最大高度
- * @return 图片字节数组
- */
-func Thumb(path string, tagetMaxSize int) ([]byte, error) {
+// 生成视频缩略图
+// path 视频文件路径
+// targetMaxSize 图片最大边
+// return 图片字节数组,错误信息
+func Thumb(path string, targetMaxSize int) ([]byte, error) {
 
 	//获取视频第一帧作为缩略图
 	jpgData, cmdErr := ShellUtil.ExecToOkData("\"" + application.FfmpegPath + "/ffmpeg\" -i \"" + path + "\" -vf select=eq(n\\,0) -q:v 1 -f image2pipe -vcodec mjpeg -")
 	if cmdErr != nil {
 		return nil, cmdErr
 	}
-	return ImageUtil.ThumbByData(jpgData, tagetMaxSize)
+	return ImageUtil.ThumbByData(jpgData, targetMaxSize)
+}
+
+// 生成视频缩略图
+// path 视频文件路径
+// tagetMaxSize 图片最大边
+// return 图片字节数组,错误信息
+func ThumbPng(path string, targetMaxSize int) ([]byte, error) {
+	info, infoErr := GetInfo(path)
+	if infoErr != nil {
+		return nil, infoErr
+	}
+
+	//目标宽,高
+	targetW, targetH := ImageUtil.GetScaleSize(info.Width, info.Height, targetMaxSize)
+
+	//获取视频第一帧作为缩略图,以png格式输出。经过实际验证，输出jpg会导致颜色泛白。
+	//参数说明
+	//-pix_fmt rgb24  使用 标准 RGB，不带透明度（减少存储体积）
+	//-pred mixed 混合预测模式，通常比默认模式压缩得更好。
+	//-f image2pipe -vcodec png  强制使用png编码
+	pngData, cmdErr := ShellUtil.ExecToOkData("\"" + application.FfmpegPath + "/ffmpeg\" -i \"" + path + "\" -vf \"scale=" + String.ValueOf(targetW) + ":" + String.ValueOf(targetH) + ",select=eq(n\\,0)\" -q:v 1 -pix_fmt rgb24 -pred mixed -f image2pipe -vcodec png -")
+	if cmdErr != nil {
+		return nil, cmdErr
+	}
+	return pngData, nil
 }
 
 /**

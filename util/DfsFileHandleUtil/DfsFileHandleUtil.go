@@ -208,6 +208,9 @@ func makeThumb(dfsFileDto dto.DfsFileDto) {
 
 	//生成目标图片最大边
 	targetMaxSize := SystemConfig.Instance().ThumbMaxSize
+
+	//默认文件类型
+	contentType := DfsFileUtil.DfsContentType("jpeg")
 	if strings.HasSuffix(lowerName, ".jpg") ||
 		strings.HasSuffix(lowerName, ".jpeg") ||
 		strings.HasSuffix(lowerName, ".png") ||
@@ -236,7 +239,8 @@ func makeThumb(dfsFileDto dto.DfsFileDto) {
 		strings.HasSuffix(lowerName, ".rm") ||
 		strings.HasSuffix(lowerName, ".rmvb") ||
 		strings.HasSuffix(lowerName, ".3gp") {
-		data, makeThumbErr = VideoUtil.Thumb(storagePath, targetMaxSize)
+		data, makeThumbErr = VideoUtil.ThumbPng(storagePath, targetMaxSize)
+		contentType = DfsFileUtil.DfsContentType("png")
 	} else if strings.HasSuffix(lowerName, ".cr3") ||
 		strings.HasSuffix(lowerName, ".cr2") {
 
@@ -265,7 +269,7 @@ func makeThumb(dfsFileDto dto.DfsFileDto) {
 		UserId:      dfsFileDto.UserId,
 		Date:        dfsFileDto.Date,
 		State:       1,
-		ContentType: DfsFileUtil.DfsContentType("jpeg"),
+		ContentType: contentType,
 	}
 	DfsFileService.Add(extraDto)
 }

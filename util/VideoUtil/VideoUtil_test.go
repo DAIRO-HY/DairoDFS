@@ -1,7 +1,6 @@
 package VideoUtil
 
 import (
-	application "DairoDFS/application"
 	"fmt"
 	"os"
 	"testing"
@@ -10,17 +9,16 @@ import (
 func init() {
 
 	//ffmped安装目录
-	application.FfmpegPath = "ffmpeg"
-	application.FfprobePath = "ffprobe"
+	//application.FfmpegPath = "./data/ffmpeg"
 }
 
 func TestThumb(t *testing.T) {
-	data, err := Thumb("./data/test.mp4", 300, 300)
+	data, err := ThumbPng("C:\\Users\\user\\Desktop\\新しいフォルダー\\tt.mov", 3840)
 	if err != nil {
 		t.Error(err)
 		return
 	}
-	os.WriteFile("./data/test.jpg", data, os.ModePerm)
+	os.WriteFile("./data/test.png", data, os.ModePerm)
 }
 
 func TestGetInfo(t *testing.T) {

@@ -27,9 +27,7 @@ func ThumbByFile(path string, targetMaxSize int) ([]byte, error) {
 	return ThumbByData(data, targetMaxSize)
 }
 
-/**
- * 生成图片缩略图
- */
+// 生成图片缩略图
 func ThumbByData(data []byte, targetMaxSize int) ([]byte, error) {
 
 	//加载
@@ -38,28 +36,8 @@ func ThumbByData(data []byte, targetMaxSize int) ([]byte, error) {
 		return nil, err
 	}
 
-	//输入图片宽高比
-	whInputScale := float64(imageConfig.Width) / float64(imageConfig.Height)
-
-	//目标宽
-	var targetW int
-
-	//目标高
-	var targetH int
-
-	if whInputScale > 1 { //这是一张横向图片
-		if imageConfig.Width <= targetMaxSize {
-			return data, nil
-		}
-		targetW = targetMaxSize
-		targetH = int(float64(targetW) / whInputScale)
-	} else { //这是一张竖向图片
-		if imageConfig.Height <= targetMaxSize {
-			return data, nil
-		}
-		targetH = targetMaxSize
-		targetW = int(float64(targetH) * whInputScale)
-	}
+	//目标宽,高
+	targetW, targetH := GetScaleSize(imageConfig.Width, imageConfig.Height, targetMaxSize)
 
 	//加载图片
 	img, _, err := image.Decode(bytes.NewReader(data))
@@ -110,6 +88,37 @@ func ThumbByData(data []byte, targetMaxSize int) ([]byte, error) {
 		return nil, err
 	}
 	return buf.Bytes(), nil
+}
+
+// 按比例缩放图片
+// srcWidth 原始宽
+// srcWidth 原始高
+// targetMaxSize 目标最大边
+func GetScaleSize(srcWidth int, srcHeight int, targetMaxSize int) (int, int) {
+
+	//输入图片宽高比
+	whInputScale := float64(srcWidth) / float64(srcHeight)
+
+	//目标宽
+	var targetW int
+
+	//目标高
+	var targetH int
+
+	if whInputScale > 1 { //这是一张横向图片
+		if srcWidth <= targetMaxSize {
+			return srcWidth, srcHeight
+		}
+		targetW = targetMaxSize
+		targetH = int(float64(targetW) / whInputScale)
+	} else { //这是一张竖向图片
+		if srcHeight <= targetMaxSize {
+			return srcWidth, srcHeight
+		}
+		targetH = targetMaxSize
+		targetW = int(float64(targetH) * whInputScale)
+	}
+	return targetW, targetH
 }
 
 /**
