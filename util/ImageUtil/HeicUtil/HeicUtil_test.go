@@ -1,22 +1,20 @@
 package HeicUtil
 
 import (
+	"DairoDFS/application"
 	"os"
 	"testing"
 )
 
-//func TestThumb(t *testing.T) {
-//	data, err := Thumb("C:\\Users\\user\\Desktop\\test\\IMG_2481-1741001867627.heic", 500)
-//	if err != nil {
-//		t.Fatal(err)
-//	}
-//	fmt.Println(len(data))
-//}
+func init() {
+	application.Init()
+	application.FfmpegPath = "C:\\develop\\project\\idea\\DairoDFS\\data\\ffmpeg"
+}
 
 func TestToJpegByWindows(t *testing.T) {
-	data, err := ToJpeg("C:\\Users\\user\\Desktop\\test\\heic-linux-diff\\1.heic", 100)
+	data, err := ToJpeg("C:\\Users\\user\\Desktop\\dairo-dfs-test\\heic\\hh.heic", 2)
 	if err != nil {
 		panic(err)
 	}
-	os.WriteFile("./asda.jpeg", data, 0644)
+	os.WriteFile("C:\\Users\\user\\Desktop\\dairo-dfs-test\\heic\\hh-dfs.png.2.jpg", data, 0644)
 }

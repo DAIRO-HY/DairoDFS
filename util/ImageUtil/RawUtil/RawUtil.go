@@ -2,13 +2,12 @@ package RawUtil
 
 import (
 	application "DairoDFS/application"
+	"DairoDFS/extension/String"
 	"DairoDFS/util/ImageUtil"
+	"DairoDFS/util/RamDiskUtil"
 	"DairoDFS/util/ShellUtil"
-	"bytes"
 	_ "golang.org/x/image/tiff"
-	"image"
-	"image/jpeg"
-	"image/png"
+	"os"
 	"runtime"
 )
 
@@ -29,7 +28,7 @@ func Thumb(path string, targetMaxSize int) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	return ImageUtil.ThumbByData(tiffData, targetMaxSize)
+	return ImageUtil.ThumbByTiff(tiffData, targetMaxSize)
 }
 
 /**
@@ -56,40 +55,6 @@ func ToTiff(path string) ([]byte, error) {
 }
 
 /**
- * 生成PNG图片
- * @param path raw文件路径
- * @param ext 文件后最，raw图片处理时，必须携带文件后缀名
- * @return 图片数据
- */
-func ToPng(path string) ([]byte, error) {
-	tiffData, tiffErr := ToTiff(path)
-	if tiffErr != nil {
-		return nil, tiffErr
-	}
-
-	//加载图片
-	tiff, _, err := image.Decode(bytes.NewReader(tiffData))
-	if err != nil {
-		return nil, err
-	}
-
-	// 使用 png.Encoder 指定压缩级别
-	encoder := png.Encoder{
-		CompressionLevel: png.BestCompression, // 可选：DefaultCompression, NoCompression, BestSpeed, BestCompression
-	}
-
-	// 创建一个 bytes.Buffer 用于保存 JPEG 数据
-	var buf bytes.Buffer
-
-	// 图片编码
-	err = encoder.Encode(&buf, tiff)
-	if err != nil {
-		return nil, err
-	}
-	return buf.Bytes(), nil
-}
-
-/**
  * 生成Jpg图片
  * @param path raw文件路径
  * @param ext 文件后最，raw图片处理时，必须携带文件后缀名
@@ -101,26 +66,17 @@ func ToJpg(path string) ([]byte, error) {
 		return nil, tiffErr
 	}
 
-	//加载图片
-	tiff, _, err := image.Decode(bytes.NewReader(tiffData))
-	if err != nil {
+	tempFile := RamDiskUtil.GetRamFolder() + "/" + String.MakeRandStr(16)
+
+	//先将数据写入到硬盘，因为ffmpeg无法识别tiff输入流
+	if err := os.WriteFile(tempFile, tiffData, 0644); err != nil {
 		return nil, err
 	}
+	defer os.Remove(tempFile)
 
-	// 设置 JPEG 编码选项
-	options := &jpeg.Options{
-		Quality: 100, // 设定 JPEG 质量 1-100
-	}
-
-	// 创建一个 bytes.Buffer 用于保存 JPEG 数据
-	var buf bytes.Buffer
-
-	// 将裁剪后的图片编码并保存
-	err = jpeg.Encode(&buf, tiff, options)
-	if err != nil {
-		return nil, err
-	}
-	return buf.Bytes(), nil
+	//获取视频第一帧作为缩略图
+	//-q:v代表输出图片质量，取值返回2-31，2为质量最佳
+	return ShellUtil.ExecToOkData("\"" + application.FfmpegPath + "/ffmpeg\" -f image2pipe -vcodec tiff -i \"" + tempFile + "\"" + " -q:v 2 -f image2pipe -vcodec mjpeg -")
 }
 
 // 获取图片信息

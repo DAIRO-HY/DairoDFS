@@ -211,14 +211,10 @@ func makeThumb(dfsFileDto dto.DfsFileDto) {
 
 	//默认文件类型
 	contentType := DfsFileUtil.DfsContentType("jpeg")
-	if strings.HasSuffix(lowerName, ".jpg") ||
-		strings.HasSuffix(lowerName, ".jpeg") ||
-		strings.HasSuffix(lowerName, ".png") ||
-		strings.HasSuffix(lowerName, ".bmp") ||
+	if strings.HasSuffix(lowerName, ".bmp") ||
 		strings.HasSuffix(lowerName, ".gif") ||
 		strings.HasSuffix(lowerName, ".ico") ||
 		strings.HasSuffix(lowerName, ".svg") ||
-		strings.HasSuffix(lowerName, ".tiff") ||
 		strings.HasSuffix(lowerName, ".webp") ||
 		strings.HasSuffix(lowerName, ".wmf") ||
 		strings.HasSuffix(lowerName, ".wmz") ||
@@ -227,6 +223,15 @@ func makeThumb(dfsFileDto dto.DfsFileDto) {
 		strings.HasSuffix(lowerName, ".tga") ||
 		strings.HasSuffix(lowerName, ".jfif") {
 		data, makeThumbErr = ImageUtil.ThumbByFile(storagePath, targetMaxSize)
+	} else if strings.HasSuffix(lowerName, ".jpg") ||
+		strings.HasSuffix(lowerName, ".jpeg") {
+		jpgData, _ := os.ReadFile(storagePath)
+		data, makeThumbErr = ImageUtil.ThumbByJpg(jpgData, targetMaxSize)
+	} else if strings.HasSuffix(lowerName, ".png") {
+		pngData, _ := os.ReadFile(storagePath)
+		data, makeThumbErr = ImageUtil.ThumbByPng(pngData, targetMaxSize)
+	} else if strings.HasSuffix(lowerName, ".tiff") {
+		data, makeThumbErr = ImageUtil.ThumbByTiffPath(storagePath, targetMaxSize)
 	} else if strings.HasSuffix(lowerName, ".psd") ||
 		strings.HasSuffix(lowerName, ".psb") ||
 		strings.HasSuffix(lowerName, ".ai") {
@@ -298,16 +303,16 @@ func makePreview(dfsFileDto dto.DfsFileDto) {
 	storagePath := localDto.Path
 	lowerName := strings.ToLower(dfsFileDto.Name)
 
-	var thumbData []byte
+	var previewData []byte
 	var err error
 	if strings.HasSuffix(lowerName, ".psd") ||
 		strings.HasSuffix(lowerName, ".psb") ||
 		strings.HasSuffix(lowerName, ".ai") {
-		thumbData, err = PSDUtil.ToJpeg(storagePath)
+		previewData, err = PSDUtil.ToJpeg(storagePath)
 	} else if strings.HasSuffix(lowerName, ".cr3") || strings.HasSuffix(lowerName, ".cr2") {
-		thumbData, err = RawUtil.ToJpg(storagePath)
+		previewData, err = RawUtil.ToJpg(storagePath)
 	} else if strings.HasSuffix(lowerName, ".heic") {
-		thumbData, err = HeicUtil.ToJpeg(storagePath, 100)
+		previewData, err = HeicUtil.ToJpeg(storagePath, 2)
 	} else {
 		return
 	}
@@ -316,11 +321,11 @@ func makePreview(dfsFileDto dto.DfsFileDto) {
 	}
 
 	//保存文件
-	storageFileDto := DfsFileService.SaveToStorageByData(thumbData)
+	storageFileDto := DfsFileService.SaveToStorageByData(previewData)
 	extraDto := dto.DfsFileDto{
 		Id:          Number.ID(),
 		Name:        "preview",
-		Size:        int64(len(thumbData)),
+		Size:        int64(len(previewData)),
 		StorageId:   storageFileDto.Id,
 		IsExtra:     true,
 		ParentId:    dfsFileDto.Id,

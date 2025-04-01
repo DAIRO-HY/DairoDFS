@@ -1,7 +1,7 @@
 version: '3.1'
 services:
   dairo-dfs:
-    image: dairopapa/dairo-dfs:1.0.6-RC
+    image: dairopapa/dairo-dfs:1.0.10-RC
 #    build: .
     restart: always
     container_name: dairo-dfs
@@ -12,6 +12,10 @@ services:
 
     ports:
       - 8031:8031
+
+    #创建一个虚拟的RAM硬盘，降低磁盘读写开销，根据实际情况调整大小。基本用作临时文件交换，不会长时间占用。
+    tmpfs:
+      - /mnt/dfs-ramdisk:size=128M
 
     environment:
       #时区,解决时间不一致的bug

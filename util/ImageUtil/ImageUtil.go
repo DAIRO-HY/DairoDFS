@@ -1,6 +1,10 @@
 package ImageUtil
 
 import (
+	"DairoDFS/application"
+	"DairoDFS/extension/String"
+	"DairoDFS/util/RamDiskUtil"
+	"DairoDFS/util/ShellUtil"
 	"bytes"
 	"github.com/nfnt/resize"
 	"github.com/rwcarlsen/goexif/exif"
@@ -88,6 +92,78 @@ func ThumbByData(data []byte, targetMaxSize int) ([]byte, error) {
 		return nil, err
 	}
 	return buf.Bytes(), nil
+}
+
+// 生成图片缩略图
+func ThumbByJpg(data []byte, targetMaxSize int) ([]byte, error) {
+	info, infoErr := GetInfoByData(data)
+	if infoErr != nil {
+		return nil, infoErr
+	}
+
+	//获取转换之后的尺寸
+	targetW, targetH := GetScaleSize(info.Width, info.Height, targetMaxSize)
+
+	//获取视频第一帧作为缩略图
+	//-q:v代表输出图片质量，取值返回2-31，2为质量最佳
+	//v指定输出图片尺寸
+	return ShellUtil.ExecToOkData2("\""+application.FfmpegPath+"/ffmpeg\" -f image2pipe -vcodec mjpeg -i pipe:0 -vf scale="+String.ValueOf(targetW)+":"+String.ValueOf(targetH)+" -q:v 3 -f image2pipe -vcodec mjpeg -", data)
+}
+
+// 生成图片缩略图
+func ThumbByPng(data []byte, targetMaxSize int) ([]byte, error) {
+	info, infoErr := GetInfoByData(data)
+	if infoErr != nil {
+		return nil, infoErr
+	}
+
+	//获取转换之后的尺寸
+	targetW, targetH := GetScaleSize(info.Width, info.Height, targetMaxSize)
+
+	//获取视频第一帧作为缩略图
+	//-q:v代表输出图片质量，取值返回2-31，2为质量最佳
+	//v指定输出图片尺寸
+	return ShellUtil.ExecToOkData2("\""+application.FfmpegPath+"/ffmpeg\" -f image2pipe -vcodec png -i pipe:0 -vf scale="+String.ValueOf(targetW)+":"+String.ValueOf(targetH)+" -q:v 3 -f image2pipe -vcodec mjpeg -", data)
+}
+
+// 生成图片缩略图
+func ThumbByTiffPath(path string, targetMaxSize int) ([]byte, error) {
+	tiffData, _ := os.ReadFile(path)
+	return ThumbByTiff(tiffData, targetMaxSize)
+}
+
+// 生成图片缩略图
+func ThumbByTiff(data []byte, targetMaxSize int) ([]byte, error) {
+	tempFile := RamDiskUtil.GetRamFolder() + "/" + String.MakeRandStr(16)
+
+	//先将数据写入到硬盘，因为ffmpeg无法识别tiff输入流
+	if err := os.WriteFile(tempFile, data, 0644); err != nil {
+		return nil, err
+	}
+	defer os.Remove(tempFile)
+
+	info, infoErr := GetInfoByData(data)
+	if infoErr != nil {
+		return nil, infoErr
+	}
+
+	//获取转换之后的尺寸
+	targetW, targetH := GetScaleSize(info.Width, info.Height, targetMaxSize)
+
+	//获取视频第一帧作为缩略图
+	//-q:v代表输出图片质量，取值返回2-31，2为质量最佳
+	//v指定输出图片尺寸
+	return ShellUtil.ExecToOkData("\"" + application.FfmpegPath + "/ffmpeg\" -f image2pipe -vcodec tiff -i \"" + tempFile + "\" -vf scale=" + String.ValueOf(targetW) + ":" + String.ValueOf(targetH) + " -q:v 3 -f image2pipe -vcodec mjpeg -")
+}
+
+// 将png图片转jpg
+// quatity 转换质量：2-31  2为质量最佳
+func Png2Jpg(data []byte, quality int8) ([]byte, error) {
+
+	//获取视频第一帧作为缩略图
+	//-q:v代表输出图片质量，取值返回2-31，2为质量最佳
+	//v指定输出图片尺寸
+	return ShellUtil.ExecToOkData2("\""+application.FfmpegPath+"/ffmpeg\" -f image2pipe -vcodec png -i pipe:0 -q:v "+String.ValueOf(quality)+" -f image2pipe -vcodec mjpeg -", data)
 }
 
 // 按比例缩放图片
