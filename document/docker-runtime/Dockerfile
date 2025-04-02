@@ -1,3 +1,5 @@
+#在docker镜像中构建镜像时，有时候会导致安装失败，重启一下容器可能可以解决该问题
+
 FROM ubuntu:24.10
 
 RUN apt update
@@ -101,18 +103,6 @@ RUN make install
 WORKDIR /app
 RUN rm Image-ExifTool-13.26.tar.gz
 RUN rm -rf Image-ExifTool-13.26
-
-
-
-#清理操作
-RUN apt-get remove -y make
-RUN apt-get remove -y cmake
-RUN apt-get remove -y gcc
-RUN apt-get remove -y gzip
-RUN apt-get remove -y autoconf
-RUN apt-get remove -y build-essential
-RUN apt-get remove -y perl
-RUN apt autoremove -y
 
 
 
