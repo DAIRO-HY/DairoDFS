@@ -11,7 +11,7 @@ import (
 )
 
 // VERSION 版本号
-const VERSION = "1.0.12-RC"
+const VERSION = "1.0.13-RC"
 
 /**
  * 基准时间戳
@@ -68,6 +68,9 @@ var LibrawPath = DataPath + "/libraw"
 
 // imagemagick安装目录
 var ImageMagickPath = DataPath + "/imagemagick"
+
+// Exiftool安装目录
+var ExiftoolPath = DataPath + "/exiftool"
 
 // libraw中的Dcraw模拟器存放路径
 var LIBRAW_BIN = LibrawPath + "/LibRaw-0.21.2/bin"

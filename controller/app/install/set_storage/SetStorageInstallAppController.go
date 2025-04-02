@@ -2,7 +2,7 @@ package set_storage
 
 import (
 	"DairoDFS/application/SystemConfig"
-	"DairoDFS/controller/app/install/magick"
+	"DairoDFS/controller/app/install/exiftool"
 )
 
 /**
@@ -15,7 +15,7 @@ import (
 func Html() {
 
 	//清除上一步的缓存
-	magick.Recycle()
+	exiftool.Recycle()
 }
 
 /**

@@ -122,7 +122,7 @@
      * 查看正在处理中的文件
      */
     function onHandlingClick() {
-        $("#sql").text("select count(*) from dfs_file where state = 0 and storageId > 0")
+        $("#sql").val("select count(*) from dfs_file where state = 0 and storageId > 0")
         onExecClick()
     }
 

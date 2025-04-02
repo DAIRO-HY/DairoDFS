@@ -2,16 +2,16 @@
 <html lang="zh-CN">
 <head>
     {{template "head" .}}
-    <title>安装LIBRAW</title>
+    <title>安装ImageExiftool</title>
 </head>
 <body class="bg-login">
 <div class="text-center d-table" style="width: 100vw;height: 100vh;">
     <div class="d-table-cell align-middle" style="padding: 0 100px">
         <div class="d-inline-block border rounded bg-white p-3" style="max-width: 700px;">
-            <span class="fs-4">安装LIBRAW</span>
+            <span class="fs-4">安装Exiftool</span>
             <div class="text-start">
-                Libraw 是一个用于读取和处理 RAW 图像文件的开源库，支持多种相机品牌和型号。<br>
-                RAW 文件包含相机传感器捕获的原始数据，提供更高的图像质量和更大的后期处理灵活性。
+                exiftool 是一款功能强大的命令行工具，用于读取、写入和编辑图像、视频、音频等文件的元数据（Exif、IPTC、XMP等）。<br>
+                它支持各种格式，如 JPG、PNG、TIFF、RAW、MP4、PDF 等，广泛用于图片处理、数码取证和元数据管理。
             </div>
             <div id="downloadInfo" class="mt-3" style="display: none;">
                 <div class="progress" role="progressbar" aria-label="Example with label"
@@ -30,11 +30,11 @@
             </div>
             <div class="d-flex justify-content-between mt-3">
                 <div>
-                    3/8
+                    5/8
                 </div>
                 <div>
                     <button id="btnInstall" class="btn btn-primary" onclick="onInstallClick()">安装</button>
-                    <button id="btnNext" class="btn btn-primary" onclick="window.location.href='./magick'" disabled>
+                    <button id="btnNext" class="btn btn-primary" onclick="window.location.href='./set_storage'" disabled>
                         下一步
                     </button>
                 </div>
@@ -58,7 +58,7 @@
      * 初始化按钮点击事件
      */
     function onInstallClick() {
-        $.ajaxByData("/app/install/libraw/install").success(showProgress).post()
+        $.ajaxByData("/app/install/exiftool/install").success(showProgress).post()
     }
 
     /**
@@ -70,7 +70,7 @@
             //关闭上次的连接，避免重复创建
             progressWebsocket.close()
         }
-        progressWebsocket = new WebSocket(`ws://${location.host}/app/install/libraw/progress`)
+        progressWebsocket = new WebSocket(`ws://${location.host}/app/install/exiftool/progress`)
         progressWebsocket.onopen = function () {
             console.log("websocket连接成功")
         }
