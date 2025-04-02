@@ -90,3 +90,29 @@ RUN ldconfig /usr/local/lib
 WORKDIR /app
 RUN rm ImageMagick-7.1.1-45.tar.gz
 RUN rm -rf ImageMagick-7.1.1-45
+
+#下载源码并安装ExifTool
+ADD https://exiftool.org/Image-ExifTool-13.26.tar.gz Image-ExifTool-13.26.tar.gz
+RUN tar -xzvf Image-ExifTool-13.26.tar.gz
+WORKDIR /app/Image-ExifTool-13.26
+RUN apt-get install -y perl
+RUN perl Makefile.PL
+RUN make install
+WORKDIR /app
+RUN rm Image-ExifTool-13.26.tar.gz
+RUN rm -rf Image-ExifTool-13.26
+
+
+
+#清理操作
+RUN apt-get remove -y make
+RUN apt-get remove -y cmake
+RUN apt-get remove -y gcc
+RUN apt-get remove -y gzip
+RUN apt-get remove -y autoconf
+RUN apt-get remove -y build-essential
+RUN apt-get remove -y perl
+RUN apt autoremove -y
+
+
+
