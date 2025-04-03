@@ -6,6 +6,7 @@ import (
 	"DairoDFS/extension/String"
 	"DairoDFS/util/ImageUtil"
 	"DairoDFS/util/ShellUtil"
+	"encoding/json"
 	"fmt"
 	"regexp"
 	"strconv"
@@ -57,7 +58,7 @@ func ThumbPng(path string, targetMaxSize int) ([]byte, error) {
  * @param path 视频文件路径
  * @return 图片字节数组
  */
-func GetInfo(path string) (VedioInfo, error) {
+func GetInfoBk(path string) (VedioInfo, error) {
 	_, videoInfoStr, cmdErr := ShellUtil.ExecToOkAndErrorResult("\"" + application.FfprobePath + "/ffprobe\" -i \"" + path + "\"")
 	if cmdErr != nil {
 		return VedioInfo{}, cmdErr
@@ -157,6 +158,59 @@ func GetInfo(path string) (VedioInfo, error) {
 		AudioSampleRate: audioSampleRate, //音频采样率（HZ）
 		AudioFormat:     audioFormat,     //音频格式
 	}, nil
+}
+
+/**
+ * 获取视频信息
+ * @param path 视频文件路径
+ * @return 图片字节数组
+ */
+func GetInfo(path string) (VedioInfo, error) {
+	infoData, cmdErr := ShellUtil.ExecToOkData("\"" + application.FfprobePath + "/ffprobe\" -print_format json -show_streams \"" + path + "\"")
+	if cmdErr != nil {
+		return VedioInfo{}, cmdErr
+	}
+	infoMap := make(map[string]any)
+	json.Unmarshal(infoData, &infoMap)
+
+	streams, isOk := infoMap["streams"]
+	if !isOk {
+		return VedioInfo{}, cmdErr
+	}
+	for _, it := range streams.([]any) {
+		stream := it.(map[string]any)
+		if stream["codec_type"] != "video" {
+			continue
+		}
+		info := VedioInfo{}
+		info.Width = int(stream["width"].(float64))
+		info.Height = int(stream["height"].(float64))
+		info.Duration = int64(stream["duration_ts"].(float64))
+		{
+			rFrameRate := stream["r_frame_rate"].(string)
+			rFrameRates := strings.Split(rFrameRate, "/")
+			fm, _ := strconv.Atoi(rFrameRates[0])
+			fz, _ := strconv.Atoi(rFrameRates[1])
+			info.Fps = float32(fm) / float32(fz)
+		}
+		info.Bitrate, _ = strconv.Atoi(stream["bit_rate"].(string))
+		if tags, hasTag := stream["tags"]; hasTag {
+			if creationTime, hasCreationTime := tags.(map[string]any)["creation_time"]; hasCreationTime {
+				creationTime := strings.ReplaceAll(creationTime.(string), "T", " ")
+				creationTime = creationTime[:strings.Index(creationTime, ".")]
+				date, _ := time.Parse("2006-01-02 15:04:05", creationTime)
+				info.Date = date.UnixMilli()
+			}
+		}
+		if strings.Contains(string(infoData), "\"rotation\": -90") ||
+			strings.Contains(string(infoData), "\"rotation\": 90") { //这个视频宽高可能需要调换
+			width := info.Width
+			info.Width = info.Height
+			info.Height = width
+		}
+		return info, nil
+	}
+	return VedioInfo{}, exception.Biz("没有获取到视频信息")
 }
 
 /**

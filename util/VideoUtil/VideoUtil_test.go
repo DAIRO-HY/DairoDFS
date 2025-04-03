@@ -22,7 +22,7 @@ func TestThumb(t *testing.T) {
 }
 
 func TestGetInfo(t *testing.T) {
-	info, err := GetInfo("./data/test.mp4")
+	info, err := GetInfo("C:\\Users\\user\\Desktop\\dairo-dfs-test\\mov\\mm.mov")
 	if err != nil {
 		t.Error(err)
 		return

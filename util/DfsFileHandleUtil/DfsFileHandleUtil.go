@@ -237,13 +237,14 @@ func makeThumb(dfsFileDto dto.DfsFileDto) {
 		strings.HasSuffix(lowerName, ".ai") {
 		data, makeThumbErr = PSDUtil.Thumb(storagePath, targetMaxSize)
 	} else if strings.HasSuffix(lowerName, ".mp4") ||
-		strings.HasSuffix(lowerName, ".mov") ||
 		strings.HasSuffix(lowerName, ".avi") ||
 		strings.HasSuffix(lowerName, ".mkv") ||
 		strings.HasSuffix(lowerName, ".flv") ||
 		strings.HasSuffix(lowerName, ".rm") ||
 		strings.HasSuffix(lowerName, ".rmvb") ||
 		strings.HasSuffix(lowerName, ".3gp") {
+		data, makeThumbErr = VideoUtil.Thumb(storagePath, targetMaxSize)
+	} else if strings.HasSuffix(lowerName, ".mov") {
 		data, makeThumbErr = VideoUtil.ThumbPng(storagePath, targetMaxSize)
 		contentType = DfsFileUtil.DfsContentType("png")
 	} else if strings.HasSuffix(lowerName, ".cr3") ||
