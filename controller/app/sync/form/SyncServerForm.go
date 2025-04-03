@@ -14,8 +14,11 @@ type SyncServerForm struct {
 	/** 同步消息 **/
 	Msg string `json:"msg,omitempty"`
 
-	/** 同步日志数 **/
-	SyncCount int `json:"syncCount,omitempty"`
+	/** 同步进度 **/
+	Progress string `json:"progress,omitempty"`
+
+	/** 总数 **/
+	Count int `json:"count,omitempty"`
 
 	/** 最后一次同步完成时间 **/
 	LastTime string `json:"lastTime,omitempty"`

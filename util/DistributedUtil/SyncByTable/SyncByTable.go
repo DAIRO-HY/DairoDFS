@@ -1,6 +1,7 @@
 package SyncByTable
 
 import (
+	"DairoDFS/application/SystemConfig"
 	"DairoDFS/extension/String"
 	"DairoDFS/util/DBConnection"
 	"DairoDFS/util/DBUtil"
@@ -15,6 +16,9 @@ import (
 	"strings"
 )
 
+//全量同步时，从主机端下载所有数据和本地数据对比
+//避免由于网络延迟，本机没有完全同步主机日志（主要是update，delete语句），导致本机数据与主机不一致。
+
 // 同步所有数据
 func SyncAll() {
 
@@ -22,8 +26,16 @@ func SyncAll() {
 	SyncInfoManager.ReloadList()
 
 	//避免并发
-	defer DistributedUtil.SyncLock.Unlock()
+	defer func() {
+
+		//标记正在全量同步结束
+		DistributedUtil.IsTableSyncing = false
+		DistributedUtil.SyncLock.Unlock()
+	}()
 	DistributedUtil.SyncLock.Lock()
+
+	//标记正在全量同步中
+	DistributedUtil.IsTableSyncing = true
 
 	for _, info := range SyncInfoManager.SyncInfoList {
 		syncByInfo(info)
@@ -65,6 +77,8 @@ func syncByInfo(info *DistributedUtil.SyncServerInfo) {
 		"share",
 		"storage_file",
 	}
+	info.Count = GetTableCount(info, tbNames, aopId)
+	info.SyncCount = 0
 	for _, it := range tbNames {
 		loopSync(info, it, 0, aopId)
 	}
@@ -86,37 +100,17 @@ func loopSync(info *DistributedUtil.SyncServerInfo, tbName string, lastId int64,
 		panic("同步被强制取消")
 	}
 
-	//通过表名从主机端获取某个断面以后的id列表
-	masterIds := getTableId(info, tbName, lastId, aopId)
-	if masterIds == "" { //同步主机端的数据已经全部取完
+	//得到主机端的数据
+	masterDataMapList := getTableData(info, tbName, lastId, aopId)
+	if len(masterDataMapList) == 0 {
 		return
 	}
-
-	//设置本次获取到的最后一个ID
-	var currentLastId int64
-	if strings.Contains(masterIds, ",") {
-		currentLastId, _ = strconv.ParseInt(masterIds[strings.LastIndex(masterIds, ",")+1:], 10, 64)
-	} else {
-		currentLastId, _ = strconv.ParseInt(masterIds, 10, 64)
-	}
-
-	//筛选出本地不存在的ID
-	needSyncIds := filterNotExistsId(tbName, masterIds)
-	if needSyncIds == "" { //本次获取到的数据，本地已经全部存在，继续获取下一篇段数据
-
-		//再次同步
-		loopSync(info, tbName, currentLastId, aopId)
-		return
-	}
-
-	//得到需要同步的数据
-	dataMapList := getTableData(info, tbName, needSyncIds)
 
 	//插入数据
-	insertData(info, tbName, dataMapList)
+	insertData(info, tbName, masterDataMapList)
 
-	//记录当前同步的数据条数
-	info.SyncCount += len(dataMapList)
+	//设置本次获取到数据的最后一个ID
+	currentLastId := int64(masterDataMapList[len(masterDataMapList)-1]["id"].(float64))
 
 	//再次同步
 	loopSync(info, tbName, currentLastId, aopId)
@@ -136,51 +130,22 @@ func getAopId(info *DistributedUtil.SyncServerInfo) int64 {
 	return aopId
 }
 
-/**
- * 从主机获取某表的一批数据id
- * @param info 主机信息
- * @param tbName 表名
- * @param lastId 上次获取到的最后一个id
- * @param aopId 本次同步的服务器端的最大id
- */
-func getTableId(info *DistributedUtil.SyncServerInfo, tbName string, lastId int64, aopId int64) string {
-	url := info.Url + "/get_table_id?tbName=" + tbName + "&lastId=" + String.ValueOf(lastId) + "&aopId=" + String.ValueOf(aopId)
+// 获取要同步数据总条数
+// tbNames 表名
+// aopId 断面ID
+func GetTableCount(info *DistributedUtil.SyncServerInfo, tbNames []string, aopId int64) int {
+	url := info.Url + "/get_table_count?aopId=" + String.ValueOf(aopId) + "&tbNames=" + strings.Join(tbNames, "&tbNames=")
 	data, err := SyncHttp.Request(url)
 	if err != nil {
 		panic(err)
 	}
-	return string(data)
-}
-
-/**
- * 筛选出本地不存在的ID
- */
-func filterNotExistsId(tbName string, ids string) string {
-
-	//得到已经存在的ID列表
-	existsIdList := DBUtil.SelectList[string]("select id from " + tbName + " where id in (" + ids + ")")
-	existsIdMap := make(map[string]struct{})
-	for _, it := range existsIdList {
-		existsIdMap[it] = struct{}{}
-	}
-
-	//得到本地不存在的id
-	notExistsIds := ""
-	for _, it := range strings.Split(ids, ",") {
-		_, isExists := existsIdMap[it]
-		if !isExists {
-			notExistsIds += it + ","
-		}
-	}
-	if len(notExistsIds) > 0 {
-		notExistsIds = notExistsIds[:len(notExistsIds)-1]
-	}
-	return notExistsIds
+	count, _ := strconv.Atoi(string(data))
+	return count
 }
 
 // 从同步主机端取数据
-func getTableData(info *DistributedUtil.SyncServerInfo, tbName string, ids string) []map[string]any {
-	url := info.Url + "/get_table_data?tbName=" + tbName + "&ids=" + ids
+func getTableData(info *DistributedUtil.SyncServerInfo, tbName string, lastId int64, aopId int64) []map[string]any {
+	url := info.Url + "/get_table_data?tbName=" + tbName + "&lastId=" + String.ValueOf(lastId) + "&aopId=" + String.ValueOf(aopId)
 	data, err := SyncHttp.Request(url)
 	if err != nil {
 		panic(err)
@@ -191,18 +156,53 @@ func getTableData(info *DistributedUtil.SyncServerInfo, tbName string, ids strin
 }
 
 // 往数据库插入数据
-func insertData(info *DistributedUtil.SyncServerInfo, tbName string, dataMapList []map[string]any) {
-	for _, dataMap := range dataMapList {
+func insertData(info *DistributedUtil.SyncServerInfo, tbName string, masterDataMapList []map[string]any) {
+	for _, masterDataMap := range masterDataMapList {
+		info.SyncCount++
 		switch tbName {
 		case "storage_file": //当前请求的是本地文件存储表，先去下载文件
-			StorageFileSyncHandle.ByTable(info, dataMap)
+			StorageFileSyncHandle.ByTable(info, masterDataMap)
 		case "dfs_file": //如果是用户文件表
-			DfsFileSyncHandle.ByTable(info, dataMap)
+			DfsFileSyncHandle.ByTable(info, masterDataMap)
+		}
+
+		//当前ID
+		masterId := masterDataMap["id"]
+		existsData := DBUtil.SelectOneMap("select * from "+tbName+" where id = ?", masterId)
+		if existsData != nil { //如果该文件已经存在，则需要对比文件内容是否一致
+
+			//将数据库查询出来的数据从新序列化再反序列，确保数据类型和主机端返回的数据类型一直。
+			//DBUtil.SelectOneMap查询结果的数据类型会根据数据库数据类型保持一直。
+			//比如数据库int类型，查询结果就是int类型，而通过json反序列化之后就成了float64类型
+			existsJson, _ := json.Marshal(existsData)
+			json.Unmarshal(existsJson, &existsData)
+
+			//标记是否数据一直
+			isEqual := true
+			for key, value := range existsData {
+				if masterDataMap[key] == value {
+					continue
+				}
+
+				//当数据不一致时，应该做点什么
+				isEqual = false
+				if SystemConfig.Instance().IgnoreSyncError { //忽略同步错误
+					break
+				}
+				panic("表" + tbName + "数据同步失败，该id[" + String.ValueOf(masterId) + "]数据已经存在，字段[" + key + "]主机：" + String.ValueOf(masterDataMap[key]) + "，本机：" + String.ValueOf(value))
+			}
+			if isEqual { //数据没有变化。不做任何处理
+				info.Commit()
+				continue
+			}
+
+			//删掉本机已经存在的数据，使用新的数据
+			info.DbTx().Exec("delete from "+tbName+" where id = ?", masterId)
 		}
 		insertKeys := ""
 		insertValueReplaces := ""
 		insertValues := make([]any, 0)
-		for k, v := range dataMap {
+		for k, v := range masterDataMap {
 			insertKeys += k + ","
 			insertValueReplaces += "?,"
 			insertValues = append(insertValues, v)

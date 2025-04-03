@@ -31,6 +31,9 @@ func ByTable(info *DistributedUtil.SyncServerInfo, dataMap map[string]any) {
 	if !isExists { //文件不存在时，不做任何处理
 		return
 	}
+	if id == existsFile.Id { //同一个文件时，什么也不做
+		return
+	}
 	//该分机端DFS文件已经存在的话，要做一些特殊处理
 	if storageId == 0 && existsFile.StorageId == 0 {
 		// 如果都是文件夹，则保留主机端的文件夹，具体步骤如下
@@ -49,8 +52,8 @@ func ByTable(info *DistributedUtil.SyncServerInfo, dataMap map[string]any) {
 				panic(err)
 			}
 		} else { //本地的文件比较新，则将主机端的文件设置为历史文件
-			//dfsFile.IsHistory = true
-			dataMap["isHistory"] = 1
+			//这里一定要设置为float64(1)，不能时1。因为从主机端反序列化的数据中，1被序列化成了float类型
+			dataMap["isHistory"] = float64(1)
 		}
 	} else { //主机端和分几端，一个时文件，一个是文件夹，无法同步
 

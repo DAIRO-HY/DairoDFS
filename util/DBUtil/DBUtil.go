@@ -92,6 +92,15 @@ func SelectOne[T any](query string, args ...any) (T, bool) {
 	return dtoList[0], true
 }
 
+// SelectOne 查询第一个数据
+func SelectOneMap(query string, args ...any) map[string]any {
+	mapList, _ := SelectToListMap(query, args...)
+	if len(mapList) == 0 {
+		return nil
+	}
+	return mapList[0]
+}
+
 // SelectList 查询列表
 func SelectListBk[T any](query string, args ...any) []*T {
 	list, _ := SelectToListMap(query, args...)

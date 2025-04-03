@@ -4,11 +4,7 @@ import (
 	"DairoDFS/util/DBConnection"
 	"context"
 	"database/sql"
-	"sync"
 )
-
-// 数据同步锁，防止并发执行
-var SyncLock sync.Mutex
 
 type SyncServerInfo struct {
 
@@ -23,6 +19,9 @@ type SyncServerInfo struct {
 
 	// 同步消息
 	Msg string
+
+	// 要同步的数据总量
+	Count int
 
 	// 同步日志数
 	SyncCount int

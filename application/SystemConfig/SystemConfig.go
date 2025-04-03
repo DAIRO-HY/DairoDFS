@@ -40,6 +40,9 @@ type SystemConfig struct {
 
 	// 缩略图最大边尺寸
 	ThumbMaxSize int
+
+	// 忽略本机同步错误
+	IgnoreSyncError bool
 }
 
 // 读取文件锁

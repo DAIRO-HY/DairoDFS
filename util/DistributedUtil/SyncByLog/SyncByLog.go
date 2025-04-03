@@ -41,7 +41,7 @@ func listen(info *DistributedUtil.SyncServerInfo) {
 		if info.IsStop { // 如果被强行终止
 			break
 		}
-		time.Sleep(1 * time.Second)
+		time.Sleep(3 * time.Second)
 		loopListen(info)
 	}
 }
@@ -64,6 +64,7 @@ func loopListen(info *DistributedUtil.SyncServerInfo) {
 			info.Rollback()
 		}
 	}()
+	info.Count = 0
 
 	//监听之前先执行一次请求，达到上次执行失败，本次重试的目的
 	callRequestSqlLog(info)
@@ -131,8 +132,16 @@ func loopListen(info *DistributedUtil.SyncServerInfo) {
 
 // 调起requestSqlLog函数
 func callRequestSqlLog(info *DistributedUtil.SyncServerInfo) {
-	defer DistributedUtil.SyncLock.Unlock()
+	defer func() {
+
+		//标记日志同步结束
+		DistributedUtil.IsLogSyncing = false
+		DistributedUtil.SyncLock.Unlock()
+	}()
 	DistributedUtil.SyncLock.Lock() //单线程同步
+
+	//标记正在日志同步中
+	DistributedUtil.IsLogSyncing = true
 	requestSqlLog(info)
 }
 

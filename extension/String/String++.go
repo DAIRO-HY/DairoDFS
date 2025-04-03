@@ -99,6 +99,9 @@ func MakeRandStrBySourceStr(sourceStr string, count int) string {
 
 // 将某个值转换成字符串
 func ValueOf(v any) string {
+	if v == nil {
+		return ""
+	}
 	switch value := v.(type) {
 	case int:
 		return strconv.Itoa(value)
@@ -110,7 +113,23 @@ func ValueOf(v any) string {
 		return strconv.Itoa(int(value))
 	case int64:
 		return strconv.FormatInt(value, 10)
+	case float64:
+		return floatToStr(value)
+	case float32:
+		return floatToStr(float64(value))
 	default:
 		return fmt.Sprintf("%q", v)
+	}
+}
+
+// 浮点型转字符串,去掉后面的0
+func floatToStr(f float64) string {
+	result := strconv.FormatFloat(f, 'f', 32, 64)
+	results := strings.Split(result, ".")
+	fraction, _ := strconv.ParseInt(results[1], 10, 64)
+	if fraction == 0 { //没有小数部分
+		return results[0]
+	} else {
+		return results[0] + strconv.FormatInt(fraction, 10)
 	}
 }

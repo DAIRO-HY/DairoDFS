@@ -56,6 +56,8 @@ func download(info *DistributedUtil.SyncServerInfo, md5 string, masterStorageFil
 
 		//将sql语句中的参数路劲修改为本地存储的文件
 		return saveLocalPath
+	} else if existsStorageFile.Id == masterStorageFileId { //文件已经存在，并且与主机端的id一样，直接返回（全量同步时用到）
+		return existsStorageFile.Path
 	} else { //本机存在同样的文件,直接使用
 
 		//删除本地的数据

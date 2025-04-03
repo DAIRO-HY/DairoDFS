@@ -24,12 +24,8 @@ func TestDoSync(t *testing.T) {
 func TestLoopSync(t *testing.T) {
 	application.Init()
 	info := DistributedUtil.GetMasterInfo()
-	aopId, _ := getAopId(info)
-	err := loopSync(info, "storage_file", 0, aopId)
-	if err != nil {
-		t.Fatal(err)
-		return
-	}
+	aopId := getAopId(info)
+	loopSync(info, "storage_file", 0, aopId)
 }
 
 /**
@@ -39,51 +35,24 @@ func TestLoopSync(t *testing.T) {
 func TestGetAopId(t *testing.T) {
 	application.Init()
 	info := DistributedUtil.GetMasterInfo()
-	aopId, err := getAopId(info)
-	if err != nil {
-		t.Fatal(err)
-		return
-	}
+	aopId := getAopId(info)
 	fmt.Println(aopId)
-}
-
-/**
- * 从主机获取某表的一批数据id
- * @param info 主机信息
- * @param tbName 表名
- * @param lastId 上次获取到的最后一个id
- * @param aopId 本次同步的服务器端的最大id
- */
-func TestGetTableId(t *testing.T) {
-	application.Init()
-	info := DistributedUtil.GetMasterInfo()
-	aopId, _ := getAopId(info)
-	ids, err := getTableId(info, "dfs_file", 0, aopId)
-	if err != nil {
-		t.Fatal(err)
-		return
-	}
-	fmt.Println(ids)
 }
 
 /**
  * 筛选出本地不存在的ID
  */
-func TestFilterNotExistsId(t *testing.T) {
-}
-
-/**
- * 从同步主机端取数据
- */
-func TestGetTableData(t *testing.T) {
+func TestGetTableCount(t *testing.T) {
 	application.Init()
 	info := DistributedUtil.GetMasterInfo()
-	aopId, _ := getAopId(info)
-	ids, _ := getTableId(info, "user", 0, aopId)
-	data, err := getTableData(info, "user", ids)
-	if err != nil {
-		t.Fatal(err)
-		return
-	}
-	fmt.Println(data)
+	aopId := getAopId(info)
+	count := GetTableCount(info, []string{
+		"user",
+		"user_token",
+		"dfs_file",
+		"dfs_file_delete",
+		"share",
+		"storage_file",
+	}, aopId)
+	fmt.Println(count)
 }

@@ -36,6 +36,9 @@ type ProfileForm struct {
 	/** 缩略图最大边尺寸 **/
 	//@Limit(min = 100, max = 1024)
 	ThumbMaxSize int `json:"thumbMaxSize"`
+
+	/** 忽略本机同步错误 **/
+	IgnoreSyncError bool `json:"ignoreSyncError"`
 }
 
 // 目录正确性检查

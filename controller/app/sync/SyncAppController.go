@@ -4,6 +4,7 @@ import (
 	"DairoDFS/controller/app/sync/form"
 	"DairoDFS/extension/Bool"
 	"DairoDFS/extension/Date"
+	"DairoDFS/extension/String"
 	"DairoDFS/util/DistributedUtil/SyncByLog"
 	"DairoDFS/util/DistributedUtil/SyncByTable"
 	"DairoDFS/util/DistributedUtil/SyncInfoManager"
@@ -33,7 +34,7 @@ func InfoList() []form.SyncServerForm {
 			State:         it.State,
 			Msg:           it.Msg,
 			No:            it.No,
-			SyncCount:     it.SyncCount,
+			Progress:      String.ValueOf(it.SyncCount) + "/" + String.ValueOf(it.Count),
 			LastHeartTime: Bool.Is(it.LastHeartTime == 0, "无", Date.FormatByTimespan(it.LastHeartTime)),
 			LastTime:      Bool.Is(it.LastTime == 0, "无", Date.FormatByTimespan(it.LastTime)),
 		}

@@ -69,6 +69,15 @@
             </div>
         </div>
         <div class="row mt-2">
+            <label class="col-2 col-form-label text-end">同步失败处理</label>
+            <div class="col-10">
+                <select class="form-select w-auto" name="ignoreSyncError">
+                    <option value="false">停止</option>
+                    <option value="true">忽略</option>
+                </select>
+            </div>
+        </div>
+        <div class="row mt-2">
             <label class="col-2 col-form-label text-end">同步服务器URL</label>
             <div class="col-10">
                 <textarea class="form-control" name="syncDomains" style="max-width: 550px"></textarea>

@@ -7,8 +7,8 @@ import (
 	"DairoDFS/extension/Number"
 	"DairoDFS/util/DBUtil"
 	"DairoDFS/util/DfsFileUtil"
+	"DairoDFS/util/DistributedUtil"
 	"net/http"
-	"strings"
 	"sync"
 	"time"
 )
@@ -23,8 +23,8 @@ var waitingRequestMap = make(map[string]int64)
 
 var waitingRequestLock sync.Mutex
 
-// 限制每次同步数据量，条数不宜过大,过大可能导致客户端请求时，url太长导致请求失败
-const _MAX_SYNC_DATA_LIMIT = 100
+// 限制每次同步数据量
+const _MAX_SYNC_DATA_LIMIT = 10000
 
 /**
  * 分机端同步监听请求
@@ -67,16 +67,6 @@ func GetLog(lastId int64) []map[string]any {
 }
 
 /**
- * 主机发起同步通知
- */
-//@//Request:/push_notify
-func pushNotify() {
-	//thread {
-	//    SyncByLog.start()
-	//}
-}
-
-/**
  * 获取一个断面ID，防止再全量同步的过程中，主机又增加数据，导致全量同步数据不完整
  * 其实就是当前服务器时间戳
  */
@@ -85,23 +75,31 @@ func GetAopId() int64 {
 	return Number.ID()
 }
 
-// 获取每个表的id
-// tbName 表名
-// lastId 已经取到的最后一个id
+// 获取要同步数据总条数
+// tbNames 表名
 // aopId 断面ID
-// @Request:/get_table_id
-func GetTableId(tbName string, lastId int64, aopId int64) string {
+// @Request:/get_table_count
+func GetTableCount(tbNames []string, aopId int64) int {
+	count := 0
+	for _, tb := range tbNames {
+		count += DBUtil.SelectSingleOneIgnoreError[int]("select count(*) from "+tb+" where id < ?", aopId)
+	}
+	return count
+}
+
+/**
+ * 获取表数据
+ * @param tbName 表名
+ * @param ids 要取的数据id列表
+ */
+//@Request:/get_table_databk
+func GetTableDataBk(tbName string, ids string) []map[string]any {
 	//TODO:如果本机正在同步数据,则禁止往分机端传递文件
 	//if (SyncByTable.isRuning || SyncByLog.isRunning) {
 	//   throw BusinessException("主机正在同步数据中，请等待完成后继续。")
 	//}
-	idList := DBUtil.SelectList[string](
-		"select id from "+tbName+" where id > ? and id < ? order by id asc limit ?",
-		lastId,
-		aopId,
-		_MAX_SYNC_DATA_LIMIT,
-	)
-	return strings.Join(idList, ",")
+	list, _ := DBUtil.SelectToListMap("select * from " + tbName + " where id in (" + ids + ")")
+	return list
 }
 
 /**
@@ -110,12 +108,11 @@ func GetTableId(tbName string, lastId int64, aopId int64) string {
  * @param ids 要取的数据id列表
  */
 //@Request:/get_table_data
-func GetTableData(tbName string, ids string) []map[string]any {
-	//TODO:如果本机正在同步数据,则禁止往分机端传递文件
-	//if (SyncByTable.isRuning || SyncByLog.isRunning) {
-	//   throw BusinessException("主机正在同步数据中，请等待完成后继续。")
-	//}
-	list, _ := DBUtil.SelectToListMap("select * from " + tbName + " where id in (" + ids + ")")
+func GetTableData(tbName string, lastId int64, aopId int64) []map[string]any {
+	if DistributedUtil.IsLogSyncing || DistributedUtil.IsTableSyncing {
+		panic("主机正在同步数据中，请等待完成后继续。")
+	}
+	list, _ := DBUtil.SelectToListMap("select * from "+tbName+" where id > ? and id < ? order by id asc limit ?", lastId, aopId, _MAX_SYNC_DATA_LIMIT)
 	return list
 }
 
@@ -127,10 +124,6 @@ func GetTableData(tbName string, ids string) []map[string]any {
  */
 //@Request:/download/{md5}
 func Download(writer http.ResponseWriter, request *http.Request, md5 string) {
-	//TODO:如果本机正在同步数据,则禁止往分机端传递文件
-	//if (SyncByTable.isRuning || SyncByLog.isRunning) {
-	//   throw BusinessException("主机正在同步数据中，请等待完成后继续。")
-	//}
 	storageFileDto, isExists := StorageFileDao.SelectByFileMd5(md5)
 	if !isExists {
 		writer.WriteHeader(http.StatusNotFound)
