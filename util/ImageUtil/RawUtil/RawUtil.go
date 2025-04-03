@@ -6,6 +6,7 @@ import (
 	"DairoDFS/util/ShellUtil"
 	_ "golang.org/x/image/tiff"
 	"runtime"
+	"strings"
 )
 
 /**
@@ -38,7 +39,26 @@ func ToJpg(path string) ([]byte, error) {
 	} else {
 		cmd = "\"" + application.ExiftoolPath + "/exiftool-13.26_64/exiftool\""
 	}
-	return ShellUtil.ExecToOkData(cmd + " -b -JpgFromRaw \"" + path + "\"")
+	jpgData, getJegDataErr := ShellUtil.ExecToOkData(cmd + " -b -JpgFromRaw \"" + path + "\"")
+	if getJegDataErr != nil {
+		return nil, getJegDataErr
+	}
+	orientation, getOrientationErr := ShellUtil.ExecToOkResult(cmd + " -Orientation \"" + path + "\"")
+	if getOrientationErr != nil {
+		return nil, getOrientationErr
+	}
+	orientation = strings.ReplaceAll(orientation, " ", "")
+	orientation = strings.ReplaceAll(orientation, "\r", "")
+	orientation = strings.ReplaceAll(orientation, "\n", "")
+	if orientation == "Orientation:Rotate90CW" { //需要顺时针旋转90°
+		return ImageUtil.TransposeToJpeg(jpgData, 1)
+	} else if orientation == "Orientation:Rotate180CW" { //需要顺时针旋转180°
+		return ImageUtil.TransposeToJpeg(jpgData, 2)
+	} else if orientation == "Orientation:Rotate270CW" { //需要顺时针旋转270°
+		return ImageUtil.TransposeToJpeg(jpgData, 3)
+	} else {
+		return jpgData, nil
+	}
 }
 
 // 获取图片信息

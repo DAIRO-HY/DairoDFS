@@ -166,6 +166,23 @@ func Png2Jpg(data []byte, quality int8) ([]byte, error) {
 	return ShellUtil.ExecToOkData2("\""+application.FfmpegPath+"/ffmpeg\" -f image2pipe -vcodec png -i pipe:0 -q:v "+String.ValueOf(quality)+" -f image2pipe -vcodec mjpeg -", data)
 }
 
+// 旋转图片并将图片转换成jpeg
+// transpose 旋转角度 1：顺时针90° 2：顺时针180° 3：顺时针270°
+func TransposeToJpeg(data []byte, transpose int8) ([]byte, error) {
+
+	//-q:v代表输出图片质量，取值返回2-31，2为质量最佳
+	ffmpeg := "\"" + application.FfmpegPath + "/ffmpeg\""
+	if transpose == 1 { //需要顺时针旋转90°
+		return ShellUtil.ExecToOkData2(ffmpeg+" -i pipe:0 -vf \"transpose=1\" -q:v 2 -", data)
+	} else if transpose == 2 { //需要顺时针旋转180°
+		return ShellUtil.ExecToOkData2(ffmpeg+" -i pipe:0 -vf \"transpose=1,transpose=1\" -q:v 2 -", data)
+	} else if transpose == 3 { //需要顺时针旋转270°
+		return ShellUtil.ExecToOkData2(ffmpeg+" -i pipe:0 -vf \"transpose=1,transpose=1,transpose=1\" -q:v 2 -f image2pipe -vcodec mjpeg -", data)
+	} else {
+		return data, nil
+	}
+}
+
 // 按比例缩放图片
 // srcWidth 原始宽
 // srcWidth 原始高
