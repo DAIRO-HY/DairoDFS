@@ -11,7 +11,7 @@ import (
 )
 
 // VERSION 版本号
-const VERSION = "1.0.22-RC"
+const VERSION = "1.0.23-RC"
 
 /**
  * 基准时间戳
@@ -89,6 +89,12 @@ type appArgs struct {
 
 	// 是否开发模式
 	IsDev bool
+
+	// 日志输出方式
+	LogOutType int
+
+	// 日志输出级别
+	LogLevel string
 }
 
 func Init() {

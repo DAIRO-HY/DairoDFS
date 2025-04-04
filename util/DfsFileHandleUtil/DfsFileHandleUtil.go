@@ -16,6 +16,7 @@ import (
 	"DairoDFS/util/ImageUtil/HeicUtil"
 	"DairoDFS/util/ImageUtil/PSDUtil"
 	"DairoDFS/util/ImageUtil/RawUtil"
+	"DairoDFS/util/LogUtil"
 	"DairoDFS/util/VideoUtil"
 	"encoding/json"
 	"fmt"
@@ -52,6 +53,21 @@ func NotifyWorker() {
 }
 
 func start() {
+	defer func() {
+		if r := recover(); r != nil { //处理错误
+			var errMsg string
+			switch rType := r.(type) {
+			case string:
+				errMsg = rType
+			case error:
+				errMsg = rType.Error()
+			default:
+				errMsg = fmt.Sprintf("%q", r)
+			}
+			LogUtil.Debug("文件处理发生了错误：" + errMsg)
+		}
+	}()
+	LogUtil.Debug("开启处理文件")
 	for {
 		cond.L.Lock()
 		for !hasData {
@@ -63,6 +79,7 @@ func start() {
 		//fmt.Println("文件处理：开始新任务...")
 		for {
 			dfsList := DfsFileDao.SelectNoHandle()
+			LogUtil.Debug("当前查询到数据条数：" + String.ValueOf(len(dfsList)))
 			if len(dfsList) == 0 {
 				break
 			}
@@ -70,6 +87,7 @@ func start() {
 				handle(it)
 			}
 		}
+		LogUtil.Debug("本次处理文件结束")
 		cond.L.Lock()
 		hasData = false
 		cond.L.Unlock()

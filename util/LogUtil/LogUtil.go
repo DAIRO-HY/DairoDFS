@@ -1,8 +1,10 @@
 package LogUtil
 
 import (
+	"DairoDFS/application"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -15,18 +17,8 @@ const LOG_OUT_TYPE_CONSOLE = 1
 // 输出到文件
 const LOG_OUT_TYPE_FILE = 2
 
-// 日志输出方式
-var LogOutType = LOG_OUT_TYPE_FILE
-
 // 日志存储目录
 const LOG_PATH = "./data/log"
-
-// 日志输出级别
-var LogLevel = map[string]bool{
-	"info":  false,
-	"error": true,
-	"debug": false,
-}
 
 // 初始化执行
 func init() {
@@ -44,7 +36,7 @@ func init() {
 
 // 记录日志
 func Info(content string) {
-	if !LogLevel["info"] {
+	if !strings.Contains(application.Args.LogLevel, "info") {
 		return
 	}
 	write("info  " + content)
@@ -52,7 +44,7 @@ func Info(content string) {
 
 // 记录错误日志
 func Error(content string) {
-	if !LogLevel["error"] {
+	if !strings.Contains(application.Args.LogLevel, "error") {
 		return
 	}
 	write("error  " + content)
@@ -63,7 +55,7 @@ func Error2(err error) {
 	if err == nil {
 		return
 	}
-	if !LogLevel["error"] {
+	if !strings.Contains(application.Args.LogLevel, "error") {
 		return
 	}
 	write(fmt.Sprintf("error %q", err))
@@ -74,7 +66,7 @@ func Error3(msg string, err error) {
 	if err == nil {
 		return
 	}
-	if !LogLevel["error"] {
+	if !strings.Contains(application.Args.LogLevel, "error") {
 		return
 	}
 	write(fmt.Sprintf("error  %s%q", msg, err))
@@ -82,7 +74,7 @@ func Error3(msg string, err error) {
 
 // 记录错误日志
 func Debug(content string) {
-	if !LogLevel["debug"] {
+	if !strings.Contains(application.Args.LogLevel, "debug") {
 		return
 	}
 	write("debug  " + content)
@@ -90,23 +82,23 @@ func Debug(content string) {
 
 // 记录日志
 func write(content string) {
-	if LogOutType == LOG_OUT_TYPE_NO { //不输出日志
+	if application.Args.LogOutType == LOG_OUT_TYPE_NO { //不输出日志
 		return
 	}
 	line := time.Now().Format("2006-01-02 15:04:05") + "  " + content + "\n"
-	if LogOutType == LOG_OUT_TYPE_CONSOLE { //控制台输出
+	if application.Args.LogOutType == LOG_OUT_TYPE_CONSOLE { //控制台输出
 		fmt.Print(line)
 		return
 	}
 	logFileName := time.Now().Format("200601") + ".log"
 
-	file, err := os.OpenFile(LOG_PATH+"/"+logFileName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		fmt.Println(err)
+	file, openErr := os.OpenFile(LOG_PATH+"/"+logFileName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if openErr != nil {
+		fmt.Println(openErr)
 	}
 	defer file.Close()
 
-	if _, err := file.WriteString(line); err != nil {
-		fmt.Println(err)
+	if _, writeErr := file.WriteString(line); writeErr != nil {
+		fmt.Println(writeErr)
 	}
 }

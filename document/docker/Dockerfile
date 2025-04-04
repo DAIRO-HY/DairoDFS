@@ -10,4 +10,4 @@ COPY dairo-dfs-linux-amd64 /app
 RUN chmod +x dairo-dfs-linux-amd64
 
 #启动脚本
-ENTRYPOINT "/app/dairo-dfs-linux-amd64"
+ENTRYPOINT ["/app/dairo-dfs-linux-amd64","--log-out-type","2","--log-level","debug,info,error"]
