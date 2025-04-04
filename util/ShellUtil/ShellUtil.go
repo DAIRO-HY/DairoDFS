@@ -3,10 +3,10 @@ package ShellUtil
 import (
 	"DairoDFS/exception"
 	"bytes"
+	"fmt"
 	"io"
 	"os/exec"
 	"strings"
-	"time"
 )
 
 // 将执行结果输出到正常流
@@ -16,16 +16,12 @@ import (
 func ExecToOkReader(command string, okReader func(io.ReadCloser)) (string, error) {
 	var errResult string
 	errReader := func(reader io.ReadCloser) {
-		var data []byte
-		buf := make([]byte, 8*1024)
-		for {
-			n, err := reader.Read(buf)
-			if err != nil && err == io.EOF {
-				break
-			}
-			data = append(data[:], buf[:n]...)
+		data, err := io.ReadAll(reader)
+		if err != nil {
+			//这里需要做点什么
 		}
 		errResult = string(data)
+		reader.Close()
 	}
 	err := ExecToReader(command, okReader, errReader)
 	return errResult, err
@@ -38,16 +34,12 @@ func ExecToOkReader(command string, okReader func(io.ReadCloser)) (string, error
 func ExecToErrReader(command string, errReader func(io.ReadCloser)) (string, error) {
 	var okResult string
 	reader := func(reader io.ReadCloser) {
-		var data []byte
-		buf := make([]byte, 8*1024)
-		for {
-			n, err := reader.Read(buf)
-			if err != nil && err == io.EOF {
-				break
-			}
-			data = append(data[:], buf[:n]...)
+		data, err := io.ReadAll(reader)
+		if err != nil {
+			//这里需要做点什么
 		}
 		okResult = string(data)
+		reader.Close()
 	}
 	err := ExecToReader(command, reader, errReader)
 	return okResult, err
@@ -114,26 +106,22 @@ func ExecToOkAndErrorResult2(command string, data []byte) (string, string, error
 func ExecToOkAndErrorData(command string) ([]byte, []byte, error) {
 	var okData []byte
 	reader := func(reader io.ReadCloser) {
-		buf := make([]byte, 8*1024)
-		for {
-			n, err := reader.Read(buf)
-			if err != nil && err == io.EOF {
-				break
-			}
-			okData = append(okData[:], buf[:n]...)
+		data, err := io.ReadAll(reader)
+		if err != nil {
+			fmt.Println("这里应该做点什么")
 		}
+		okData = data
+		reader.Close()
 	}
 
 	var errData []byte
 	errReader := func(reader io.ReadCloser) {
-		buf := make([]byte, 8*1024)
-		for {
-			n, err := reader.Read(buf)
-			if err != nil && err == io.EOF {
-				break
-			}
-			errData = append(errData[:], buf[:n]...)
+		data, err := io.ReadAll(reader)
+		if err != nil {
+			fmt.Println("这里应该做点什么")
 		}
+		errData = data
+		reader.Close()
 	}
 	err := ExecToReader(command, reader, errReader)
 	return okData, errData, err
@@ -143,31 +131,28 @@ func ExecToOkAndErrorData(command string) ([]byte, []byte, error) {
 // 如果成功数据流没有数据，将会返回错误数据流中的数据
 // - command 指令
 // return 正常数据，异常数据，error
-func ExecToOkAndErrorData2(command string, data []byte) ([]byte, []byte, error) {
+func ExecToOkAndErrorData2(command string, inputData []byte) ([]byte, []byte, error) {
 	var okData []byte
 	reader := func(reader io.ReadCloser) {
-		buf := make([]byte, 8*1024)
-		for {
-			n, err := reader.Read(buf)
-			if err != nil && err == io.EOF {
-				break
-			}
-			okData = append(okData[:], buf[:n]...)
+		//time.Sleep(5 * time.Second)
+		data, err := io.ReadAll(reader)
+		if err != nil {
+			fmt.Println("这里应该做点什么")
 		}
+		okData = data
+		reader.Close()
 	}
 
 	var errData []byte
 	errReader := func(reader io.ReadCloser) {
-		buf := make([]byte, 8*1024)
-		for {
-			n, err := reader.Read(buf)
-			if err != nil && err == io.EOF {
-				break
-			}
-			errData = append(errData[:], buf[:n]...)
+		data, err := io.ReadAll(reader)
+		if err != nil {
+			fmt.Println("这里应该做点什么")
 		}
+		errData = data
+		reader.Close()
 	}
-	err := ExecToReader2(command, data, reader, errReader)
+	err := ExecToReader2(command, inputData, reader, errReader)
 	return okData, errData, err
 }
 
@@ -220,6 +205,7 @@ func ExecToReader(command string, reader func(io.ReadCloser), errReader func(io.
 func ExecToReader2(command string, inputData []byte, reader func(io.ReadCloser), errReader func(io.ReadCloser)) error {
 	cmdArr := parseCmd(command)
 	cmd := exec.Command(cmdArr[0], cmdArr[1:]...)
+	//defer cmd.Cancel()
 
 	//得到一个输出流
 	stdin, stdinErr := cmd.StdinPipe()
@@ -249,7 +235,6 @@ func ExecToReader2(command string, inputData []byte, reader func(io.ReadCloser),
 		io.Copy(stdin, bytes.NewReader(inputData))
 		stdin.Close()
 	}()
-	time.Sleep(1 * time.Second)
 	go reader(stdout)
 	errReader(stderr)
 	if err := cmd.Wait(); err != nil {

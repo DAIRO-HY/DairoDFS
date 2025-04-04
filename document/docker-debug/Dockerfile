@@ -6,11 +6,11 @@ FROM dairo-dfs-runtime
 #安装git
 RUN yes|apt install git
 
-##安装sqlite编译环境
-#RUN yes|apt-get install libsqlite3-dev
-#
-##安装gcc,编译sqlite需要
-#RUN yes|apt-get install gcc
+#安装sqlite编译环境
+RUN yes|apt-get install libsqlite3-dev
+
+#安装gcc,编译sqlite需要
+RUN yes|apt-get install gcc
 
 WORKDIR /opt
 
