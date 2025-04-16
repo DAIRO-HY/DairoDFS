@@ -270,24 +270,59 @@ func Download(path string, writer http.ResponseWriter, request *http.Request) {
 	file.Seek(start, io.SeekStart)
 	data := make([]byte, 16*1024) // 缓冲字节数组
 	var total = start
-	for {
+	waitStr := request.URL.Query().Get("wait")
+	if waitStr != "" { //测试用
+		wait, _ := strconv.Atoi(waitStr)
+		for {
+			time.Sleep(time.Duration(wait) * time.Millisecond)
 
-		//计算还需要的数据长度
-		needReadLen := int(end - total + 1)
-		n, readErr := file.Read(data)
-		if readErr != nil {
-			//if readErr != io.EOF { //如果不是文件读取完成标志,理论上，这里不会发生该异常
-			//	writer.WriteHeader(http.StatusInternalServerError)
-			//}
-			break
+			//计算还需要的数据长度
+			needReadLen := int(end - total + 1)
+			n, readErr := file.Read(data)
+			if n > 0 {
+				total += int64(n)
+				var writeErr error
+				if needReadLen <= n { //还需要的数据长度小于本次读取到的数据长度
+					_, writeErr = writer.Write(data[:needReadLen])
+					break
+				} else {
+					_, writeErr = writer.Write(data[:n])
+				}
+				if writeErr != nil { //可能客户端已经关闭停止
+					break
+				}
+			}
+			if readErr != nil {
+				//if readErr != io.EOF { //如果不是文件读取完成标志,理论上，这里不会发生该异常
+				//	writer.WriteHeader(http.StatusInternalServerError)
+				//}
+				break
+			}
+			writer.(http.Flusher).Flush()
 		}
-		total += int64(n)
-		if needReadLen <= n { //还需要的数据长度小于本次读取到的数据长度
-			writer.Write(data[:needReadLen])
-			break
-		} else {
-			_, writeErr := writer.Write(data[:n])
-			if writeErr != nil { //可能客户端已经关闭停止
+	} else {
+		for {
+
+			//计算还需要的数据长度
+			needReadLen := int(end - total + 1)
+			n, readErr := file.Read(data)
+			if n > 0 {
+				total += int64(n)
+				var writeErr error
+				if needReadLen <= n { //还需要的数据长度小于本次读取到的数据长度
+					_, writeErr = writer.Write(data[:needReadLen])
+					break
+				} else {
+					_, writeErr = writer.Write(data[:n])
+				}
+				if writeErr != nil { //可能客户端已经关闭停止
+					break
+				}
+			}
+			if readErr != nil {
+				//if readErr != io.EOF { //如果不是文件读取完成标志,理论上，这里不会发生该异常
+				//	writer.WriteHeader(http.StatusInternalServerError)
+				//}
 				break
 			}
 		}
