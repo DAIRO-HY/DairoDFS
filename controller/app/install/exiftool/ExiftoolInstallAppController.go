@@ -88,11 +88,11 @@ func doInstall() {
 
 		//将exiftool(-k).exe重命名为exiftool.exe
 		os.Rename(application.ExiftoolPath+"/exiftool-13.26_64/exiftool(-k).exe", application.ExiftoolPath+"/exiftool-13.26_64/exiftool.exe")
-	case "darwin": //@TODO:
+	case "darwin":
 		cache := make([]byte, 128)
 		installResultSize := 0
-		const installTotalSize = 302021
-		_, installCmdErr := ShellUtil.ExecToOkReader("brew install imagemagick", func(rc io.ReadCloser) {
+		const installTotalSize = 846
+		_, installCmdErr := ShellUtil.ExecToOkReader("brew install exiftool", func(rc io.ReadCloser) {
 			for {
 				n, err := rc.Read(cache)
 				if err != nil {
@@ -108,6 +108,7 @@ func doInstall() {
 			downloadInfo.Info = fmt.Sprintf("安装失败：%q", installCmdErr)
 			return
 		}
+
 	case "linux":
 		// 读取嵌入的文件内容
 		data, _ := exiftoolInstallSH.ReadFile("exiftool-install.sh")
@@ -150,11 +151,13 @@ func validate() error {
 	var cmd string
 	if runtime.GOOS == "linux" {
 		cmd = "exiftool"
+	} else if runtime.GOOS == "darwin" {
+		cmd = "exiftool"
 	} else {
 		cmd = "\"" + application.ExiftoolPath + "/exiftool-13.26_64/exiftool\""
 	}
 	result, cmdErr := ShellUtil.ExecToOkResult(cmd + " -ver")
-	if cmdErr == nil && strings.HasPrefix(result, "13.26") {
+	if cmdErr == nil && strings.HasPrefix(result, "13.") {
 		downloadInfo.Info = "安装完成"
 		downloadInfo.IsInstalled = true
 		return nil
