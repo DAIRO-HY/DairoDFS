@@ -35,7 +35,7 @@ func Init() form.ProfileForm {
 
 // 页面初始化
 // @Post:/update
-func Update(form form.ProfileForm) error {
+func Update(form form.ProfileForm) {
 	folders := strings.Split(form.Folders, "\n")
 	systemConfig := SystemConfig.Instance()
 	saveFolderList := []string{}
@@ -70,7 +70,6 @@ func Update(form form.ProfileForm) error {
 
 	//重新开启监听
 	SyncByLog.ListenAll()
-	return nil
 }
 
 // 切换token
