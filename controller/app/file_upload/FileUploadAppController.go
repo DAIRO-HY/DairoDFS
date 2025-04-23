@@ -32,7 +32,7 @@ var uploadingLock sync.Mutex
 
 // 浏览器文件上传
 // @Post:
-func Upload(request *http.Request, folder string, contentType string) error {
+func Upload(request *http.Request, folder string, contentType string) {
 
 	// 获取上传的文件
 	header := request.MultipartForm.File["file"][0]
@@ -47,7 +47,7 @@ func Upload(request *http.Request, folder string, contentType string) error {
 	//文件MD5
 	md5File, openErr := header.Open()
 	if openErr != nil {
-		return openErr
+		panic(openErr)
 	}
 	defer md5File.Close()
 	md5 := File.ToMd5ByReader(md5File)
@@ -63,7 +63,6 @@ func Upload(request *http.Request, folder string, contentType string) error {
 	//立即提交事务，否则可能导致文件处理任务获取不到数据
 	DBConnection.Commit()
 	DfsFileHandleUtil.NotifyWorker()
-	return nil
 }
 
 // ByStream 以流的方式上传文件
