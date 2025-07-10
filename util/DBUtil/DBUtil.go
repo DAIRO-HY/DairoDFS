@@ -4,6 +4,7 @@ import (
 	"DairoDFS/util/CommonUtil"
 	"DairoDFS/util/DBConnection"
 	"DairoDFS/util/LogUtil"
+	"DairoDFS/util/PageUtil"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -37,11 +38,11 @@ func Exec(query string, args ...any) (int64, error) {
 
 // 添加数据,忽略错误
 func InsertIgnoreError(query string, args ...any) int64 {
-	count, err := Insert(query, args...)
+	lastInsertId, err := Insert(query, args...)
 	if err != nil {
 		panic(err)
 	}
-	return count
+	return lastInsertId
 }
 
 // 添加数据,并返回最后一次添加的ID
@@ -60,7 +61,10 @@ func Insert(query string, args ...any) (int64, error) {
 
 // SelectSingleOneIgnoreError 查询第一个数据并忽略错误
 func SelectSingleOneIgnoreError[T any](query string, args ...any) T {
-	value, _ := SelectSingleOne[T](query, args...)
+	value, err := SelectSingleOne[T](query, args...)
+	if err != nil {
+		panic(err)
+	}
 	return value
 }
 
@@ -75,7 +79,7 @@ func SelectSingleOne[T any](query string, args ...any) (T, error) {
 		if errors.Is(err, sql.ErrNoRows) { //没有查询到数据
 			return *new(T), nil // 返回默认值
 		}
-		panic(err)
+		return *new(T), err
 	}
 	if value == nil { //查询到的值本省为null
 		return *new(T), nil
@@ -131,18 +135,20 @@ func SelectListBk[T any](query string, args ...any) []*T {
 
 // SelectList 查询列表
 func SelectList[T any](query string, args ...any) []T {
-	rows, err := DBConnection.Query(query, args...)
-	if err != nil {
-		LogUtil.Error(fmt.Sprintf("查询数据失败:%s: err:%q", query, err))
-		return nil
+	rows, queryErr := DBConnection.Query(query, args...)
+	if queryErr != nil {
+		//LogUtil.Error(fmt.Sprintf("查询数据失败:%s: err:%q", query, err))
+		//return nil
+		panic(queryErr)
 	}
 	defer rows.Close()
 
 	// 获取列的名称
-	columns, err := rows.Columns()
-	if err != nil {
-		LogUtil.Error(fmt.Sprintf("%q: %s\n", err, query))
-		return nil
+	columns, columnsErr := rows.Columns()
+	if columnsErr != nil {
+		//LogUtil.Error(fmt.Sprintf("%q: %s\n", err, query))
+		//return nil
+		panic(columnsErr)
 	}
 
 	//用来存储扫描值的列表
@@ -160,8 +166,9 @@ func SelectList[T any](query string, args ...any) []T {
 		dtoT := new(T)
 		if CommonUtil.IsBaseType(*dtoT) { //这是一个基本数据类型
 			if scanErr := rows.Scan(dtoT); scanErr != nil {
-				LogUtil.Error(fmt.Sprintf("数据扫描失败:%s: err:%q", query, scanErr))
-				return nil
+				//LogUtil.Error(fmt.Sprintf("数据扫描失败:%s: err:%q", query, scanErr))
+				//return nil
+				panic(scanErr)
 			}
 			dtoList = append(dtoList, *dtoT)
 			continue
@@ -179,8 +186,9 @@ func SelectList[T any](query string, args ...any) []T {
 
 		// 将当前行的数据扫描到scanList中
 		if scanErr := rows.Scan(scanList...); scanErr != nil {
-			LogUtil.Error(fmt.Sprintf("数据扫描失败:%s: err:%q", query, scanErr))
-			return nil
+			//LogUtil.Error(fmt.Sprintf("数据扫描失败:%s: err:%q", query, scanErr))
+			//return nil
+			panic(scanErr)
 		}
 		for i, it := range fieldPointList {
 			value := *scanList[i].(*any)
@@ -481,4 +489,11 @@ func setValue(field reflect.Value, value any) {
 	} else {
 		field.Set(reflect.ValueOf(value))
 	}
+}
+
+// 将查询结果以分页的方式返回
+func SelectToPage[T any](pageRequest PageUtil.PageRequest, sql string, args ...any) (int, []T) {
+	total := SelectSingleOneIgnoreError[int]("select count(*) from ("+sql+") as temp", args...)
+	data := SelectList[T]("select * from ("+sql+") as temp "+pageRequest.PageSql(), args...)
+	return total, data
 }

@@ -154,6 +154,11 @@ func Write(query string, args ...any) (sql.Result, error) {
 	if !isAutoCommit { //手动提交表单的话，开启事务
 		StartTransaction()
 	}
+	for i := 0; i < len(args); i++ { //将空字符串当做null处理
+		if args[i] == "" {
+			args[i] = nil
+		}
+	}
 	switch value := getConnection().(type) {
 	case *sql.DB:
 		r, e := value.Exec(query, args...)
