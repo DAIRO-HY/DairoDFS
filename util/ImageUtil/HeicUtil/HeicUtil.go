@@ -8,11 +8,11 @@ import (
 
 // 生成图片缩略图
 func Thumb(path string, targetMaxSize int) ([]byte, error) {
-	pngData, err := ToJpeg(path, 100)
+	jpgData, err := ToJpeg(path, 100)
 	if err != nil {
 		return nil, err
 	}
-	return ImageUtil.ThumbByPng(pngData, targetMaxSize)
+	return ImageUtil.ThumbByJpg(jpgData, targetMaxSize)
 }
 
 // 转换成png图片

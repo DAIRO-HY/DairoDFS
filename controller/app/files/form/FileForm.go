@@ -19,4 +19,7 @@ type FileForm struct {
 
 	/** 缩率图 **/
 	Thumb string `json:"thumb"`
+
+	/** 其他属性1,视频时为视频总时长 **/
+	Other1 string `json:"other1"`
 }

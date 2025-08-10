@@ -11,8 +11,6 @@ import (
  * 添加一条数据
  */
 func Add(fileDto dto.DfsFileDto) {
-
-	//@TODO:该sql的四u该可能会影响日志同步
 	DBUtil.InsertIgnoreError("insert into dfs_file(id, userId, parentId, name, ext, size, contentType, storageId, date, isExtra, property, state) values (?,?,?,?,?,?,?,?,?,?,?,?)",
 		fileDto.Id,
 		fileDto.UserId,
@@ -322,4 +320,27 @@ func SelectAllChildList(id int64) []dto.DfsFileDto {
 func IsFileUsing(id int64) bool {
 	sql := `select count(*) > 0 from dfs_file where storageId = ?`
 	return DBUtil.SelectSingleOneIgnoreError[bool](sql, id)
+}
+
+//// 检查文件是否已经存在
+//// - md5 文件的md5,多个以逗号分隔
+//// return 已经存在的文件md5列表
+//func CheckExistsByMd5(userId int64, md5 string) []string {
+//	return DBUtil.SelectList[string](
+//		`select storage_file.md5 from dfs_file
+//	           left join storage_file on dfs_file.storageId = storage_file.id
+//	           where dfs_file.userId = ? and isExtra = 0 and isHistory = 0 and dfs_file.deleteDate is null and storage_file.md5 in (?)
+//	           `,
+//	)
+//}
+
+// 检查文件是否已经存在
+// - md5 文件的md5,多个以逗号分隔
+// return 已经存在的文件md5列表
+func CheckExistsByMd5(userId int64, md5 string) bool {
+	return DBUtil.SelectSingleOneIgnoreError[bool](
+		`select count(id) > 0 from dfs_file where storageId = (
+			   	select id from storage_file where md5 = ?
+			   ) and userId = ? and isHistory = 0 and isExtra = 0 and deleteDate is null`, md5, userId,
+	)
 }

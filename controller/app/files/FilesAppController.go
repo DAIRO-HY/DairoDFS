@@ -48,10 +48,10 @@ func GetList(folder string) []form.FileForm {
 
 // 获取相册列表
 // @Post:/get_album_list
-func GetAlbumList() []form.AlbumForm {
+func GetAlbumList() []form.FileForm {
 	loginId := LoginState.LoginId()
 	list := DfsFileDao.SelectAlbum(loginId)
-	forms := make([]form.AlbumForm, 0)
+	forms := make([]form.FileForm, 0)
 	for _, it := range list {
 		dataMap := make(map[string]any)
 
@@ -72,13 +72,13 @@ func GetAlbumList() []form.AlbumForm {
 		if CameraDate == 0 {
 			CameraDate = it.Date
 		}
-		outForm := form.AlbumForm{
+		outForm := form.FileForm{
 			Id:       it.Id,
 			Name:     it.Name,
 			Size:     it.Size,
-			Date:     CameraDate,
+			Date:     Date.FormatByTimespan(CameraDate),
 			FileFlag: it.StorageId != 0,
-			Duration: duration,
+			Other1:   duration,
 			Thumb:    Bool.Is(it.HasThumb, "/app/files/thumb/"+String.ValueOf(it.Id), ""),
 		}
 		forms = append(forms, outForm)

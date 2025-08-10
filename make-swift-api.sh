@@ -1,0 +1,1 @@
+./GoAutoWeb --api-suffix AppController --source-dir /Users/zhoulq/dev/java/idea/DairoDFS --target-type swift-api --target-dir /Users/zhoulq/dev/xcode/DairoDFS-IOS/DairoDFS/Api

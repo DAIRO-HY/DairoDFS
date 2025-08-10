@@ -2,6 +2,7 @@ package file_upload
 
 import (
 	"DairoDFS/application"
+	"DairoDFS/dao/DfsFileDao"
 	"DairoDFS/dao/StorageFileDao"
 	"DairoDFS/dao/dto"
 	"DairoDFS/exception"
@@ -141,6 +142,9 @@ func ByMd5(md5 string, path string, contentType string) {
 	loginId := LoginState.LoginId()
 	storageFileDto, isExists := StorageFileDao.SelectByFileMd5(md5)
 	if !isExists {
+
+		//文件上传中发生了以外,删除临时文件重新上传
+		os.Remove(application.TEMP_PATH + "/" + md5)
 		panic(exception.NO_EXISTS())
 	}
 
@@ -152,6 +156,13 @@ func ByMd5(md5 string, path string, contentType string) {
 
 	//开启生成缩略图线程
 	DfsFileHandleUtil.NotifyWorker()
+}
+
+// 检查文件是否已经存在
+// - md5 文件的md5,多个以逗号分隔
+// @Post:/check_exists_by_md5
+func CheckExistsByMd5(md5 string) bool {
+	return DfsFileDao.CheckExistsByMd5(LoginState.LoginId(), md5)
 }
 
 // 添加到DFS文件
