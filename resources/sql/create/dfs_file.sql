@@ -20,8 +20,8 @@ CREATE TABLE dfs_file
 CREATE INDEX idx_userId ON dfs_file (userId);
 CREATE INDEX idx_isExtra ON dfs_file (isExtra);
 CREATE INDEX idx_ext ON dfs_file (ext);
+CREATE INDEX idx_dfs_file_storageId ON dfs_file (storageId);
 
 -- 非历史文件且未删除时，同一文件夹下文件名不允许重复
 CREATE UNIQUE INDEX idx_name
-    ON dfs_file (parentId, name)
-    WHERE parentId != 0 and isHistory = 0 and deleteDate is null;
+    ON dfs_file (parentId, name) WHERE parentId != 0 and isHistory = 0 and deleteDate is null;
