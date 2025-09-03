@@ -123,7 +123,10 @@ fi
 #---------------------------------------构建Docker镜像-----------------------------------------
 mv $exec_file ./document/docker/
 cd ./document/docker/
-docker build --no-cache -t $docker_user/$dockerImageName:$version .
+
+#--no-cache：忽略缓存，解决一些莫名其妙的问题
+#--network=host：强制使用主机网络。当在容器中构建镜像时（如：jenkins容器中构建镜像），否则可能会导致网络连接失败而无法通过Dockerfile构建镜像
+docker build --no-cache --network=host -t $docker_user/$dockerImageName:$version .
 
 #---------------------------------------上传Docker镜像-----------------------------------------
 docker login -u $docker_user --password $docker_pwd

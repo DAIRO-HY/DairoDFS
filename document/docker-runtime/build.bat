@@ -1,1 +1,1 @@
-docker build --no-cache -t dairo-dfs-runtime .
+docker build --no-cache --network=host -t dairo-dfs-runtime .
