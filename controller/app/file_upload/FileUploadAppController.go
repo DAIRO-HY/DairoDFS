@@ -98,6 +98,9 @@ func ByStream(request *http.Request, md5 string) {
 
 	//保存文件
 	_, copyErr := io.Copy(writeFile, request.Body)
+
+	//尽快关闭文件流
+	writeFile.Close()
 	if copyErr != nil { //可能与客户端中断的情况
 		panic(copyErr)
 		return
@@ -106,16 +109,12 @@ func ByStream(request *http.Request, md5 string) {
 	//计算文件的MD5
 	fileMd5 := File.ToMd5(tempPath)
 	if md5 != fileMd5 {
-		writeFile.Close()
 		os.Remove(tempPath)
 		panic(exception.Biz("文件校验失败"))
 	}
 
 	//将文件存放到指定目录
 	DfsFileService.SaveToStorageByFile(tempPath, md5)
-
-	//文件上传成功，删除临时文件
-	writeFile.Close()
 	os.Remove(tempPath)
 }
 
@@ -155,7 +154,7 @@ func ByMd5(md5 string, path string, contentType string) {
 	os.Remove(application.TEMP_PATH + "/" + md5)
 
 	//开启生成缩略图线程
-	DfsFileHandleUtil.NotifyWorker()
+	//DfsFileHandleUtil.NotifyWorker()
 }
 
 // 检查文件是否已经存在
