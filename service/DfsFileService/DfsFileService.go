@@ -235,6 +235,7 @@ func Move(userId int64, sourcePaths []string, targetFolder string, isOverWrite b
  * 文件重命名
  */
 func Rename(userId int64, sourcePath string, name string) {
+	File.CheckPath(name)
 
 	//获取源目录文件id
 	fileId := DfsFileDao.SelectIdByPath(userId, sourcePath)
