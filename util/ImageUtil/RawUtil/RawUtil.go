@@ -36,6 +36,8 @@ func ToJpg(path string) ([]byte, error) {
 	var cmd string
 	if runtime.GOOS == "linux" {
 		cmd = "exiftool"
+	} else if runtime.GOOS == "darwin" {
+		cmd = "exiftool"
 	} else {
 		cmd = "\"" + application.ExiftoolPath + "/exiftool-13.26_64/exiftool\""
 	}
