@@ -154,7 +154,7 @@ func ByMd5(md5 string, path string, contentType string) {
 	os.Remove(application.TEMP_PATH + "/" + md5)
 
 	//开启生成缩略图线程
-	//DfsFileHandleUtil.NotifyWorker()
+	DfsFileHandleUtil.NotifyWorker()
 }
 
 // 检查文件是否已经存在
