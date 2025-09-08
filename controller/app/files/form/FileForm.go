@@ -23,5 +23,5 @@ type FileForm struct {
 
 	/** 其他属性1,视频时为视频总时长(毫秒) **/
 	//Other1 string `json:"other1"`
-	Other1 any `json:"other1"`
+	Other1 string `json:"other1"`
 }

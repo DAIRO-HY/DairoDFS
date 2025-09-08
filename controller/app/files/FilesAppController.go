@@ -96,7 +96,7 @@ func GetAlbumList() []form.FileForm {
 			Date:     captureTime,
 			FileFlag: it.StorageId != 0,
 			//Other1:   Number.ToTimeFormat(duration / 1000),
-			Other1: duration,
+			Other1: String.ValueOf(duration),
 			Thumb:  Bool.Is(it.HasThumb, "/app/files/thumb/"+String.ValueOf(it.Id), ""),
 		}
 		forms = append(forms, outForm)
