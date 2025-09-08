@@ -4,9 +4,10 @@ import (
 	"DairoDFS/application"
 	"DairoDFS/util/ImageUtil"
 	"DairoDFS/util/ShellUtil"
-	_ "golang.org/x/image/tiff"
 	"runtime"
 	"strings"
+
+	_ "golang.org/x/image/tiff"
 )
 
 /**
@@ -39,7 +40,7 @@ func ToJpg(path string) ([]byte, error) {
 	} else if runtime.GOOS == "darwin" {
 		cmd = "exiftool"
 	} else {
-		cmd = "\"" + application.ExiftoolPath + "/exiftool-13.26_64/exiftool\""
+		cmd = "\"" + application.ExiftoolPath + "/exiftool-13.35_64/exiftool\""
 	}
 	jpgData, getJegDataErr := ShellUtil.ExecToOkData(cmd + " -b -JpgFromRaw \"" + path + "\"")
 	if getJegDataErr != nil {
