@@ -245,7 +245,7 @@ func makeThumb(dfsFileDto dto.DfsFileDto) {
 		strings.HasSuffix(lowerName, ".3gp") {
 		data, makeThumbErr = VideoUtil.Thumb(storagePath, targetMaxSize)
 	} else if strings.HasSuffix(lowerName, ".mov") {
-		data, makeThumbErr = VideoUtil.ThumbPng(storagePath, targetMaxSize)
+		data, makeThumbErr = VideoUtil.Thumb(storagePath, targetMaxSize)
 		contentType = DfsFileUtil.DfsContentType("png")
 	} else if strings.HasSuffix(lowerName, ".cr3") ||
 		strings.HasSuffix(lowerName, ".cr2") {
