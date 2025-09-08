@@ -32,4 +32,12 @@ type ImageInfo struct {
 
 	//经度
 	Long float64 `json:"long,omitempty"`
+
+	//图片方向
+	// Orientation 值的意义如下：
+	// 1 = 正常方向
+	// 6 = 需要顺时针旋转90度（宽高对调）
+	// 8 = 逆时针旋转90度（宽高对调）
+	// 3 = 旋转180度
+	Orientation int `json:"orientation,omitempty"`
 }

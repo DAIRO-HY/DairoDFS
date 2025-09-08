@@ -6,11 +6,6 @@ import (
 	"DairoDFS/util/RamDiskUtil"
 	"DairoDFS/util/ShellUtil"
 	"bytes"
-	"github.com/nfnt/resize"
-	"github.com/rwcarlsen/goexif/exif"
-	_ "golang.org/x/image/bmp"
-	_ "golang.org/x/image/tiff"
-	_ "golang.org/x/image/webp"
 	"image"
 	"image/color"
 	"image/draw"
@@ -18,6 +13,12 @@ import (
 	_ "image/png"
 	"os"
 	"strconv"
+
+	"github.com/nfnt/resize"
+	"github.com/rwcarlsen/goexif/exif"
+	_ "golang.org/x/image/bmp"
+	_ "golang.org/x/image/tiff"
+	_ "golang.org/x/image/webp"
 )
 
 /**
@@ -383,11 +384,27 @@ func GetInfoByData(data []byte) (ImageInfo, error) {
 		imageInfo.ISO, _ = strconv.Atoi(iso.String())
 	}
 
+	// 获取图片方向
+	orient, err := x.Get(exif.Orientation)
+	if err == nil {
+		// Orientation 值的意义如下：
+		// 1 = 正常方向
+		// 6 = 需要顺时针旋转90度（宽高对调）
+		// 8 = 逆时针旋转90度（宽高对调）
+		// 3 = 旋转180度
+		imageInfo.Orientation, _ = orient.Int(0)
+	}
+
 	// 获取 GPS 信息（如果有）
 	lat, long, err := x.LatLong()
 	if err == nil {
 		imageInfo.Lat = lat
 		imageInfo.Long = long
+	}
+	if imageInfo.Orientation == 6 || imageInfo.Orientation == 8 { //这张图片有90°旋转，则调换宽高属性
+		temp := imageInfo.Width
+		imageInfo.Width = imageInfo.Height
+		imageInfo.Height = temp
 	}
 	return imageInfo, nil
 }
