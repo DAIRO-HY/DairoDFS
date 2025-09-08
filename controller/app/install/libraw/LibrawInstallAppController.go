@@ -130,7 +130,7 @@ func validate() error {
 		cmd = "\"" + application.LIBRAW_BIN + "/dcraw_emu\""
 	}
 	_, cmdErr := ShellUtil.ExecToOkResult(cmd + " -version")
-	if cmdErr != nil && strings.Contains(cmdErr.Error(), "Unknown option \"-version\".") {
+	if cmdErr != nil && strings.Contains(cmdErr.Error(), `Unknown option \"-version\".`) {
 		downloadInfo.Info = "安装完成"
 		downloadInfo.IsInstalled = true
 		return nil
