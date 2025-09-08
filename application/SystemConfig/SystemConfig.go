@@ -66,7 +66,7 @@ func Instance() *SystemConfig {
 				DistributedToken:     String.MakeRandStr(32),
 				TrashTimeout:         30,
 				DeleteStorageTimeout: 30,
-				ThumbMaxSize:         360,
+				ThumbMaxSize:         180,
 			}
 			Save()
 		} else {
