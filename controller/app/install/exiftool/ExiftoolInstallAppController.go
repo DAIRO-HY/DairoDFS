@@ -35,7 +35,7 @@ func url() string {
 	case "linux":
 		return ""
 	case "windows":
-		return "https://exiftool.org/exiftool-13.26_64.zip"
+		return "https://exiftool.org/exiftool-13.35_64.zip"
 	case "darwin":
 		return ""
 	default:
@@ -87,7 +87,7 @@ func doInstall() {
 	case "windows":
 
 		//将exiftool(-k).exe重命名为exiftool.exe
-		os.Rename(application.ExiftoolPath+"/exiftool-13.26_64/exiftool(-k).exe", application.ExiftoolPath+"/exiftool-13.26_64/exiftool.exe")
+		os.Rename(application.ExiftoolPath+"/exiftool-13.35_64/exiftool(-k).exe", application.ExiftoolPath+"/exiftool-13.35_64/exiftool.exe")
 	case "darwin":
 		cache := make([]byte, 128)
 		installResultSize := 0
@@ -154,7 +154,7 @@ func validate() error {
 	} else if runtime.GOOS == "darwin" {
 		cmd = "exiftool"
 	} else {
-		cmd = "\"" + application.ExiftoolPath + "/exiftool-13.26_64/exiftool\""
+		cmd = "\"" + application.ExiftoolPath + "/exiftool-13.35_64/exiftool\""
 	}
 	result, cmdErr := ShellUtil.ExecToOkResult(cmd + " -ver")
 	if cmdErr == nil && strings.HasPrefix(result, "13.") {
