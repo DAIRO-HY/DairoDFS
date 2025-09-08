@@ -222,7 +222,7 @@
                     .replace("{thumb}", thumb)
                     .replace("{name}", item.name)
                     .replace("{size}", item.size.toDataSize())
-                    .replace("{date}", item.date)
+                    .replace("{date}",  new Date(item.date).dateFormat())
                     .replace(/{border}/g, border)
                     .replace(/{index}/g, index)
             )

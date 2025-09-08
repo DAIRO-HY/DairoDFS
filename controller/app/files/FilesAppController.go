@@ -13,8 +13,9 @@ import (
 	"DairoDFS/util/DfsFileHandleUtil"
 	"DairoDFS/util/DfsFileUtil"
 	"DairoDFS/util/LoginState"
-	"encoding/json"
 	"net/http"
+	"sort"
+	"strconv"
 	"strings"
 )
 
@@ -34,10 +35,11 @@ func GetList(folder string) []form.FileForm {
 	forms := make([]form.FileForm, 0)
 	for _, it := range list {
 		outForm := form.FileForm{
-			Id:       it.Id,
-			Name:     it.Name,
-			Size:     it.Size,
-			Date:     Date.FormatByTimespan(it.Date),
+			Id:   it.Id,
+			Name: it.Name,
+			Size: it.Size,
+			//Date:     Date.FormatByTimespan(it.Date),
+			Date:     it.Date,
 			FileFlag: it.StorageId != 0,
 			Thumb:    Bool.Is(it.HasThumb, "/app/files/thumb/"+String.ValueOf(it.Id), ""),
 		}
@@ -53,36 +55,57 @@ func GetAlbumList() []form.FileForm {
 	list := DfsFileDao.SelectAlbum(loginId)
 	forms := make([]form.FileForm, 0)
 	for _, it := range list {
-		dataMap := make(map[string]any)
 
 		//拍摄时间
-		var CameraDate int64
+		var captureTime int64
 
 		//视频时长
-		var duration = ""
+		var duration int64
 		if it.Property != "" {
-			_ = json.Unmarshal([]byte(it.Property), &dataMap)
-			if date, ok := dataMap["date"]; ok {
-				CameraDate = int64(date.(float64))
+			captureTimeJson := it.Property
+
+			//拍摄时间索引位置
+			captureTimeIndex := strings.Index(captureTimeJson, "\"date\":")
+			if captureTimeIndex != -1 {
+				captureTimeStr := captureTimeJson[captureTimeIndex+7 : captureTimeIndex+7+13]
+				captureTime, _ = strconv.ParseInt(captureTimeStr, 10, 64)
 			}
-			if durationValue, ok := dataMap["duration"]; ok {
-				duration = Number.ToTimeFormat(durationValue.(float64) / 1000)
+
+			durationJson := it.Property
+
+			//拍摄时间索引位置
+			durationIndex := strings.Index(durationJson, "\"duration\":")
+			if durationIndex != -1 {
+				durationStr := durationJson[durationIndex+11:]
+				durationEndIndex := strings.Index(durationStr, ",")
+				if durationEndIndex == -1 {
+					durationEndIndex = strings.Index(durationStr, "}")
+				}
+				durationStr = durationStr[:durationEndIndex]
+				duration, _ = strconv.ParseInt(durationStr, 10, 64)
 			}
 		}
-		if CameraDate == 0 {
-			CameraDate = it.Date
+		if captureTime == 0 { //如果没有拍摄时间，则取上传时间
+			captureTime = it.Date
 		}
 		outForm := form.FileForm{
-			Id:       it.Id,
-			Name:     it.Name,
-			Size:     it.Size,
-			Date:     Date.FormatByTimespan(CameraDate),
+			Id:   it.Id,
+			Name: it.Name,
+			Size: it.Size,
+			//Date:     Date.FormatByTimespan(captureTime),
+			Date:     captureTime,
 			FileFlag: it.StorageId != 0,
-			Other1:   duration,
-			Thumb:    Bool.Is(it.HasThumb, "/app/files/thumb/"+String.ValueOf(it.Id), ""),
+			//Other1:   Number.ToTimeFormat(duration / 1000),
+			Other1: duration,
+			Thumb:  Bool.Is(it.HasThumb, "/app/files/thumb/"+String.ValueOf(it.Id), ""),
 		}
 		forms = append(forms, outForm)
 	}
+
+	// 按拍摄时间升序排序
+	sort.Slice(forms, func(i, j int) bool {
+		return forms[i].Date < forms[j].Date
+	})
 	return forms
 }
 
