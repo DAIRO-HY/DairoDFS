@@ -36,7 +36,7 @@ func url() string {
 	case "linux":
 		return ""
 	case "windows":
-		return "https://imagemagick.org/archive/binaries/ImageMagick-7.1.1-45-Q16-HDRI-x64-dll.exe"
+		return "https://imagemagick.org/archive/binaries/ImageMagick-7.1.2-3-Q16-HDRI-x64-dll.exe"
 	case "darwin":
 		return ""
 	default:
@@ -87,7 +87,7 @@ func doInstall() {
 	switch runtime.GOOS {
 	case "windows":
 		downloadInfo.Info = "正在安装：请按照弹出的安装界面提示安装软件"
-		_, err := ShellUtil.ExecToOkResult(downloadInfo.SavePath + "/ImageMagick-7.1.1-45-Q16-HDRI-x64-dll.exe")
+		_, err := ShellUtil.ExecToOkResult(downloadInfo.SavePath + "/ImageMagick-7.1.2-3-Q16-HDRI-x64-dll.exe")
 		if err != nil {
 			downloadInfo.Info = fmt.Sprintf("安装失败：%q", err)
 		} else {
