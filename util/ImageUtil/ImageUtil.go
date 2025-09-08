@@ -157,6 +157,22 @@ func ThumbByTiff(data []byte, targetMaxSize int) ([]byte, error) {
 	return ShellUtil.ExecToOkData("\"" + application.FfmpegPath + "/ffmpeg\" -f image2pipe -vcodec tiff -i \"" + tempFile + "\" -vf scale=" + String.ValueOf(targetW) + ":" + String.ValueOf(targetH) + " -q:v 3 -f image2pipe -vcodec mjpeg -")
 }
 
+// 将tiff图片转jpg
+func TiffToJpg(data []byte) ([]byte, error) {
+	tempFile := RamDiskUtil.GetRamFolder() + "/" + String.MakeRandStr(16)
+
+	//先将数据写入到硬盘，因为ffmpeg无法识别tiff输入流
+	if err := os.WriteFile(tempFile, data, 0644); err != nil {
+		return nil, err
+	}
+	defer os.Remove(tempFile)
+
+	//获取视频第一帧作为缩略图
+	//-q:v代表输出图片质量，取值返回2-31，2为质量最佳
+	//v指定输出图片尺寸
+	return ShellUtil.ExecToOkData("\"" + application.FfmpegPath + "/ffmpeg\" -f image2pipe -vcodec tiff -i \"" + tempFile + "\" -q:v 2 -f image2pipe -vcodec mjpeg -")
+}
+
 // 将png图片转jpg
 // quatity 转换质量：2-31  2为质量最佳
 func Png2Jpg(data []byte, quality int8) ([]byte, error) {

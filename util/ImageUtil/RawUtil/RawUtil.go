@@ -2,6 +2,7 @@ package RawUtil
 
 import (
 	"DairoDFS/application"
+	"DairoDFS/exception"
 	"DairoDFS/util/ImageUtil"
 	"DairoDFS/util/ShellUtil"
 	"runtime"
@@ -42,7 +43,32 @@ func ToJpg(path string) ([]byte, error) {
 	} else {
 		cmd = "\"" + application.ExiftoolPath + "/exiftool-13.35_64/exiftool\""
 	}
-	jpgData, getJegDataErr := ShellUtil.ExecToOkData(cmd + " -b -JpgFromRaw \"" + path + "\"")
+
+	//获取cr3文件内嵌了哪些图片
+	includeImageInfo, includedImageInfoErr := ShellUtil.ExecToOkResult(cmd + " -preview:all \"" + path + "\"")
+	if includedImageInfoErr != nil {
+		return nil, includedImageInfoErr
+	}
+	var jpgData []byte
+	var getJegDataErr error
+	if strings.Contains(includeImageInfo, "Jpg From Raw") { //这个文件内嵌了一张大图
+		jpgData, getJegDataErr = ShellUtil.ExecToOkData(cmd + " -b -JpgFromRaw \"" + path + "\"")
+	} else if strings.Contains(includeImageInfo, "Preview Image") { //这个文件内嵌了一张尺寸较小的预览图
+		jpgData, getJegDataErr = ShellUtil.ExecToOkData(cmd + " -b -PreviewImage \"" + path + "\"")
+	} else if strings.Contains(includeImageInfo, "Thumbnail Image") { //这个文件内嵌了一张缩略图
+		jpgData, getJegDataErr = ShellUtil.ExecToOkData(cmd + " -b -ThumbnailImage \"" + path + "\"")
+	} else {
+		return nil, exception.Biz("这个文件灭有内置jpg图片")
+	}
+	if len(jpgData) == 0 || getJegDataErr != nil { //极端情况，使用libraw获取jpg图片
+		tiffData, err := ToTiff(path)
+		if err == nil {
+			jpgData, getJegDataErr = ImageUtil.TiffToJpg(tiffData)
+		} else {
+			getJegDataErr = err
+		}
+	}
+
 	if getJegDataErr != nil {
 		return nil, getJegDataErr
 	}
@@ -62,6 +88,19 @@ func ToJpg(path string) ([]byte, error) {
 	} else {
 		return jpgData, nil
 	}
+}
+
+// / 将cr3转Tiff图片
+func ToTiff(path string) ([]byte, error) {
+	var cmd string
+	if runtime.GOOS == "linux" {
+		cmd = "dcraw_emu"
+	} else {
+		cmd = "\"" + application.LIBRAW_BIN + "/dcraw_emu\""
+	}
+
+	//将图片转换成TIFF图片
+	return ShellUtil.ExecToOkData(cmd + " -T -Z - -mem -mmap \"" + path + "\"")
 }
 
 // 获取图片信息
