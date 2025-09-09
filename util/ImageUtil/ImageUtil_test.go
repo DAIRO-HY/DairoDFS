@@ -44,8 +44,8 @@ func TestThumbByData(t *testing.T) {
 	var err error
 
 	now := time.Now()
-	for i := 0; i < 1; i++ {
-		thumb, err = ThumbByData(data, 1300, 85)
+	for i := 0; i < 10; i++ {
+		thumb, err = ThumbByData(data, 800, 85)
 	}
 	fmt.Println(time.Now().Sub(now).Seconds())
 	if err != nil {
@@ -62,7 +62,7 @@ func TestThumbSizeByData(t *testing.T) {
 	var err error
 
 	now := time.Now()
-	for i := 0; i < 100; i++ {
+	for i := 0; i < 10; i++ {
 		thumb, err = ThumbSizeByData(data, 200, 200, 85)
 	}
 	fmt.Println(time.Now().Sub(now).Seconds())
@@ -79,8 +79,8 @@ func TestThumbByJpg(t *testing.T) {
 	var thumb []byte
 	var err error
 	now := time.Now()
-	for i := 0; i < 100; i++ {
-		thumb, err = ThumbByJpg(data, 300)
+	for i := 0; i < 10; i++ {
+		thumb, err = ThumbByJpg(data, 1000)
 	}
 	fmt.Println(time.Now().Sub(now).Seconds())
 	if err != nil {

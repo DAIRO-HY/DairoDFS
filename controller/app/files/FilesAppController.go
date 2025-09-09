@@ -21,6 +21,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 )
 
 // 文件列表页面
@@ -401,32 +402,43 @@ func ThumbOnline(writer http.ResponseWriter, id int64, maxSize int, width int, h
 		return
 	}
 
+	var previewData []byte
+
 	//获取缩率图附属文件
 	thumbDto, isThumbExists := DfsFileDao.SelectExtra(dfsDto.Id, "thumb")
-	if !isThumbExists {
-		writer.WriteHeader(http.StatusNotFound)
-		return
-	}
-	storageDto, isStorageExists := StorageFileDao.SelectOne(thumbDto.StorageId)
-	if !isStorageExists {
-		writer.WriteHeader(http.StatusNotFound)
-		return
-	}
-	_, statErr := os.Stat(storageDto.Path)
-	if os.IsNotExist(statErr) {
-		writer.WriteHeader(http.StatusNotFound)
-		return
+	if isThumbExists { //如果存在缩略图
+		storageDto, isStorageExists := StorageFileDao.SelectOne(thumbDto.StorageId)
+		if !isStorageExists {
+			writer.WriteHeader(http.StatusNotFound)
+			return
+		}
+		_, statErr := os.Stat(storageDto.Path)
+		if os.IsNotExist(statErr) {
+			writer.WriteHeader(http.StatusNotFound)
+			return
+		}
+		var readErr error
+		previewData, readErr = os.ReadFile(storageDto.Path)
+		if readErr != nil {
+			panic(readErr)
+		}
+	} else {
+		var previewJpgErr error
+		previewData, previewJpgErr = DfsFileHandleUtil.GetPreviewJpg(dfsDto)
+		if previewJpgErr != nil {
+			panic(previewJpgErr)
+		}
 	}
 
 	var thumbData []byte
 	var makeThumbErr error
 	if maxSize > 0 {
 		thumbOnlineLock.Lock()
-		thumbData, makeThumbErr = ImageUtil.ThumbByFile(storageDto.Path, maxSize, 85)
+		thumbData, makeThumbErr = ImageUtil.ThumbByData(previewData, maxSize, 85)
 		thumbOnlineLock.Unlock()
 	} else if width > 0 && height > 0 {
 		thumbOnlineLock.Lock()
-		thumbData, makeThumbErr = ImageUtil.ThumbSizeByFile(storageDto.Path, width, height, 85)
+		thumbData, makeThumbErr = ImageUtil.ThumbSizeByData(previewData, width, height, 85)
 		thumbOnlineLock.Unlock()
 	} else {
 		panic(exception.Biz("width,height和maxSize至少要传其中一种参数"))
@@ -435,6 +447,12 @@ func ThumbOnline(writer http.ResponseWriter, id int64, maxSize int, width int, h
 		panic(makeThumbErr)
 	}
 
+	// 设置Cache-Control头，配置缓存（1年）
+	writer.Header().Set("Cache-Control", "public, max-age=31536000, s-maxage=31536000, immutable")
+
+	// 设置Expires头，配置为1年后的时间
+	expiresTime := time.Now().AddDate(1, 0, 0).Format(time.RFC1123)
+	writer.Header().Set("Expires", expiresTime)
 	writer.Header().Set("Content-Type", "image/jpeg")
 	writer.Header().Set("Content-Length", strconv.Itoa(len(thumbData)))
 

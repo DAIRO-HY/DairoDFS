@@ -196,70 +196,18 @@ func makeThumb(dfsFileDto dto.DfsFileDto) {
 		return
 	}
 
-	localDto, _ := StorageFileDao.SelectOne(dfsFileDto.StorageId)
-	storagePath := localDto.Path
-
-	//缩略图数据
-	var data []byte
-
-	//生成缩略图过程中出现的错误
-	var makeThumbErr error
-	lowerName := strings.ToLower(dfsFileDto.Name)
+	//去获取预览图
+	jpgData, previewErr := GetPreviewJpg(dfsFileDto)
+	if previewErr != nil {
+		panic(previewErr)
+	}
+	if jpgData == nil { //无需生成缩略图
+		return
+	}
 
 	//生成目标图片最大边
 	targetMaxSize := SystemConfig.Instance().ThumbMaxSize
-
-	//缩略图质量
-	quality := 85
-
-	//默认文件类型
-	contentType := DfsFileUtil.DfsContentType("jpeg")
-	if strings.HasSuffix(lowerName, ".bmp") ||
-		strings.HasSuffix(lowerName, ".gif") ||
-		strings.HasSuffix(lowerName, ".ico") ||
-		strings.HasSuffix(lowerName, ".svg") ||
-		strings.HasSuffix(lowerName, ".webp") ||
-		strings.HasSuffix(lowerName, ".wmf") ||
-		strings.HasSuffix(lowerName, ".wmz") ||
-		strings.HasSuffix(lowerName, ".jp2") ||
-		strings.HasSuffix(lowerName, ".eps") ||
-		strings.HasSuffix(lowerName, ".tga") ||
-		strings.HasSuffix(lowerName, ".jfif") {
-		data, makeThumbErr = ImageUtil.ThumbByFile(storagePath, targetMaxSize, quality)
-	} else if strings.HasSuffix(lowerName, ".jpg") ||
-		strings.HasSuffix(lowerName, ".jpeg") {
-		jpgData, _ := os.ReadFile(storagePath)
-		data, makeThumbErr = ImageUtil.ThumbByJpg(jpgData, targetMaxSize)
-	} else if strings.HasSuffix(lowerName, ".png") {
-		pngData, _ := os.ReadFile(storagePath)
-		data, makeThumbErr = ImageUtil.ThumbByPng(pngData, targetMaxSize)
-	} else if strings.HasSuffix(lowerName, ".tiff") {
-		data, makeThumbErr = ImageUtil.ThumbByTiffPath(storagePath, targetMaxSize)
-	} else if strings.HasSuffix(lowerName, ".psd") ||
-		strings.HasSuffix(lowerName, ".psb") ||
-		strings.HasSuffix(lowerName, ".ai") {
-		data, makeThumbErr = PSDUtil.Thumb(storagePath, targetMaxSize)
-	} else if strings.HasSuffix(lowerName, ".mp4") ||
-		strings.HasSuffix(lowerName, ".avi") ||
-		strings.HasSuffix(lowerName, ".mkv") ||
-		strings.HasSuffix(lowerName, ".flv") ||
-		strings.HasSuffix(lowerName, ".rm") ||
-		strings.HasSuffix(lowerName, ".rmvb") ||
-		strings.HasSuffix(lowerName, ".3gp") {
-		data, makeThumbErr = VideoUtil.Thumb(storagePath, targetMaxSize)
-	} else if strings.HasSuffix(lowerName, ".mov") {
-		data, makeThumbErr = VideoUtil.Thumb(storagePath, targetMaxSize)
-		contentType = DfsFileUtil.DfsContentType("png")
-	} else if strings.HasSuffix(lowerName, ".cr3") ||
-		strings.HasSuffix(lowerName, ".cr2") {
-
-		//专业相机RAW图片
-		data, makeThumbErr = RawUtil.Thumb(storagePath, targetMaxSize)
-	} else if strings.HasSuffix(lowerName, ".heic") { //Iphone手机拍摄的照片
-		data, makeThumbErr = HeicUtil.Thumb(storagePath, targetMaxSize)
-	} else { //无需生成缩略图
-		return
-	}
+	data, makeThumbErr := ImageUtil.ThumbByData(jpgData, targetMaxSize, 85)
 	if makeThumbErr != nil {
 		panic(makeThumbErr)
 	}
@@ -278,9 +226,69 @@ func makeThumb(dfsFileDto dto.DfsFileDto) {
 		UserId:      dfsFileDto.UserId,
 		Date:        dfsFileDto.Date,
 		State:       1,
-		ContentType: contentType,
+		ContentType: DfsFileUtil.DfsContentType("jpeg"),
 	}
 	DfsFileService.Add(extraDto)
+}
+
+// 获取文件预览图片Jpg
+func GetPreviewJpg(dfsFileDto dto.DfsFileDto) ([]byte, error) {
+	localDto, _ := StorageFileDao.SelectOne(dfsFileDto.StorageId)
+	storagePath := localDto.Path
+	lowerName := strings.ToLower(dfsFileDto.Name)
+
+	//缩略图质量
+	quality := 100
+
+	//默认返回原始大小的图片
+	targetSize := 999999
+	if strings.HasSuffix(lowerName, ".bmp") ||
+		strings.HasSuffix(lowerName, ".gif") ||
+		strings.HasSuffix(lowerName, ".ico") ||
+		strings.HasSuffix(lowerName, ".svg") ||
+		strings.HasSuffix(lowerName, ".webp") ||
+		strings.HasSuffix(lowerName, ".wmf") ||
+		strings.HasSuffix(lowerName, ".wmz") ||
+		strings.HasSuffix(lowerName, ".jp2") ||
+		strings.HasSuffix(lowerName, ".eps") ||
+		strings.HasSuffix(lowerName, ".tga") ||
+		strings.HasSuffix(lowerName, ".jfif") {
+		return ImageUtil.ThumbByFile(storagePath, targetSize, quality)
+	} else if strings.HasSuffix(lowerName, ".jpg") ||
+		strings.HasSuffix(lowerName, ".jpeg") {
+		return os.ReadFile(storagePath)
+	} else if strings.HasSuffix(lowerName, ".png") {
+		return ImageUtil.ThumbByFile(storagePath, targetSize, quality)
+	} else if strings.HasSuffix(lowerName, ".tiff") {
+		return ImageUtil.ThumbByFile(storagePath, targetSize, quality)
+	} else if strings.HasSuffix(lowerName, ".psd") ||
+		strings.HasSuffix(lowerName, ".psb") ||
+		strings.HasSuffix(lowerName, ".ai") {
+		return PSDUtil.Thumb(storagePath, targetSize)
+	} else if strings.HasSuffix(lowerName, ".mp4") ||
+		strings.HasSuffix(lowerName, ".avi") ||
+		strings.HasSuffix(lowerName, ".mkv") ||
+		strings.HasSuffix(lowerName, ".flv") ||
+		strings.HasSuffix(lowerName, ".rm") ||
+		strings.HasSuffix(lowerName, ".rmvb") ||
+		strings.HasSuffix(lowerName, ".3gp") {
+		return VideoUtil.Thumb(storagePath, targetSize)
+	} else if strings.HasSuffix(lowerName, ".mov") {
+		return VideoUtil.Thumb(storagePath, targetSize)
+	} else if strings.HasSuffix(lowerName, ".cr3") ||
+		strings.HasSuffix(lowerName, ".cr2") {
+
+		//专业相机RAW图片
+		tiffData, toTiffErr := RawUtil.ToTiff(storagePath)
+		if toTiffErr != nil {
+			return nil, toTiffErr
+		}
+		return ImageUtil.ThumbByData(tiffData, targetSize, quality)
+	} else if strings.HasSuffix(lowerName, ".heic") { //Iphone手机拍摄的照片
+		return HeicUtil.Thumb(storagePath, targetSize)
+	} else { //无需生成缩略图
+		return nil, nil
+	}
 }
 
 // 某些文件生成预览图,如PSD,PDF,RAW等格式的图片
@@ -322,6 +330,53 @@ func makePreview(dfsFileDto dto.DfsFileDto) {
 	}
 	if err != nil {
 		return
+	}
+
+	//保存文件
+	storageFileDto := DfsFileService.SaveToStorageByData(previewData)
+	extraDto := dto.DfsFileDto{
+		Id:          Number.ID(),
+		Name:        "preview",
+		Size:        int64(len(previewData)),
+		StorageId:   storageFileDto.Id,
+		IsExtra:     true,
+		ParentId:    dfsFileDto.Id,
+		UserId:      dfsFileDto.UserId,
+		Date:        dfsFileDto.Date,
+		ContentType: "image/jpeg",
+		State:       1,
+	}
+	DfsFileService.Add(extraDto)
+}
+
+// 某些文件生成预览图,如PSD,PDF,RAW等格式的图片
+func makePreviewBk(dfsFileDto dto.DfsFileDto) {
+
+	//获取已经存在的附属文件
+	if _, isExists := DfsFileDao.SelectExtra(dfsFileDto.Id, "preview"); isExists {
+
+		//已经存在附属文件,则跳过  重新生成附属文件时用到
+		return
+	}
+
+	if existsPreview, isExists := DfsFileDao.SelectExtraFileByStorageIdAndName(dfsFileDto.StorageId, "preview"); isExists {
+
+		//该文件预览图在其他文件中已经生成
+		existsPreview.Id = Number.ID()
+		existsPreview.ParentId = dfsFileDto.Id
+		existsPreview.UserId = dfsFileDto.UserId
+		DfsFileService.Add(existsPreview)
+		return
+	}
+	previewData, previewErr := GetPreviewJpg(dfsFileDto)
+	if previewErr != nil {
+		panic(previewErr)
+	}
+
+	//得到一张低分辨率的预览图，用来生成缩略图等
+	previewData, previewErr = ImageUtil.ThumbByData(previewData, 1200, 85)
+	if previewErr != nil {
+		panic(previewErr)
 	}
 
 	//保存文件
