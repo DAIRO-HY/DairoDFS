@@ -360,7 +360,8 @@ func makeVideo(dfsFileDto dto.DfsFileDto) {
 		}
 
 		//要转换的目标尺寸
-		for _, it := range []string{"1920:30", "1280:25", "640:15"} {
+		//for _, it := range []string{"1920:30", "1280:25", "640:15"} {
+		for _, it := range []string{"1280:30"} {
 			targetArr := strings.Split(it, ":")
 			targetSizeInt64, _ := strconv.ParseInt(targetArr[0], 10, 16) //目标最大边
 			targetFpsInt64, _ := strconv.ParseInt(targetArr[1], 10, 16)  //目标帧数
