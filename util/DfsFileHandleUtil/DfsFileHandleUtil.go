@@ -279,7 +279,7 @@ func GetPreviewJpg(dfsFileDto dto.DfsFileDto) ([]byte, error) {
 		strings.HasSuffix(lowerName, ".cr2") {
 
 		//专业相机RAW图片
-		tiffData, toTiffErr := RawUtil.ToTiff(storagePath)
+		tiffData, toTiffErr := RawUtil.ToJpg(storagePath)
 		if toTiffErr != nil {
 			return nil, toTiffErr
 		}
