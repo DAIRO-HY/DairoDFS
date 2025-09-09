@@ -3,6 +3,7 @@ package files
 import (
 	"DairoDFS/controller/app/files/form"
 	"DairoDFS/dao/DfsFileDao"
+	"DairoDFS/dao/StorageFileDao"
 	"DairoDFS/exception"
 	"DairoDFS/extension/Bool"
 	"DairoDFS/extension/Date"
@@ -12,11 +13,14 @@ import (
 	"DairoDFS/service/FileShareService"
 	"DairoDFS/util/DfsFileHandleUtil"
 	"DairoDFS/util/DfsFileUtil"
+	"DairoDFS/util/ImageUtil"
 	"DairoDFS/util/LoginState"
 	"net/http"
+	"os"
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 // 文件列表页面
@@ -373,4 +377,73 @@ func Thumb(writer http.ResponseWriter, request *http.Request, id int64) {
 	//获取缩率图附属文件
 	thumb, isExists := DfsFileDao.SelectExtra(dfsDto.Id, "thumb")
 	DfsFileUtil.DownloadDfs(thumb, writer, request)
+}
+
+// 缩略图生成单线程限制
+var thumbOnlineLock sync.Mutex
+
+// ThumbOnline - 缩略图在线生成
+// 优先使用maxSize
+// id 文件ID
+// width 宽
+// height 高
+// maxSize 最大边
+// @Get:/thumb_online/{id}
+func ThumbOnline(writer http.ResponseWriter, id int64, maxSize int, width int, height int) {
+	dfsDto, isExists := DfsFileDao.SelectOne(id)
+	if !isExists { //文件不存在
+		writer.WriteHeader(http.StatusNotFound)
+		return
+	}
+	loginId := LoginState.LoginId()
+	if dfsDto.UserId != loginId { //没有权限
+		writer.WriteHeader(http.StatusForbidden)
+		return
+	}
+
+	//获取缩率图附属文件
+	thumbDto, isThumbExists := DfsFileDao.SelectExtra(dfsDto.Id, "thumb")
+	if !isThumbExists {
+		writer.WriteHeader(http.StatusNotFound)
+		return
+	}
+	storageDto, isStorageExists := StorageFileDao.SelectOne(thumbDto.StorageId)
+	if !isStorageExists {
+		writer.WriteHeader(http.StatusNotFound)
+		return
+	}
+	_, statErr := os.Stat(storageDto.Path)
+	if os.IsNotExist(statErr) {
+		writer.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	var thumbData []byte
+	var makeThumbErr error
+	if maxSize > 0 {
+		thumbOnlineLock.Lock()
+		thumbData, makeThumbErr = ImageUtil.ThumbByFile(storageDto.Path, maxSize, 85)
+		thumbOnlineLock.Unlock()
+	} else if width > 0 && height > 0 {
+		thumbOnlineLock.Lock()
+		thumbData, makeThumbErr = ImageUtil.ThumbSizeByFile(storageDto.Path, width, height, 85)
+		thumbOnlineLock.Unlock()
+	} else {
+		panic(exception.Biz("width,height和maxSize至少要传其中一种参数"))
+	}
+	if makeThumbErr != nil {
+		panic(makeThumbErr)
+	}
+
+	writer.Header().Set("Content-Type", "image/jpeg")
+	writer.Header().Set("Content-Length", strconv.Itoa(len(thumbData)))
+
+	//告诉客户端,服务器支持请求部分数据
+	//writer.Header().Set("Accept-Ranges", "bytes")
+
+	//http.ResponseWriter发送状态码之后，再设置头部信息将会不生效，所以发送状态码一定要等所有头部信息设置完成之后再发送
+	writer.WriteHeader(http.StatusOK)
+	if _, writeErr := writer.Write(thumbData); writeErr != nil {
+		panic(writeErr)
+	}
 }

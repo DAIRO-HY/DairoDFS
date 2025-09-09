@@ -209,6 +209,9 @@ func makeThumb(dfsFileDto dto.DfsFileDto) {
 	//生成目标图片最大边
 	targetMaxSize := SystemConfig.Instance().ThumbMaxSize
 
+	//缩略图质量
+	quality := 85
+
 	//默认文件类型
 	contentType := DfsFileUtil.DfsContentType("jpeg")
 	if strings.HasSuffix(lowerName, ".bmp") ||
@@ -222,7 +225,7 @@ func makeThumb(dfsFileDto dto.DfsFileDto) {
 		strings.HasSuffix(lowerName, ".eps") ||
 		strings.HasSuffix(lowerName, ".tga") ||
 		strings.HasSuffix(lowerName, ".jfif") {
-		data, makeThumbErr = ImageUtil.ThumbByFile(storagePath, targetMaxSize)
+		data, makeThumbErr = ImageUtil.ThumbByFile(storagePath, targetMaxSize, quality)
 	} else if strings.HasSuffix(lowerName, ".jpg") ||
 		strings.HasSuffix(lowerName, ".jpeg") {
 		jpgData, _ := os.ReadFile(storagePath)

@@ -25,7 +25,7 @@ func Thumb(path string, targetMaxSize int) ([]byte, error) {
 	if cmdErr != nil {
 		return nil, cmdErr
 	}
-	return ImageUtil.ThumbByData(jpgData, targetMaxSize)
+	return ImageUtil.ThumbByData(jpgData, targetMaxSize, 85)
 }
 
 // 生成视频缩略图

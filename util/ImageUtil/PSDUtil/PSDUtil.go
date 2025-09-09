@@ -14,7 +14,7 @@ func Thumb(path string, tagetMaxSize int) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	return ImageUtil.ThumbByData(pngData, tagetMaxSize)
+	return ImageUtil.ThumbByData(pngData, tagetMaxSize, 85)
 }
 
 // 生成jpeg图片
