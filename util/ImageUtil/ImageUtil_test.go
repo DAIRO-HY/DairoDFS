@@ -41,8 +41,8 @@ func TestGetInfo(t *testing.T) {
 }
 
 func TestToJpg(t *testing.T) {
-	jpgData, _ := ToJpg("C:\\test\\1.tiff", 80)
-	os.WriteFile("C:\\test\\1.tiff.jpg", jpgData, 0644)
+	jpgData, _ := ToJpg("C:\\test\\mov\\1.jpg", 100)
+	os.WriteFile("C:\\test\\mov\\1.jpg.jpg", jpgData, 0644)
 }
 
 func TestToPng(t *testing.T) {

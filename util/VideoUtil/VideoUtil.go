@@ -3,9 +3,10 @@ package VideoUtil
 import (
 	application "DairoDFS/application"
 	"DairoDFS/exception"
+	"DairoDFS/extension/String"
+	"DairoDFS/util/RamDiskUtil"
 	"DairoDFS/util/ShellUtil"
 	"encoding/json"
-	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
@@ -26,14 +27,32 @@ func ToPng(path string) ([]byte, error) {
 	return ShellUtil.ExecToOkData("\"" + application.FfmpegPath + "/ffmpeg\" -i \"" + path + "\" -vf select=eq(n\\,0) -q:v 1 -pix_fmt rgb24 -pred mixed -f image2pipe -vcodec png -")
 }
 
+// 从HDR视频提取Jpg图
+// path 视频文件路径
+// targetMaxSize 图片最大边
+// return 图片字节数组,错误信息
+func ToJpgFromHDR(path string) ([]byte, error) {
+
+	//获取视频第一帧作为缩略图
+	return ShellUtil.ExecToOkData("\"" + application.FfmpegPath + "/ffmpeg\" -i \"" + path + "\" -vf scale=out_color_matrix=bt709,eq=gamma=0.6:saturation=2 -color_primaries bt709 -color_trc bt709 -colorspace bt709 -vframes 1 -q:v 1 -f image2pipe -vcodec mjpeg -")
+}
+
 // 生成视频Jpg缩略图
 // path 视频文件路径
 // targetMaxSize 图片最大边
 // return 图片字节数组,错误信息
 func ToJpg(path string) ([]byte, error) {
+	if IsHDR(path) {
+		tempPath := RamDiskUtil.GetRamFolder() + "/" + String.MakeRandStr(16)
 
-	//获取视频第一帧作为缩略图
-	return ShellUtil.ExecToOkData("\"" + application.FfmpegPath + "/ffmpeg\" -i \"" + path + "\" -vf select=eq(n\\,0) -q:v 1 -f image2pipe -vcodec mjpeg -")
+		//先将HDR转SDR再截图，避免取出来的图片泛白
+		if err := HDR2SDR(path, 0, 0, 1, tempPath); err != nil {
+			return nil, err
+		}
+		return ShellUtil.ExecToOkData("\"" + application.FfmpegPath + "/ffmpeg\" -i \"" + tempPath + "\" -vf select=eq(n\\,0) -q:v 1 -f image2pipe -vcodec mjpeg -")
+	} else { //SDR获取截图的方式
+		return ShellUtil.ExecToOkData("\"" + application.FfmpegPath + "/ffmpeg\" -i \"" + path + "\" -vf select=eq(n\\,0) -q:v 1 -f image2pipe -vcodec mjpeg -")
+	}
 }
 
 /**
@@ -178,8 +197,8 @@ func GetInfo(path string) (VedioInfo, error) {
 		}
 		info.Bitrate, _ = strconv.Atoi(stream["bit_rate"].(string))
 		if tags, hasTag := stream["tags"]; hasTag {
-			if creationTime, hasCreationTime := tags.(map[string]any)["creation_time"]; hasCreationTime {
-				creationTime := strings.ReplaceAll(creationTime.(string), "T", " ")
+			if creationTimeAny, hasCreationTime := tags.(map[string]any)["creation_time"]; hasCreationTime {
+				creationTime := strings.ReplaceAll(creationTimeAny.(string), "T", " ")
 				creationTime = creationTime[:strings.Index(creationTime, ".")]
 				date, _ := time.Parse("2006-01-02 15:04:05", creationTime)
 				info.Date = date.UnixMilli()
@@ -196,13 +215,63 @@ func GetInfo(path string) (VedioInfo, error) {
 	return VedioInfo{}, exception.Biz("没有获取到视频信息")
 }
 
-/**
- * 视频转码
- */
-func Transfer(path string, targetW int, targetH int, targetFps float32, targetPath string) error {
-	_, errResult, cmdErr := ShellUtil.ExecToOkAndErrorResult(fmt.Sprintf("\"%s/ffmpeg\" -i \"%s\" -vf scale=%d:%d -r %f -f mp4 \"%s\"", application.FfmpegPath, path, targetW, targetH, targetFps, targetPath))
+// Transfer - SDR视频转SDR视频，HDR视频转HDR视频，
+// width,height必须是偶数
+func Transfer(inPath string, width int, height int, fps float32, outPath string) error {
+	cmd := `"${FfmpegPath}/ffmpeg" -i "${inPath}"`
+	if width > 0 && height > 0 {
+		cmd += " -vf scale=${width}:${height}"
+	}
+	if fps > 0 {
+		cmd += " -r ${fps}"
+	}
+	cmd += ` -f mp4 -y "${outPath}"`
+	cmd = strings.ReplaceAll(cmd, "${FfmpegPath}", application.FfmpegPath)
+	cmd = strings.ReplaceAll(cmd, "${inPath}", inPath)
+	cmd = strings.ReplaceAll(cmd, "${width}", strconv.Itoa(width))
+	cmd = strings.ReplaceAll(cmd, "${height}", strconv.Itoa(height))
+	cmd = strings.ReplaceAll(cmd, "${fps}", String.ValueOf(fps))
+	cmd = strings.ReplaceAll(cmd, "${outPath}", outPath)
+	_, errResult, cmdErr := ShellUtil.ExecToOkAndErrorResult(cmd)
 	if cmdErr != nil {
 		return exception.Biz(errResult)
 	}
 	return nil
+}
+
+// HDR2SDR - HDR视频转SDR视频
+// width,height必须是偶数
+func HDR2SDRAndCut(inPath string, width int, height int, fps float32, outPath string, start string, end string) error {
+	cmd := `"${FfmpegPath}/ffmpeg" -i "${inPath}" -vf zscale=t=linear:npl=100,format=gbrpf32le,zscale=p=bt709,tonemap=tonemap=hable:desat=0,zscale=`
+	if width > 0 && height > 0 {
+		cmd += "w=${width}:h=${height}:"
+	}
+	cmd += "t=bt709:m=bt709:r=tv,format=yuv420p -c:v libx265 -crf 22 -preset medium -tune fastdecode"
+	if fps > 0 {
+		cmd += " -r ${fps}"
+	}
+	cmd += ` -f mp4 -y "${outPath}"`
+	cmd = strings.ReplaceAll(cmd, "${FfmpegPath}", application.FfmpegPath)
+	cmd = strings.ReplaceAll(cmd, "${inPath}", inPath)
+	cmd = strings.ReplaceAll(cmd, "${width}", strconv.Itoa(width))
+	cmd = strings.ReplaceAll(cmd, "${height}", strconv.Itoa(height))
+	cmd = strings.ReplaceAll(cmd, "${fps}", String.ValueOf(fps))
+	cmd = strings.ReplaceAll(cmd, "${outPath}", outPath)
+	_, errResult, cmdErr := ShellUtil.ExecToOkAndErrorResult(cmd)
+	if cmdErr != nil {
+		return exception.Biz(errResult)
+	}
+	return nil
+}
+
+// IsHDR - 判断视频是否HDR
+func IsHDR(path string) bool {
+	streamsInfo, errMsg, cmdErr := ShellUtil.ExecToOkAndErrorResult("\"" + application.FfprobePath + "/ffprobe\" -v error -select_streams v:0 -show_entries stream=color_transfer -of json \"" + path + "\"")
+	if errMsg != "" || cmdErr != nil {
+		return false
+	}
+	if strings.Contains(streamsInfo, "\"color_transfer\": \"arib-std-b67\"") || strings.Contains(streamsInfo, "\"color_transfer\": \"smpte2084\"") {
+		return true
+	}
+	return false
 }
