@@ -13,15 +13,6 @@ func init() {
 	application.ExiftoolPath = "C:\\develop\\project\\idea\\DairoDFS\\data\\exiftool"
 }
 
-func TestThumb(t *testing.T) {
-	data, err := Thumb("C:\\Users\\user\\Desktop\\dairo-dfs-test\\bb.cr3", 6000)
-	if err != nil {
-		t.Error(err)
-		return
-	}
-	os.WriteFile("./data/test.thumb.jpg", data, os.ModePerm)
-}
-
 func TestToJpg(t *testing.T) {
 	data, err := ToJpg("C:\\Users\\user\\Desktop\\dairo-dfs-test\\raw\\tt.cr3")
 	if err != nil {

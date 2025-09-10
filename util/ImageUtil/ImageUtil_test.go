@@ -33,8 +33,21 @@ func TestPng2Jpg(t *testing.T) {
 }
 
 func TestGetInfo(t *testing.T) {
-	info, _ := GetInfo("C:\\Users\\user\\Desktop\\test\\tt.cr3.tiff")
-	fmt.Println(info)
+	info1, _ := GetInfo("C:\\test\\1.jpg")
+	fmt.Println(info1)
+
+	info2, _ := GetInfo("C:\\test\\2.jpg")
+	fmt.Println(info2)
+}
+
+func TestToJpg(t *testing.T) {
+	jpgData, _ := ToJpg("C:\\test\\1.tiff", 80)
+	os.WriteFile("C:\\test\\1.tiff.jpg", jpgData, 0644)
+}
+
+func TestToPng(t *testing.T) {
+	pngData, _ := ToPng("C:\\test\\1.jpg")
+	os.WriteFile("C:\\test\\1.tojpg.png", pngData, 0644)
 }
 
 // TestThumbByData - 生成图片缩略图

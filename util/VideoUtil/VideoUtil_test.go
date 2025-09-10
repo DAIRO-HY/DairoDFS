@@ -1,6 +1,8 @@
 package VideoUtil
 
 import (
+	"DairoDFS/application"
+	"DairoDFS/util/ImageUtil"
 	"fmt"
 	"os"
 	"testing"
@@ -9,16 +11,21 @@ import (
 func init() {
 
 	//ffmped安装目录
-	//application.FfmpegPath = "./data/ffmpeg"
+	application.FfmpegPath = "C:\\Users\\ths.developer.1\\IdeaProjects\\DairoDFS\\data\\ffmpeg"
 }
 
-func TestThumb(t *testing.T) {
-	data, err := ThumbPng("C:\\Users\\user\\Desktop\\新しいフォルダー\\tt.mov", 3840)
+func TestToPng(t *testing.T) {
+	data, err := ToPng("C:\\test\\1.mov")
 	if err != nil {
 		t.Error(err)
 		return
 	}
-	os.WriteFile("./data/test.png", data, os.ModePerm)
+	data, err = ImageUtil.ToJpgByData(data, 100)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	os.WriteFile("C:\\test\\1.mov.jpg", data, os.ModePerm)
 }
 
 func TestGetInfo(t *testing.T) {

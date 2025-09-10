@@ -137,36 +137,37 @@ func makeProperty(dfsFileDto dto.DfsFileDto) {
 	storagePath := localDto.Path
 	var property any
 	var makePropertyErr error
-	if dfsFileDto.Ext == ".jpg" ||
-		dfsFileDto.Ext == "jpeg" ||
-		dfsFileDto.Ext == "png" ||
-		dfsFileDto.Ext == "bmp" ||
-		dfsFileDto.Ext == "gif" ||
-		dfsFileDto.Ext == "ico" ||
-		dfsFileDto.Ext == "svg" ||
-		dfsFileDto.Ext == "tiff" ||
-		dfsFileDto.Ext == "webp" ||
-		dfsFileDto.Ext == "wmf" ||
-		dfsFileDto.Ext == "wmz" ||
-		dfsFileDto.Ext == "jp2" ||
-		dfsFileDto.Ext == "eps" ||
-		dfsFileDto.Ext == "tga" ||
-		dfsFileDto.Ext == "jfif" { //图片处理
+	ext := dfsFileDto.Ext
+	if ext == "jpg" ||
+		ext == "jpeg" ||
+		ext == "png" ||
+		ext == "bmp" ||
+		ext == "gif" ||
+		ext == "ico" ||
+		ext == "svg" ||
+		ext == "tiff" ||
+		ext == "webp" ||
+		ext == "wmf" ||
+		ext == "wmz" ||
+		ext == "jp2" ||
+		ext == "eps" ||
+		ext == "tga" ||
+		ext == "jfif" { //图片处理
 		property, makePropertyErr = ImageUtil.GetInfo(storagePath)
-	} else if dfsFileDto.Ext == "psd" || dfsFileDto.Ext == "psb" || dfsFileDto.Ext == "ai" {
+	} else if ext == "psd" || ext == "psb" || ext == "ai" {
 		property, makePropertyErr = PSDUtil.GetInfo(storagePath)
-	} else if dfsFileDto.Ext == "cr3" || dfsFileDto.Ext == "cr2" { //专业相机RAW图片
+	} else if ext == "cr3" || ext == "cr2" { //专业相机RAW图片
 		property, makePropertyErr = RawUtil.GetInfo(storagePath)
-	} else if dfsFileDto.Ext == "heic" { //Iphone手机拍摄的照片
+	} else if ext == "heic" { //Iphone手机拍摄的照片
 		property, makePropertyErr = HeicUtil.GetInfo(storagePath)
-	} else if dfsFileDto.Ext == "mp4" ||
-		dfsFileDto.Ext == "mov" ||
-		dfsFileDto.Ext == "avi" ||
-		dfsFileDto.Ext == "mkv" ||
-		dfsFileDto.Ext == "flv" ||
-		dfsFileDto.Ext == "rm" ||
-		dfsFileDto.Ext == "rmvb" ||
-		dfsFileDto.Ext == "3gp" {
+	} else if ext == "mp4" ||
+		ext == "mov" ||
+		ext == "avi" ||
+		ext == "mkv" ||
+		ext == "flv" ||
+		ext == "rm" ||
+		ext == "rmvb" ||
+		ext == "3gp" {
 		property, makePropertyErr = VideoUtil.GetInfo(storagePath)
 	} else {
 		return
@@ -235,57 +236,48 @@ func makeThumb(dfsFileDto dto.DfsFileDto) {
 func GetPreviewJpg(dfsFileDto dto.DfsFileDto) ([]byte, error) {
 	localDto, _ := StorageFileDao.SelectOne(dfsFileDto.StorageId)
 	storagePath := localDto.Path
-	lowerName := strings.ToLower(dfsFileDto.Name)
 
 	//缩略图质量
 	quality := 100
-
-	//默认返回原始大小的图片
-	targetSize := 999999
-	if strings.HasSuffix(lowerName, ".bmp") ||
-		strings.HasSuffix(lowerName, ".gif") ||
-		strings.HasSuffix(lowerName, ".ico") ||
-		strings.HasSuffix(lowerName, ".svg") ||
-		strings.HasSuffix(lowerName, ".webp") ||
-		strings.HasSuffix(lowerName, ".wmf") ||
-		strings.HasSuffix(lowerName, ".wmz") ||
-		strings.HasSuffix(lowerName, ".jp2") ||
-		strings.HasSuffix(lowerName, ".eps") ||
-		strings.HasSuffix(lowerName, ".tga") ||
-		strings.HasSuffix(lowerName, ".jfif") {
-		return ImageUtil.ThumbByFile(storagePath, targetSize, quality)
-	} else if strings.HasSuffix(lowerName, ".jpg") ||
-		strings.HasSuffix(lowerName, ".jpeg") {
+	ext := dfsFileDto.Ext
+	if ext == "bmp" ||
+		ext == "gif" ||
+		ext == "ico" ||
+		ext == "svg" ||
+		ext == "webp" ||
+		ext == "wmf" ||
+		ext == "wmz" ||
+		ext == "jp2" ||
+		ext == "eps" ||
+		ext == "tga" ||
+		ext == "jfif" {
+		return ImageUtil.ToJpg(storagePath, quality)
+	} else if ext == "jpg" ||
+		ext == "jpeg" {
 		return os.ReadFile(storagePath)
-	} else if strings.HasSuffix(lowerName, ".png") {
-		return ImageUtil.ThumbByFile(storagePath, targetSize, quality)
-	} else if strings.HasSuffix(lowerName, ".tiff") {
-		return ImageUtil.ThumbByFile(storagePath, targetSize, quality)
-	} else if strings.HasSuffix(lowerName, ".psd") ||
-		strings.HasSuffix(lowerName, ".psb") ||
-		strings.HasSuffix(lowerName, ".ai") {
-		return PSDUtil.Thumb(storagePath, targetSize)
-	} else if strings.HasSuffix(lowerName, ".mp4") ||
-		strings.HasSuffix(lowerName, ".avi") ||
-		strings.HasSuffix(lowerName, ".mkv") ||
-		strings.HasSuffix(lowerName, ".flv") ||
-		strings.HasSuffix(lowerName, ".rm") ||
-		strings.HasSuffix(lowerName, ".rmvb") ||
-		strings.HasSuffix(lowerName, ".3gp") {
-		return VideoUtil.Thumb(storagePath, targetSize)
-	} else if strings.HasSuffix(lowerName, ".mov") {
-		return VideoUtil.Thumb(storagePath, targetSize)
-	} else if strings.HasSuffix(lowerName, ".cr3") ||
-		strings.HasSuffix(lowerName, ".cr2") {
-
-		//专业相机RAW图片
-		tiffData, toTiffErr := RawUtil.ToJpg(storagePath)
-		if toTiffErr != nil {
-			return nil, toTiffErr
-		}
-		return ImageUtil.ThumbByData(tiffData, targetSize, quality)
-	} else if strings.HasSuffix(lowerName, ".heic") { //Iphone手机拍摄的照片
-		return HeicUtil.Thumb(storagePath, targetSize)
+	} else if ext == "png" {
+		return ImageUtil.ToJpg(storagePath, quality)
+	} else if ext == "tiff" {
+		return ImageUtil.ToJpg(storagePath, quality)
+	} else if ext == "psd" ||
+		ext == "psb" ||
+		ext == "ai" {
+		return PSDUtil.ToJpg(storagePath)
+	} else if ext == "mp4" ||
+		ext == "avi" ||
+		ext == "mkv" ||
+		ext == "flv" ||
+		ext == "rm" ||
+		ext == "rmvb" ||
+		ext == "3gp" {
+		return VideoUtil.ToJpg(storagePath)
+	} else if ext == "mov" {
+		return VideoUtil.ToJpg(storagePath)
+	} else if ext == "cr3" ||
+		ext == "cr2" { //专业相机RAW图片
+		return RawUtil.ToJpg(storagePath)
+	} else if ext == "heic" { //Iphone手机拍摄的照片
+		return HeicUtil.ToJpg(storagePath, quality)
 	} else { //无需生成缩略图
 		return nil, nil
 	}
@@ -311,20 +303,16 @@ func makePreview(dfsFileDto dto.DfsFileDto) {
 		return
 	}
 
-	localDto, _ := StorageFileDao.SelectOne(dfsFileDto.StorageId)
-	storagePath := localDto.Path
-	lowerName := strings.ToLower(dfsFileDto.Name)
-
 	var previewData []byte
 	var err error
-	if strings.HasSuffix(lowerName, ".psd") ||
-		strings.HasSuffix(lowerName, ".psb") ||
-		strings.HasSuffix(lowerName, ".ai") {
-		previewData, err = PSDUtil.ToJpeg(storagePath)
-	} else if strings.HasSuffix(lowerName, ".cr3") || strings.HasSuffix(lowerName, ".cr2") {
-		previewData, err = RawUtil.ToJpg(storagePath)
-	} else if strings.HasSuffix(lowerName, ".heic") {
-		previewData, err = HeicUtil.ToJpeg(storagePath, 2)
+	ext := dfsFileDto.Ext
+	if ext == "psd" ||
+		ext == "psb" ||
+		ext == "ai" ||
+		ext == "cr3" ||
+		ext == "cr2" ||
+		ext == "heic" {
+		previewData, err = GetPreviewJpg(dfsFileDto)
 	} else {
 		return
 	}
@@ -400,14 +388,15 @@ func makePreviewBk(dfsFileDto dto.DfsFileDto) {
 func makeVideo(dfsFileDto dto.DfsFileDto) {
 	localDto, _ := StorageFileDao.SelectOne(dfsFileDto.StorageId)
 	storagePath := localDto.Path
-	if dfsFileDto.Ext == "mp4" ||
-		dfsFileDto.Ext == "mov" ||
-		dfsFileDto.Ext == "avi" ||
-		dfsFileDto.Ext == "mkv" ||
-		dfsFileDto.Ext == "flv" ||
-		dfsFileDto.Ext == "rm" ||
-		dfsFileDto.Ext == "rmvb" ||
-		dfsFileDto.Ext == "3gp" {
+	ext := dfsFileDto.Ext
+	if ext == "mp4" ||
+		ext == "mov" ||
+		ext == "avi" ||
+		ext == "mkv" ||
+		ext == "flv" ||
+		ext == "rm" ||
+		ext == "rmvb" ||
+		ext == "3gp" {
 
 		videoInfo, err := VideoUtil.GetInfo(storagePath)
 		if err != nil {

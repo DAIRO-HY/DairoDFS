@@ -11,26 +11,6 @@ import (
 	_ "golang.org/x/image/tiff"
 )
 
-/**
- * Raw图片解析工具类
- */
-
-/**
- * 生成缩略图
- * @param path 文件路径
- * @param ext 文件后最，raw图片处理时，必须携带文件后缀名
- * @param maxWidth 图片最大宽度
- * @param maxHeight 图片最大高度
- * @return 图片字节数组
- */
-func Thumb(path string, targetMaxSize int) ([]byte, error) {
-	jpgData, err := ToJpg(path)
-	if err != nil {
-		return nil, err
-	}
-	return ImageUtil.ThumbByJpg(jpgData, targetMaxSize)
-}
-
 // 从CR3文件中提取JPEG预览图
 // path CR3文件路径
 // @return 图片数据
@@ -58,12 +38,12 @@ func ToJpg(path string) ([]byte, error) {
 	} else if strings.Contains(includeImageInfo, "Thumbnail Image") { //这个文件内嵌了一张缩略图
 		jpgData, getJegDataErr = ShellUtil.ExecToOkData(cmd + " -b -ThumbnailImage \"" + path + "\"")
 	} else {
-		return nil, exception.Biz("这个文件灭有内置jpg图片")
+		return nil, exception.Biz("这个文件没有内置jpg图片")
 	}
 	if len(jpgData) == 0 || getJegDataErr != nil { //极端情况，使用libraw获取jpg图片
 		tiffData, err := ToTiff(path)
 		if err == nil {
-			jpgData, getJegDataErr = ImageUtil.TiffToJpg(tiffData)
+			jpgData, getJegDataErr = ImageUtil.ToJpgByData(tiffData, 100)
 		} else {
 			getJegDataErr = err
 		}

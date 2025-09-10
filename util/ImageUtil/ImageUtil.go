@@ -10,14 +10,15 @@ import (
 	"image/color"
 	"image/draw"
 	"image/jpeg"
-	_ "image/png"
+	"image/png"
 	"os"
 	"strconv"
+
+	_ "golang.org/x/image/tiff" //对tiff支持
 
 	"github.com/nfnt/resize"
 	"github.com/rwcarlsen/goexif/exif"
 	_ "golang.org/x/image/bmp"
-	_ "golang.org/x/image/tiff"
 	_ "golang.org/x/image/webp"
 )
 
@@ -432,6 +433,112 @@ func ThumbSquareByData(data []byte, maxWidth int, maxHeight int) ([]byte, error)
 
 	// 将裁剪后的图片编码并保存
 	err = jpeg.Encode(&buf, croppedImg, options)
+	if err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
+// 图片转换为Jpg
+func ToJpg(path string, quality int) ([]byte, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	return ToJpgByData(data, quality)
+}
+
+// 图片转换为Jpg
+func ToJpgByData(data []byte, quality int) ([]byte, error) {
+
+	//加载
+	_, format, err := image.DecodeConfig(bytes.NewReader(data))
+	if err != nil {
+		return nil, err
+	}
+
+	//加载图片
+	img, _, err := image.Decode(bytes.NewReader(data))
+	if err != nil {
+		return nil, err
+	}
+
+	//data不再使用，让GC尽快回收
+	data = nil
+	if format == "png" { //如果图片是png格式，将背景填充白色
+
+		// 创建一个新的 RGBA 图像
+		bounds := img.Bounds()
+
+		//填充背景色后的图片
+		pngFill := image.NewRGBA(bounds)
+
+		// 指定填充颜色（如白色）
+		fillColor := color.RGBA{R: 255, G: 255, B: 255, A: 255}
+
+		// 填充背景颜色
+		draw.Draw(pngFill, bounds, &image.Uniform{fillColor}, image.Point{}, draw.Src)
+
+		// 将原始图片绘制到新图像上，保留非透明部分
+		draw.Draw(pngFill, bounds, img, bounds.Min, draw.Over)
+		img = pngFill
+	}
+
+	// 创建一个 bytes.Buffer 用于保存 JPEG 数据
+	var buf bytes.Buffer
+
+	// 设置 JPEG 编码选项
+	options := &jpeg.Options{
+		Quality: quality, // 设定 JPEG 质量 1-100
+	}
+	err = jpeg.Encode(&buf, img, options)
+	if err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
+// 图片转换为png
+func ToPng(path string) ([]byte, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	return ToPngByData(data)
+}
+
+// 图片转换为png
+func ToPngByData(data []byte) ([]byte, error) {
+
+	//加载
+	_, format, err := image.DecodeConfig(bytes.NewReader(data))
+	if err != nil {
+		return nil, err
+	}
+	if format == "png" { //如果图片是png格式
+		return data, nil
+	}
+
+	//加载图片
+	img, _, err := image.Decode(bytes.NewReader(data))
+	if err != nil {
+		return nil, err
+	}
+
+	//data不再使用，让GC尽快回收
+	data = nil
+
+	encoder := png.Encoder{
+		//png.NoCompression（无压缩）
+		//png.BestSpeed（最快压缩）
+		//png.BestCompression（最佳压缩）
+		//png.DefaultCompression（默认压缩）
+		CompressionLevel: png.BestCompression, // 设置为最佳压缩
+	}
+
+	// 创建一个 bytes.Buffer 用于保存 JPEG 数据
+	var buf bytes.Buffer
+	err = encoder.Encode(&buf, img)
 	if err != nil {
 		return nil, err
 	}
