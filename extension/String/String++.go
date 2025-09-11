@@ -130,6 +130,6 @@ func floatToStr(f float64) string {
 	if fraction == 0 { //没有小数部分
 		return results[0]
 	} else {
-		return results[0] + strconv.FormatInt(fraction, 10)
+		return results[0] + "." + strconv.FormatInt(fraction, 10)
 	}
 }

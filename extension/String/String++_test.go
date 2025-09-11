@@ -59,3 +59,7 @@ func TestMakeRandStr(t *testing.T) {
 func TestFileExt(t *testing.T) {
 	fmt.Println(FileExt("sfsdfsd.txt"))
 }
+func TestValueOf(t *testing.T) {
+	var tt = 29.97003
+	fmt.Println(floatToStr(tt))
+}

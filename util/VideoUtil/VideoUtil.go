@@ -168,7 +168,7 @@ func (mine TransferArgument) toTransferCmd() string {
 	cmd = strings.ReplaceAll(cmd, "${width}", strconv.Itoa(mine.Width))
 	cmd = strings.ReplaceAll(cmd, "${height}", strconv.Itoa(mine.Height))
 	cmd = strings.ReplaceAll(cmd, "${crf}", String.ValueOf(mine.Crf))
-	cmd = strings.ReplaceAll(cmd, "${fps}", Bool.Is(mine.Fps > 0, "-r "+String.ValueOf(mine.Fps), ""))
+	cmd = strings.ReplaceAll(cmd, "${fps}", Bool.Is(mine.Fps > 0, "-r "+strconv.FormatFloat(float64(mine.Fps), 'f', 2, 64), ""))
 	cmd = strings.ReplaceAll(cmd, "${deleteSound}", Bool.Is(mine.DeleteSound, "-an", ""))
 	cmd = strings.ReplaceAll(cmd, "${output}", mine.Output)
 	return cmd
@@ -185,7 +185,7 @@ func (mine TransferArgument) toHDR2SDRCmd() string {
 	cmd = strings.ReplaceAll(cmd, "${width}", strconv.Itoa(mine.Width))
 	cmd = strings.ReplaceAll(cmd, "${height}", strconv.Itoa(mine.Height))
 	cmd = strings.ReplaceAll(cmd, "${crf}", String.ValueOf(mine.Crf))
-	cmd = strings.ReplaceAll(cmd, "${fps}", Bool.Is(mine.Fps > 0, "-r "+String.ValueOf(mine.Fps), ""))
+	cmd = strings.ReplaceAll(cmd, "${fps}", Bool.Is(mine.Fps > 0, "-r "+strconv.FormatFloat(float64(mine.Fps), 'f', 2, 64), ""))
 	cmd = strings.ReplaceAll(cmd, "${deleteSound}", Bool.Is(mine.DeleteSound, "-an", ""))
 	cmd = strings.ReplaceAll(cmd, "${output}", mine.Output)
 	return cmd
