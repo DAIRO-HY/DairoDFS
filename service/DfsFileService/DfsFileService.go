@@ -208,7 +208,7 @@ func Move(userId int64, sourcePaths []string, targetFolder string, isOverWrite b
 				fileName := String.FileName(targetPath)
 				sourceFileDto.Name = fileName
 				DfsFileDao.Move(sourceFileDto)
-			} else { //目标文件已经存在
+			} else {                         //目标文件已经存在
 				if existFileDto.IsFolder() { //移动的对象一个时文件一个是文件夹,禁止移动
 					panic(exception.EXISTS(targetPath))
 				}
@@ -438,14 +438,16 @@ func SaveToStorageByData(data []byte) dto.StorageFileDto {
  * @param iStream 文件流
  */
 func SaveToStorageByFile(path string, md5 string) dto.StorageFileDto {
-	file, err := os.Open(path)
-	if err != nil {
-		panic(err)
-	}
 	if md5 == "" { //如果调用的地方没有传递md5
 		md5 = File.ToMd5(path)
 	}
 	stat, _ := os.Stat(path)
+
+	file, err := os.Open(path)
+	if err != nil {
+		panic(err)
+	}
+	defer file.Close()
 	return SaveToStorageReader(md5, file, stat.Size())
 }
 

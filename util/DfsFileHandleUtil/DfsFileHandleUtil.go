@@ -264,14 +264,13 @@ func GetPreviewJpg(dfsFileDto dto.DfsFileDto) ([]byte, error) {
 		ext == "ai" {
 		return PSDUtil.ToJpg(storagePath)
 	} else if ext == "mp4" ||
+		ext == "mov" ||
 		ext == "avi" ||
 		ext == "mkv" ||
 		ext == "flv" ||
 		ext == "rm" ||
 		ext == "rmvb" ||
 		ext == "3gp" {
-		return VideoUtil.ToJpg(storagePath)
-	} else if ext == "mov" {
 		return VideoUtil.ToJpg(storagePath)
 	} else if ext == "cr3" ||
 		ext == "cr2" { //专业相机RAW图片
@@ -465,18 +464,33 @@ func makeVideo(dfsFileDto dto.DfsFileDto) {
 			//转换之后的文件
 			targetPathRelative := application.DataPath + "/temp/" + String.ValueOf(time.Now().UnixMicro())
 			targetPath, _ := filepath.Abs(targetPathRelative)
-			if err := VideoUtil.Transfer(storagePath, targetW, targetH, targetFps, targetPath); err != nil {
-				panic(err)
+			arg := VideoUtil.TransferArgument{
+				Input:  storagePath,
+				Width:  targetW,
+				Height: targetH,
+				Fps:    targetFps,
+				Crf:    22,
+				Output: targetPath,
 			}
 
-			targetFileInfo, _ := os.Stat(targetPath)
-			targetFile, _ := os.Open(targetPath)
+			//golang不建议在for循环中使用defer，因为defer会在整个函数结束之后才会调用，如果for回环次数较多可能导致内存泄露。
+			//但是这里循环次数很少，不用考虑内存泄露的问题
+			defer os.Remove(targetPath)
+
+			//将视频转码成SDR高兼容性
+			if VideoUtil.IsHDR(storagePath) {
+				if transferErr := VideoUtil.HDR2SDR(arg); transferErr != nil {
+					panic(transferErr)
+				}
+			} else {
+				if transferErr := VideoUtil.Transfer(arg); transferErr != nil {
+					panic(transferErr)
+				}
+			}
 
 			//保存到本地文件
 			storageFileDto := DfsFileService.SaveToStorageByFile(targetPath, "")
-			_ = targetFile.Close()
-			_ = os.Remove(targetPath)
-
+			targetFileInfo, _ := os.Stat(targetPath)
 			extraDto := dto.DfsFileDto{
 				Id:          Number.ID(),
 				Name:        String.ValueOf(targetSize),

@@ -3,39 +3,16 @@ package VideoUtil
 import (
 	application "DairoDFS/application"
 	"DairoDFS/exception"
+	"DairoDFS/extension/Bool"
 	"DairoDFS/extension/String"
 	"DairoDFS/util/RamDiskUtil"
 	"DairoDFS/util/ShellUtil"
 	"encoding/json"
-	"regexp"
+	"os"
 	"strconv"
 	"strings"
 	"time"
 )
-
-// 生成视频Png缩略图
-// path 视频文件路径
-// tagetMaxSize 图片最大边
-// return 图片字节数组,错误信息
-func ToPng(path string) ([]byte, error) {
-
-	//获取视频第一帧作为缩略图,以png格式输出。经过实际验证，输出jpg会导致颜色泛白。
-	//参数说明
-	//-pix_fmt rgb24  使用 标准 RGB，不带透明度（减少存储体积）
-	//-pred mixed 混合预测模式，通常比默认模式压缩得更好。
-	//-f image2pipe -vcodec png  强制使用png编码
-	return ShellUtil.ExecToOkData("\"" + application.FfmpegPath + "/ffmpeg\" -i \"" + path + "\" -vf select=eq(n\\,0) -q:v 1 -pix_fmt rgb24 -pred mixed -f image2pipe -vcodec png -")
-}
-
-// 从HDR视频提取Jpg图
-// path 视频文件路径
-// targetMaxSize 图片最大边
-// return 图片字节数组,错误信息
-func ToJpgFromHDR(path string) ([]byte, error) {
-
-	//获取视频第一帧作为缩略图
-	return ShellUtil.ExecToOkData("\"" + application.FfmpegPath + "/ffmpeg\" -i \"" + path + "\" -vf scale=out_color_matrix=bt709,eq=gamma=0.6:saturation=2 -color_primaries bt709 -color_trc bt709 -colorspace bt709 -vframes 1 -q:v 1 -f image2pipe -vcodec mjpeg -")
-}
 
 // 生成视频Jpg缩略图
 // path 视频文件路径
@@ -44,122 +21,24 @@ func ToJpgFromHDR(path string) ([]byte, error) {
 func ToJpg(path string) ([]byte, error) {
 	if IsHDR(path) {
 		tempPath := RamDiskUtil.GetRamFolder() + "/" + String.MakeRandStr(16)
+		defer os.Remove(tempPath)
+		arg := TransferArgument{
+			Input:       path,
+			Time:        1,
+			Fps:         1,
+			Crf:         18,
+			DeleteSound: true,
+			Output:      tempPath,
+		}
 
 		//先将HDR转SDR再截图，避免取出来的图片泛白
-		if err := HDR2SDR(path, 0, 0, 1, tempPath); err != nil {
+		if err := HDR2SDR(arg); err != nil {
 			return nil, err
 		}
 		return ShellUtil.ExecToOkData("\"" + application.FfmpegPath + "/ffmpeg\" -i \"" + tempPath + "\" -vf select=eq(n\\,0) -q:v 1 -f image2pipe -vcodec mjpeg -")
 	} else { //SDR获取截图的方式
 		return ShellUtil.ExecToOkData("\"" + application.FfmpegPath + "/ffmpeg\" -i \"" + path + "\" -vf select=eq(n\\,0) -q:v 1 -f image2pipe -vcodec mjpeg -")
 	}
-}
-
-/**
- * 获取视频信息
- * @param path 视频文件路径
- * @return 图片字节数组
- */
-func GetInfoBk(path string) (VedioInfo, error) {
-	_, videoInfoStr, cmdErr := ShellUtil.ExecToOkAndErrorResult("\"" + application.FfprobePath + "/ffprobe\" -i \"" + path + "\"")
-	if cmdErr != nil {
-		return VedioInfo{}, cmdErr
-	}
-
-	//时长
-
-	duration := func() int64 {
-		defer application.StopRuntimeError() // 防止程序终止
-		durationStr := regexp.MustCompile("Duration: \\d{2}:\\d{2}:\\d{2}\\.\\d{2}").FindAllString(videoInfoStr, -1)[0]
-		durationStr = durationStr[10:]
-		durationArr := strings.Split(durationStr, ":")
-
-		h, _ := strconv.ParseFloat(durationArr[0], 32)
-		m, _ := strconv.ParseFloat(durationArr[1], 32)
-		s, _ := strconv.ParseFloat(durationArr[2], 32)
-		return int64(h*60*60+m*60+s) * 1000
-	}()
-
-	//创建时间
-	date := func() int64 {
-		defer application.StopRuntimeError() // 防止程序终止
-		dateStr := regexp.MustCompile("creation_time   \\: .*\\.").FindAllString(videoInfoStr, -1)[0]
-		dateStr = dateStr[strings.Index(dateStr, ":")+1 : len(dateStr)-1]
-		dateStr = strings.TrimSpace(dateStr)
-		dateStr = strings.ReplaceAll(dateStr, "T", " ")
-		date, _ := time.Parse("2006-01-02 15:04:05", dateStr)
-		return date.UnixMilli()
-	}()
-
-	//视频比特率
-	bitrate := func() int {
-		defer application.StopRuntimeError() // 防止程序终止
-		bitrateStr := regexp.MustCompile("\\d+ kb/s,.*fps").FindAllString(videoInfoStr, -1)[0]
-		bitrateStr = bitrateStr[:strings.Index(bitrateStr, "kb")-1]
-		bitrate, _ := strconv.Atoi(bitrateStr)
-		return bitrate
-	}()
-
-	//帧率
-	fps := func() float32 {
-		defer application.StopRuntimeError() // 防止程序终止
-		fpsStr := regexp.MustCompile("\\d+ kb/s,.*fps").FindAllString(videoInfoStr, -1)[0]
-		fpsStr = fpsStr[strings.Index(fpsStr, ",")+2 : len(fpsStr)-4]
-		fps, _ := strconv.ParseFloat(fpsStr, 32)
-		return float32(fps)
-	}()
-
-	//视频宽高
-	width, height := func() (int, int) {
-		defer application.StopRuntimeError() // 防止程序终止
-		whStr := regexp.MustCompile("Stream.+Video:.+, \\d+x\\d+").FindAllString(videoInfoStr, -1)[0]
-		whStr = regexp.MustCompile(", \\d+x\\d+").FindAllString(whStr, -1)[0]
-		whStr = regexp.MustCompile("\\d+x\\d+").FindAllString(whStr, -1)[0]
-
-		widthStr := strings.Split(whStr, "x")[0]
-		heightStr := strings.Split(whStr, "x")[1]
-		width, _ := strconv.Atoi(widthStr)
-		height, _ := strconv.Atoi(heightStr)
-		return width, height
-	}()
-
-	//音频格式
-	audioFormat := func() string {
-		defer application.StopRuntimeError() // 防止程序终止
-		audioFormatStr := regexp.MustCompile("Audio: [A-z,0-9]+").FindAllString(videoInfoStr, -1)[0]
-		return audioFormatStr[7:]
-	}()
-
-	//音频采样率
-	audioSampleRate := func() int {
-		defer application.StopRuntimeError() // 防止程序终止
-		audioSamplerateStr := regexp.MustCompile("Audio: .* Hz").FindAllString(videoInfoStr, -1)[0]
-		audioSamplerateStr = regexp.MustCompile("\\d+ Hz").FindAllString(audioSamplerateStr, -1)[0]
-		audioSampleRateStr := audioSamplerateStr[:len(audioSamplerateStr)-3]
-		audioSampleRate, _ := strconv.Atoi(audioSampleRateStr)
-		return audioSampleRate
-	}()
-
-	//音频比特率
-	audioBitrate := func() int {
-		defer application.StopRuntimeError() // 防止程序终止
-		audioBitrateStr := regexp.MustCompile("Audio: .*\\d+ kb/s").FindAllString(videoInfoStr, -1)[0]
-		audioBitrateStr = regexp.MustCompile("\\d+ kb/s").FindAllString(audioBitrateStr, -1)[0]
-		audioBitrateStr = audioBitrateStr[:len(audioBitrateStr)-5]
-		audioBitrate, _ := strconv.Atoi(audioBitrateStr)
-		return audioBitrate
-	}()
-	return VedioInfo{
-		Width:           width,           //宽
-		Height:          height,          //高
-		Fps:             fps,             //帧数
-		Bitrate:         bitrate,         //视频比特率
-		Duration:        duration,        //视频时长（毫秒）
-		Date:            date,            //视频创建时间戳
-		AudioBitrate:    audioBitrate,    //音频比特率
-		AudioSampleRate: audioSampleRate, //音频采样率（HZ）
-		AudioFormat:     audioFormat,     //音频格式
-	}, nil
 }
 
 /**
@@ -217,22 +96,8 @@ func GetInfo(path string) (VedioInfo, error) {
 
 // Transfer - SDR视频转SDR视频，HDR视频转HDR视频，
 // width,height必须是偶数
-func Transfer(inPath string, width int, height int, fps float32, outPath string) error {
-	cmd := `"${FfmpegPath}/ffmpeg" -i "${inPath}"`
-	if width > 0 && height > 0 {
-		cmd += " -vf scale=${width}:${height}"
-	}
-	if fps > 0 {
-		cmd += " -r ${fps}"
-	}
-	cmd += ` -f mp4 -y "${outPath}"`
-	cmd = strings.ReplaceAll(cmd, "${FfmpegPath}", application.FfmpegPath)
-	cmd = strings.ReplaceAll(cmd, "${inPath}", inPath)
-	cmd = strings.ReplaceAll(cmd, "${width}", strconv.Itoa(width))
-	cmd = strings.ReplaceAll(cmd, "${height}", strconv.Itoa(height))
-	cmd = strings.ReplaceAll(cmd, "${fps}", String.ValueOf(fps))
-	cmd = strings.ReplaceAll(cmd, "${outPath}", outPath)
-	_, errResult, cmdErr := ShellUtil.ExecToOkAndErrorResult(cmd)
+func Transfer(arg TransferArgument) error {
+	_, errResult, cmdErr := ShellUtil.ExecToOkAndErrorResult(arg.toTransferCmd())
 	if cmdErr != nil {
 		return exception.Biz(errResult)
 	}
@@ -241,23 +106,8 @@ func Transfer(inPath string, width int, height int, fps float32, outPath string)
 
 // HDR2SDR - HDR视频转SDR视频
 // width,height必须是偶数
-func HDR2SDRAndCut(inPath string, width int, height int, fps float32, outPath string, start string, end string) error {
-	cmd := `"${FfmpegPath}/ffmpeg" -i "${inPath}" -vf zscale=t=linear:npl=100,format=gbrpf32le,zscale=p=bt709,tonemap=tonemap=hable:desat=0,zscale=`
-	if width > 0 && height > 0 {
-		cmd += "w=${width}:h=${height}:"
-	}
-	cmd += "t=bt709:m=bt709:r=tv,format=yuv420p -c:v libx265 -crf 22 -preset medium -tune fastdecode"
-	if fps > 0 {
-		cmd += " -r ${fps}"
-	}
-	cmd += ` -f mp4 -y "${outPath}"`
-	cmd = strings.ReplaceAll(cmd, "${FfmpegPath}", application.FfmpegPath)
-	cmd = strings.ReplaceAll(cmd, "${inPath}", inPath)
-	cmd = strings.ReplaceAll(cmd, "${width}", strconv.Itoa(width))
-	cmd = strings.ReplaceAll(cmd, "${height}", strconv.Itoa(height))
-	cmd = strings.ReplaceAll(cmd, "${fps}", String.ValueOf(fps))
-	cmd = strings.ReplaceAll(cmd, "${outPath}", outPath)
-	_, errResult, cmdErr := ShellUtil.ExecToOkAndErrorResult(cmd)
+func HDR2SDR(arg TransferArgument) error {
+	_, errResult, cmdErr := ShellUtil.ExecToOkAndErrorResult(arg.toHDR2SDRCmd())
 	if cmdErr != nil {
 		return exception.Biz(errResult)
 	}
@@ -274,4 +124,69 @@ func IsHDR(path string) bool {
 		return true
 	}
 	return false
+}
+
+// 转码参数
+type TransferArgument struct {
+
+	//输入文件
+	Input string
+
+	//裁剪开始时间
+	Start int
+
+	//裁剪时长
+	Time int
+
+	//目标分辨率：宽(只能是偶数)
+	Width int
+
+	//目标分辨率：高(只能是偶数)
+	Height int
+
+	//目标帧率
+	Fps float32
+
+	//视频画质，0-51 0：无损（文件大） 51：最低画质（文件小）
+	Crf int
+
+	// 禁用声音
+	DeleteSound bool
+
+	// 输出文件
+	Output string
+}
+
+// SDR视频转SDR视频，HDR视频转HDR视频，
+// width,height必须是偶数
+func (mine TransferArgument) toTransferCmd() string {
+	cmd := `"${FfmpegPath}/ffmpeg" -i "${input}" -ss ${start} ${time} -vf scale=w=${width}:h=${height} -c:v libx265 -crf ${crf} -preset medium ${fps} -f mp4 ${deleteSound} -y "${output}"`
+	cmd = strings.ReplaceAll(cmd, "${FfmpegPath}", application.FfmpegPath)
+	cmd = strings.ReplaceAll(cmd, "${input}", mine.Input)
+	cmd = strings.ReplaceAll(cmd, "${start}", strconv.Itoa(mine.Start))
+	cmd = strings.ReplaceAll(cmd, "${time}", Bool.Is(mine.Time > 0, "-t "+strconv.Itoa(mine.Time), ""))
+	cmd = strings.ReplaceAll(cmd, "${width}", strconv.Itoa(mine.Width))
+	cmd = strings.ReplaceAll(cmd, "${height}", strconv.Itoa(mine.Height))
+	cmd = strings.ReplaceAll(cmd, "${crf}", String.ValueOf(mine.Crf))
+	cmd = strings.ReplaceAll(cmd, "${fps}", Bool.Is(mine.Fps > 0, "-r "+String.ValueOf(mine.Fps), ""))
+	cmd = strings.ReplaceAll(cmd, "${deleteSound}", Bool.Is(mine.DeleteSound, "-an", ""))
+	cmd = strings.ReplaceAll(cmd, "${output}", mine.Output)
+	return cmd
+}
+
+// /获取HDR转SDR的指令
+func (mine TransferArgument) toHDR2SDRCmd() string {
+	cmd := `"${FfmpegPath}/ffmpeg" -i "${input}" -ss ${start} ${time} -vf zscale=t=linear:npl=100,format=gbrpf32le,zscale=p=bt709,tonemap=tonemap=hable:desat=0,zscale=w=${width}:h=${height}:t=bt709:m=bt709:r=tv,format=yuv420p -c:v libx265 -crf ${crf} -preset medium ${fps} -f mp4 ${deleteSound} -y "${output}"`
+	cmd = strings.ReplaceAll(cmd, "${FfmpegPath}", application.FfmpegPath)
+	cmd = strings.ReplaceAll(cmd, "${FfmpegPath}", application.FfmpegPath)
+	cmd = strings.ReplaceAll(cmd, "${input}", mine.Input)
+	cmd = strings.ReplaceAll(cmd, "${start}", strconv.Itoa(mine.Start))
+	cmd = strings.ReplaceAll(cmd, "${time}", Bool.Is(mine.Time > 0, "-t "+strconv.Itoa(mine.Time), ""))
+	cmd = strings.ReplaceAll(cmd, "${width}", strconv.Itoa(mine.Width))
+	cmd = strings.ReplaceAll(cmd, "${height}", strconv.Itoa(mine.Height))
+	cmd = strings.ReplaceAll(cmd, "${crf}", String.ValueOf(mine.Crf))
+	cmd = strings.ReplaceAll(cmd, "${fps}", Bool.Is(mine.Fps > 0, "-r "+String.ValueOf(mine.Fps), ""))
+	cmd = strings.ReplaceAll(cmd, "${deleteSound}", Bool.Is(mine.DeleteSound, "-an", ""))
+	cmd = strings.ReplaceAll(cmd, "${output}", mine.Output)
+	return cmd
 }

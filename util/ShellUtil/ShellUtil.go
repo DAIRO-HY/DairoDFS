@@ -259,6 +259,13 @@ func parseCmd(command string) []string {
 			cmdTemp = cmdTemp[nextIndex+1:]
 		}
 	}
-	//return cmdList.filter{it.isNotEmpty()}
-	return cmds
+
+	//去除无用的空格
+	var cmdArr []string
+	for _, cmd := range cmds {
+		if len(cmd) > 0 {
+			cmdArr = append(cmdArr, cmd)
+		}
+	}
+	return cmdArr
 }
