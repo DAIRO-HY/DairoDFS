@@ -8,7 +8,7 @@ import (
 )
 
 // VERSION 数据库版本号
-const _VERSION = 6
+const _VERSION = 7
 
 /**
 * 更新表结构
@@ -29,7 +29,12 @@ func Upgrade(db *sql.DB) {
 
 		//添加索引
 		db.Exec("CREATE INDEX idx_dfs_file_storageId ON dfs_file (storageId);")
-	} else if version < 6 {
+	} else if version < 7 {
+		db.Exec("drop index idx_dfs_file_storageId;")
+		db.Exec("drop index idx_ext;")
+		db.Exec("drop index idx_isExtra;")
+		db.Exec("drop index idx_userId;")
+		db.Exec("drop index index_state;")
 	}
 
 	//设置数据库版本号

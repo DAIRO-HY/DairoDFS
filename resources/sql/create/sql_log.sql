@@ -9,5 +9,4 @@ CREATE TABLE sql_log
     source VARCHAR(64)      NOT NULL,           -- 日志来源IP
     err    text                                 -- 错误消息
 );
-CREATE INDEX index_state ON sql_log (state);
 CREATE INDEX index_date ON sql_log (date);

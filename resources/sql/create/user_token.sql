@@ -10,4 +10,3 @@ CREATE TABLE user_token
     date       INT8               NOT NULL, -- 创建日期
     version    INT                NOT NULL -- 客户端版本
 );
-CREATE INDEX index_userId ON user_token (userId);

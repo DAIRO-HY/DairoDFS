@@ -17,10 +17,11 @@ CREATE TABLE dfs_file
     state       INT1                        NOT NULL DEFAULT 0, -- 文件处理状态，0：待处理 1：处理完成 2：处理出错，比如视频文件，需要转码；图片需要获取尺寸等信息
     stateMsg    TEXT                        NULL                -- 文件处理出错信息
 );
-CREATE INDEX idx_userId ON dfs_file (userId);
-CREATE INDEX idx_isExtra ON dfs_file (isExtra);
-CREATE INDEX idx_ext ON dfs_file (ext);
-CREATE INDEX idx_dfs_file_storageId ON dfs_file (storageId);
+-- sqlite创建索引，在使用链接查询时，可能会拖慢性能，实测300万条数据查询几乎都是几十微妙就能完成，所以没必要创建索引
+-- CREATE INDEX idx_userId ON dfs_file (userId);
+-- CREATE INDEX idx_isExtra ON dfs_file (isExtra);
+-- CREATE INDEX idx_ext ON dfs_file (ext);
+-- CREATE INDEX idx_dfs_file_storageId ON dfs_file (storageId);
 
 -- 非历史文件且未删除时，同一文件夹下文件名不允许重复
 CREATE UNIQUE INDEX idx_name
