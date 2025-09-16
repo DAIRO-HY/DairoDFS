@@ -1,21 +1,21 @@
 version: '3.1'
 services:
   dairo-dfs:
-    image: dairopapa/dairo-dfs:1.0.23-RC
-#    build: .
+    image: dairopapa/dairo-dfs:1.0.31-RC
+    #    build: .
     restart: always
     container_name: dairo-dfs
-    #network_mode: host
+    network_mode: host
 
     #使用真root权限进入,某些linux系统需要改权限才能运行
     privileged: true
 
-    ports:
-      - 8031:8031
+    #ports:
+    #  - 8031:8031
 
     #创建一个虚拟的RAM硬盘，降低磁盘读写开销，根据实际情况调整大小。基本用作临时文件交换，不会长时间占用。
     tmpfs:
-      - /mnt/dfs-ramdisk:size=128M
+      - /mnt/dfs-ramdisk:size=512M
 
     environment:
       #时区,解决时间不一致的bug
@@ -28,3 +28,4 @@ services:
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
       - ./data:/app/data
+      - /mnt/data-dfs-640G/dfs-home:/mnt/dfs-data
