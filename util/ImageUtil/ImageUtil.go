@@ -8,6 +8,7 @@ import (
 	"image/color"
 	"image/draw"
 	"image/jpeg"
+	_ "image/png"
 	"os"
 	"strconv"
 
