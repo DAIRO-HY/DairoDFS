@@ -2,39 +2,35 @@ package ImageUtil
 
 import (
 	"DairoDFS/application"
-	"DairoDFS/extension/String"
-	"DairoDFS/util/RamDiskUtil"
 	"DairoDFS/util/ShellUtil"
 	"bytes"
 	"image"
 	"image/color"
 	"image/draw"
 	"image/jpeg"
-	"image/png"
 	"os"
 	"strconv"
 
+	"github.com/dsoprea/go-jpeg-image-structure/v2"
 	_ "golang.org/x/image/tiff" //对tiff支持
 
 	"github.com/nfnt/resize"
-	"github.com/rwcarlsen/goexif/exif"
+	rexif "github.com/rwcarlsen/goexif/exif"
 	_ "golang.org/x/image/bmp"
 	_ "golang.org/x/image/webp"
 )
 
-/**
-* 生成图片缩略图
- */
-func ThumbByFile(path string, targetMaxSize int, quality int) ([]byte, error) {
+// Resize - 裁剪图片
+func Resize(path string, targetMaxSize int, quality int) ([]byte, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
-	return ThumbByData(data, targetMaxSize, quality)
+	return ResizeByData(data, targetMaxSize, quality)
 }
 
-// 生成图片缩略图
-func ThumbByData(data []byte, targetMaxSize int, quality int) ([]byte, error) {
+// ResizeByData - 设置图片大小
+func ResizeByData(data []byte, targetMaxSize int, quality int) ([]byte, error) {
 
 	//加载
 	imageConfig, format, err := image.DecodeConfig(bytes.NewReader(data))
@@ -50,9 +46,6 @@ func ThumbByData(data []byte, targetMaxSize int, quality int) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	//data不再使用，让GC尽快回收
-	data = nil
 	if format == "png" { //如果图片是png格式，将背景填充白色
 
 		// 创建一个新的 RGBA 图像
@@ -93,20 +86,30 @@ func ThumbByData(data []byte, targetMaxSize int, quality int) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	return buf.Bytes(), nil
+
+	//得到jpg数据
+	jpgData := buf.Bytes()
+
+	//读取原图的属性，为新图设置旋转属性
+	if info, infoErr := GetInfoByData(data); infoErr == nil {
+		if info.Orientation != 1 {
+			jpgData, _ = WriteOrientation(jpgData, uint16(info.Orientation))
+		}
+	}
+	return jpgData, nil
 }
 
-// ThumbSizeByFile - 生成指定宽高图片缩略图
-func ThumbSizeByFile(path string, width int, height int, quality int) ([]byte, error) {
+// Crop - 裁剪图片
+func Crop(path string, width int, height int, quality int) ([]byte, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
-	return ThumbSizeByData(data, width, height, quality)
+	return CropByData(data, width, height, quality)
 }
 
-// ThumbSizeByData - 生成指定宽高图片缩略图
-func ThumbSizeByData(data []byte, width int, height int, quality int) ([]byte, error) {
+// CropByData - 裁剪图片
+func CropByData(data []byte, width int, height int, quality int) ([]byte, error) {
 
 	//加载
 	imageConfig, format, err := image.DecodeConfig(bytes.NewReader(data))
@@ -151,9 +154,6 @@ func ThumbSizeByData(data []byte, width int, height int, quality int) ([]byte, e
 	if err != nil {
 		return nil, err
 	}
-
-	//data不再使用，让GC尽快回收
-	data = nil
 	if format == "png" { //如果图片是png格式，将背景填充白色
 
 		// 创建一个新的 RGBA 图像
@@ -199,95 +199,83 @@ func ThumbSizeByData(data []byte, width int, height int, quality int) ([]byte, e
 	if err != nil {
 		return nil, err
 	}
-	return buf.Bytes(), nil
-}
 
-// 生成图片缩略图
-func ThumbByJpg(data []byte, targetMaxSize int) ([]byte, error) {
-	info, infoErr := GetInfoByData(data)
-	if infoErr != nil {
-		return nil, infoErr
+	//得到jpg数据
+	jpgData := buf.Bytes()
+
+	//读取原图的属性，为新图设置旋转属性
+	if info, infoErr := GetInfoByData(data); infoErr == nil {
+		if info.Orientation != 1 {
+			jpgData, _ = WriteOrientation(jpgData, uint16(info.Orientation))
+		}
 	}
-
-	//获取转换之后的尺寸
-	targetW, targetH := GetScaleSize(info.Width, info.Height, targetMaxSize)
-
-	//获取视频第一帧作为缩略图
-	//-q:v代表输出图片质量，取值返回2-31，2为质量最佳
-	//v指定输出图片尺寸
-	return ShellUtil.ExecToOkData2("\""+application.FfmpegPath+"/ffmpeg\" -f image2pipe -vcodec mjpeg -i pipe:0 -vf scale="+String.ValueOf(targetW)+":"+String.ValueOf(targetH)+" -q:v 2 -f image2pipe -vcodec mjpeg -", data)
+	return jpgData, nil
 }
 
-// 生成图片缩略图
-func ThumbByPng(data []byte, targetMaxSize int) ([]byte, error) {
-	info, infoErr := GetInfoByData(data)
-	if infoErr != nil {
-		return nil, infoErr
-	}
-
-	//获取转换之后的尺寸
-	targetW, targetH := GetScaleSize(info.Width, info.Height, targetMaxSize)
-
-	//获取视频第一帧作为缩略图
-	//-q:v代表输出图片质量，取值返回2-31，2为质量最佳
-	//v指定输出图片尺寸
-	return ShellUtil.ExecToOkData2("\""+application.FfmpegPath+"/ffmpeg\" -f image2pipe -vcodec png -i pipe:0 -vf scale="+String.ValueOf(targetW)+":"+String.ValueOf(targetH)+" -q:v 3 -f image2pipe -vcodec mjpeg -", data)
-}
-
-// 生成图片缩略图
-func ThumbByTiffPath(path string, targetMaxSize int) ([]byte, error) {
-	tiffData, _ := os.ReadFile(path)
-	return ThumbByTiff(tiffData, targetMaxSize)
-}
-
-// 生成图片缩略图
-func ThumbByTiff(data []byte, targetMaxSize int) ([]byte, error) {
-	tempFile := RamDiskUtil.GetRamFolder() + "/" + String.MakeRandStr(16)
-
-	//先将数据写入到硬盘，因为ffmpeg无法识别tiff输入流
-	if err := os.WriteFile(tempFile, data, 0644); err != nil {
+// 图片转换为Jpg
+func ToJpg(path string, quality int) ([]byte, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
 		return nil, err
 	}
-	defer os.Remove(tempFile)
-
-	info, infoErr := GetInfoByData(data)
-	if infoErr != nil {
-		return nil, infoErr
-	}
-
-	//获取转换之后的尺寸
-	targetW, targetH := GetScaleSize(info.Width, info.Height, targetMaxSize)
-
-	//获取视频第一帧作为缩略图
-	//-q:v代表输出图片质量，取值返回2-31，2为质量最佳
-	//v指定输出图片尺寸
-	return ShellUtil.ExecToOkData("\"" + application.FfmpegPath + "/ffmpeg\" -f image2pipe -vcodec tiff -i \"" + tempFile + "\" -vf scale=" + String.ValueOf(targetW) + ":" + String.ValueOf(targetH) + " -q:v 3 -f image2pipe -vcodec mjpeg -")
+	return ToJpgByData(data, quality)
 }
 
-// 将tiff图片转jpg
-func TiffToJpg(data []byte) ([]byte, error) {
-	tempFile := RamDiskUtil.GetRamFolder() + "/" + String.MakeRandStr(16)
+// 图片转换为Jpg
+func ToJpgByData(data []byte, quality int) ([]byte, error) {
 
-	//先将数据写入到硬盘，因为ffmpeg无法识别tiff输入流
-	if err := os.WriteFile(tempFile, data, 0644); err != nil {
+	//加载
+	_, format, err := image.DecodeConfig(bytes.NewReader(data))
+	if err != nil {
 		return nil, err
 	}
-	defer os.Remove(tempFile)
 
-	//获取视频第一帧作为缩略图
-	//-q:v代表输出图片质量，取值返回2-31，2为质量最佳
-	//v指定输出图片尺寸
-	return ShellUtil.ExecToOkData("\"" + application.FfmpegPath + "/ffmpeg\" -f image2pipe -vcodec tiff -i \"" + tempFile + "\" -q:v 2 -f image2pipe -vcodec mjpeg -")
-}
+	//加载图片
+	img, _, err := image.Decode(bytes.NewReader(data))
+	if err != nil {
+		return nil, err
+	}
+	if format == "png" { //如果图片是png格式，将背景填充白色
 
-// 将png图片转jpg
-// quatity 转换质量：2-31  2为质量最佳
-func Png2Jpg(data []byte, quality int8) ([]byte, error) {
+		// 创建一个新的 RGBA 图像
+		bounds := img.Bounds()
 
-	//获取视频第一帧作为缩略图
-	//-q:v代表输出图片质量，取值返回2-31，2为质量最佳
-	//v指定输出图片尺寸
-	return ShellUtil.ExecToOkData2("\""+application.FfmpegPath+"/ffmpeg\" -f image2pipe -vcodec png -i pipe:0 -q:v "+String.ValueOf(quality)+" -f image2pipe -vcodec mjpeg -", data)
+		//填充背景色后的图片
+		pngFill := image.NewRGBA(bounds)
+
+		// 指定填充颜色（如白色）
+		fillColor := color.RGBA{R: 255, G: 255, B: 255, A: 255}
+
+		// 填充背景颜色
+		draw.Draw(pngFill, bounds, &image.Uniform{fillColor}, image.Point{}, draw.Src)
+
+		// 将原始图片绘制到新图像上，保留非透明部分
+		draw.Draw(pngFill, bounds, img, bounds.Min, draw.Over)
+		img = pngFill
+	}
+
+	// 创建一个 bytes.Buffer 用于保存 JPEG 数据
+	var buf bytes.Buffer
+
+	// 设置 JPEG 编码选项
+	options := &jpeg.Options{
+		Quality: quality, // 设定 JPEG 质量 1-100
+	}
+	err = jpeg.Encode(&buf, img, options)
+	if err != nil {
+		return nil, err
+	}
+
+	//得到jpg数据
+	jpgData := buf.Bytes()
+
+	//读取原图的属性，为新图设置旋转属性
+	if info, infoErr := GetInfoByData(data); infoErr == nil {
+		if info.Orientation != 1 {
+			jpgData, _ = WriteOrientation(jpgData, uint16(info.Orientation))
+		}
+	}
+	return jpgData, nil
 }
 
 // 旋转图片并将图片转换成jpeg
@@ -305,6 +293,55 @@ func TransposeToJpeg(data []byte, transpose int8) ([]byte, error) {
 	} else {
 		return data, nil
 	}
+}
+
+// WriteOrientation - 写入旋转属
+// 1 = 正常方向
+// 6 = 需要顺时针旋转90度（宽高对调）
+// 8 = 逆时针旋转90度（宽高对调）
+// 3 = 旋转180度
+func WriteOrientation(data []byte, value uint16) ([]byte, error) {
+	return WriteExif(data, "Orientation", []uint16{value})
+}
+
+// WriteExif - 往JPG文件写入属性
+func WriteExif(data []byte, name string, value any) ([]byte, error) {
+	// パーサーを作る
+	jmp := jpegstructure.NewJpegMediaParser()
+
+	// JPEGファイルを読み取ってセグメントリストを得る
+	ec, err := jmp.ParseBytes(data)
+	if err != nil {
+		return nil, err
+	}
+	sl := ec.(*jpegstructure.SegmentList)
+
+	// IfdBuilderを作る
+	rootBuilder, err := sl.ConstructExifBuilder()
+	if err != nil {
+		return nil, err
+	}
+
+	err = rootBuilder.SetStandardWithName(name, value)
+	if err != nil {
+		return nil, err
+	}
+
+	// SegmentListを更新する
+	err = sl.SetExif(rootBuilder)
+	if err != nil {
+		return nil, err
+	}
+
+	// 创建一个 bytes.Buffer 用于保存数据
+	var buf bytes.Buffer
+
+	// 新しいファイルに書き込む
+	err = sl.Write(&buf)
+	if err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
 }
 
 // 按比例缩放图片
@@ -338,213 +375,6 @@ func GetScaleSize(srcWidth int, srcHeight int, targetMaxSize int) (int, int) {
 	return targetW, targetH
 }
 
-/**
- * 生成正方形图片缩略图
- */
-func ThumbSquareByData(data []byte, maxWidth int, maxHeight int) ([]byte, error) {
-
-	//加载
-	imageConfig, format, err := image.DecodeConfig(bytes.NewReader(data))
-	if err != nil {
-		return nil, err
-	}
-
-	//输入图片宽高比
-	whInputtScale := float64(imageConfig.Width) / float64(imageConfig.Height)
-
-	//目标图片宽高比
-	whTargetScale := float64(maxWidth) / float64(maxHeight)
-
-	//裁剪宽度
-	var cutWidth int
-
-	//裁剪宽度
-	var cutHeight int
-
-	//裁剪坐标
-	var x int
-	var y int
-	if whTargetScale > whInputtScale {
-		cutWidth = imageConfig.Width
-		cutHeight = int((float64(imageConfig.Width) / whTargetScale))
-
-		x = 0
-		y = (imageConfig.Height - cutHeight) / 2
-	} else {
-		cutWidth = int(float64(imageConfig.Height) * whTargetScale)
-		cutHeight = imageConfig.Height
-
-		x = (imageConfig.Width - cutWidth) / 2
-		y = 0
-	}
-
-	// 定义裁剪区域 (x0, y0, x1, y1)
-	cropRect := image.Rect(x, y, x+cutWidth, y+cutHeight)
-
-	//加载图片
-	img, _, err := image.Decode(bytes.NewReader(data))
-	if err != nil {
-		return nil, err
-	}
-
-	//data不再使用，让GC尽快回收
-	data = nil
-	if format == "png" { //如果图片是png格式，将背景填充白色
-
-		// 创建一个新的 RGBA 图像
-		bounds := img.Bounds()
-
-		//填充背景色后的图片
-		pngFill := image.NewRGBA(bounds)
-
-		// 指定填充颜色（如白色）
-		fillColor := color.RGBA{R: 255, G: 255, B: 255, A: 255}
-
-		// 填充背景颜色
-		draw.Draw(pngFill, bounds, &image.Uniform{fillColor}, image.Point{}, draw.Src)
-
-		// 将原始图片绘制到新图像上，保留非透明部分
-		draw.Draw(pngFill, bounds, img, bounds.Min, draw.Over)
-		img = pngFill
-	}
-
-	//按比例裁切
-	croppedImg := img.(interface {
-		SubImage(r image.Rectangle) image.Image
-	}).SubImage(cropRect)
-
-	//img不再使用，让GC尽快回收
-	img = nil
-
-	if imageConfig.Width > maxWidth {
-
-		//重新设置图片尺寸
-		//image.resize(maxWidth, maxHeight)
-		croppedImg = resize.Resize(uint(maxWidth), uint(maxHeight), croppedImg, resize.Lanczos3)
-	}
-
-	// 设置 JPEG 编码选项
-	options := &jpeg.Options{
-		Quality: 85, // 设定 JPEG 质量 1-100
-	}
-
-	// 创建一个 bytes.Buffer 用于保存 JPEG 数据
-	var buf bytes.Buffer
-
-	// 将裁剪后的图片编码并保存
-	err = jpeg.Encode(&buf, croppedImg, options)
-	if err != nil {
-		return nil, err
-	}
-	return buf.Bytes(), nil
-}
-
-// 图片转换为Jpg
-func ToJpg(path string, quality int) ([]byte, error) {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return nil, err
-	}
-	return ToJpgByData(data, quality)
-}
-
-// 图片转换为Jpg
-func ToJpgByData(data []byte, quality int) ([]byte, error) {
-
-	//加载
-	_, format, err := image.DecodeConfig(bytes.NewReader(data))
-	if err != nil {
-		return nil, err
-	}
-
-	//加载图片
-	img, _, err := image.Decode(bytes.NewReader(data))
-	if err != nil {
-		return nil, err
-	}
-
-	//data不再使用，让GC尽快回收
-	data = nil
-	if format == "png" { //如果图片是png格式，将背景填充白色
-
-		// 创建一个新的 RGBA 图像
-		bounds := img.Bounds()
-
-		//填充背景色后的图片
-		pngFill := image.NewRGBA(bounds)
-
-		// 指定填充颜色（如白色）
-		fillColor := color.RGBA{R: 255, G: 255, B: 255, A: 255}
-
-		// 填充背景颜色
-		draw.Draw(pngFill, bounds, &image.Uniform{fillColor}, image.Point{}, draw.Src)
-
-		// 将原始图片绘制到新图像上，保留非透明部分
-		draw.Draw(pngFill, bounds, img, bounds.Min, draw.Over)
-		img = pngFill
-	}
-
-	// 创建一个 bytes.Buffer 用于保存 JPEG 数据
-	var buf bytes.Buffer
-
-	// 设置 JPEG 编码选项
-	options := &jpeg.Options{
-		Quality: quality, // 设定 JPEG 质量 1-100
-	}
-	err = jpeg.Encode(&buf, img, options)
-	if err != nil {
-		return nil, err
-	}
-	return buf.Bytes(), nil
-}
-
-// 图片转换为png
-func ToPng(path string) ([]byte, error) {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return nil, err
-	}
-	return ToPngByData(data)
-}
-
-// 图片转换为png
-func ToPngByData(data []byte) ([]byte, error) {
-
-	//加载
-	_, format, err := image.DecodeConfig(bytes.NewReader(data))
-	if err != nil {
-		return nil, err
-	}
-	if format == "png" { //如果图片是png格式
-		return data, nil
-	}
-
-	//加载图片
-	img, _, err := image.Decode(bytes.NewReader(data))
-	if err != nil {
-		return nil, err
-	}
-
-	//data不再使用，让GC尽快回收
-	data = nil
-
-	encoder := png.Encoder{
-		//png.NoCompression（无压缩）
-		//png.BestSpeed（最快压缩）
-		//png.BestCompression（最佳压缩）
-		//png.DefaultCompression（默认压缩）
-		CompressionLevel: png.BestCompression, // 设置为最佳压缩
-	}
-
-	// 创建一个 bytes.Buffer 用于保存 JPEG 数据
-	var buf bytes.Buffer
-	err = encoder.Encode(&buf, img)
-	if err != nil {
-		return nil, err
-	}
-	return buf.Bytes(), nil
-}
-
 // 获取照片信息
 func GetInfo(path string) (ImageInfo, error) {
 	data, err := os.ReadFile(path)
@@ -569,7 +399,7 @@ func GetInfoByData(data []byte) (ImageInfo, error) {
 	imageInfo.Height = imageConfig.Height
 
 	// 解析 EXIF 数据
-	x, err := exif.Decode(bytes.NewReader(data))
+	x, err := rexif.Decode(bytes.NewReader(data))
 	if err != nil {
 		//	return imageInfo, err
 
@@ -584,37 +414,37 @@ func GetInfoByData(data []byte) (ImageInfo, error) {
 	}
 
 	// 获取相机制造商
-	manufacturer, err := x.Get(exif.Make)
+	manufacturer, err := x.Get(rexif.Make)
 	if err == nil {
 		imageInfo.Make = manufacturer.String()
 	}
 
 	// 获取相机型号
-	model, err := x.Get(exif.Model)
+	model, err := x.Get(rexif.Model)
 	if err == nil {
 		imageInfo.Make = model.String()
 	}
 
 	// 获取光圈值
-	aperture, err := x.Get(exif.FNumber)
+	aperture, err := x.Get(rexif.FNumber)
 	if err == nil {
 		imageInfo.FNumber = aperture.String()
 	}
 
 	// 获取快门速度
-	shutterSpeed, err := x.Get(exif.ShutterSpeedValue)
+	shutterSpeed, err := x.Get(rexif.ShutterSpeedValue)
 	if err == nil {
 		imageInfo.ShutterSpeed = shutterSpeed.String()
 	}
 
 	// 获取 ISO
-	iso, err := x.Get(exif.ISOSpeedRatings)
+	iso, err := x.Get(rexif.ISOSpeedRatings)
 	if err == nil {
 		imageInfo.ISO, _ = strconv.Atoi(iso.String())
 	}
 
 	// 获取图片方向
-	orient, err := x.Get(exif.Orientation)
+	orient, err := x.Get(rexif.Orientation)
 	if err == nil {
 		// Orientation 值的意义如下：
 		// 1 = 正常方向
@@ -630,10 +460,10 @@ func GetInfoByData(data []byte) (ImageInfo, error) {
 		imageInfo.Lat = lat
 		imageInfo.Long = long
 	}
-	if imageInfo.Orientation == 6 || imageInfo.Orientation == 8 { //这张图片有90°旋转，则调换宽高属性
-		temp := imageInfo.Width
-		imageInfo.Width = imageInfo.Height
-		imageInfo.Height = temp
-	}
+	//if imageInfo.Orientation == 6 || imageInfo.Orientation == 8 { //这张图片有90°旋转，则调换宽高属性
+	//	temp := imageInfo.Width
+	//	imageInfo.Width = imageInfo.Height
+	//	imageInfo.Height = temp
+	//}
 	return imageInfo, nil
 }

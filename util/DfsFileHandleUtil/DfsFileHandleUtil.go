@@ -208,7 +208,7 @@ func makeThumb(dfsFileDto dto.DfsFileDto) {
 
 	//生成目标图片最大边
 	targetMaxSize := SystemConfig.Instance().ThumbMaxSize
-	data, makeThumbErr := ImageUtil.ThumbByData(jpgData, targetMaxSize, 85)
+	data, makeThumbErr := ImageUtil.ResizeByData(jpgData, targetMaxSize, 85)
 	if makeThumbErr != nil {
 		panic(makeThumbErr)
 	}
@@ -316,7 +316,13 @@ func makePreview(dfsFileDto dto.DfsFileDto) {
 		return
 	}
 	if err != nil {
-		return
+		panic(err)
+	}
+
+	//将图片压缩
+	previewData, err = ImageUtil.ToJpgByData(previewData, 80)
+	if err != nil {
+		panic(err)
 	}
 
 	//保存文件
@@ -361,7 +367,7 @@ func makePreviewBk(dfsFileDto dto.DfsFileDto) {
 	}
 
 	//得到一张低分辨率的预览图，用来生成缩略图等
-	previewData, previewErr = ImageUtil.ThumbByData(previewData, 1200, 85)
+	previewData, previewErr = ImageUtil.ResizeByData(previewData, 1200, 85)
 	if previewErr != nil {
 		panic(previewErr)
 	}

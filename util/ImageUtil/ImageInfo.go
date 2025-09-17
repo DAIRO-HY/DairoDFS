@@ -24,7 +24,7 @@ type ImageInfo struct {
 	//快门速度
 	ShutterSpeed string `json:"shutterSpeed,omitempty"`
 
-	//快门速度
+	//曝光
 	ISO int `json:"iso,omitempty"`
 
 	//纬度

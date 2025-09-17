@@ -12,9 +12,9 @@ func init() {
 }
 
 func TestToJpegByWindows(t *testing.T) {
-	data, err := ToJpeg("C:\\Users\\user\\Desktop\\dairo-dfs-test\\heic\\hh.heic", 2)
+	data, err := ToJpg("C:\\test\\1758028265210466.heic", 2)
 	if err != nil {
 		panic(err)
 	}
-	os.WriteFile("C:\\Users\\user\\Desktop\\dairo-dfs-test\\heic\\hh-dfs.png.2.jpg", data, 0644)
+	os.WriteFile("C:\\test\\1758028265210466.heic.jpg", data, 0644)
 }

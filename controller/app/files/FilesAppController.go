@@ -434,11 +434,11 @@ func ThumbOnline(writer http.ResponseWriter, id int64, maxSize int, width int, h
 	var makeThumbErr error
 	if maxSize > 0 {
 		thumbOnlineLock.Lock()
-		thumbData, makeThumbErr = ImageUtil.ThumbByData(previewData, maxSize, 85)
+		thumbData, makeThumbErr = ImageUtil.ResizeByData(previewData, maxSize, 85)
 		thumbOnlineLock.Unlock()
 	} else if width > 0 && height > 0 {
 		thumbOnlineLock.Lock()
-		thumbData, makeThumbErr = ImageUtil.ThumbSizeByData(previewData, width, height, 85)
+		thumbData, makeThumbErr = ImageUtil.CropByData(previewData, width, height, 85)
 		thumbOnlineLock.Unlock()
 	} else {
 		panic(exception.Biz("width,height和maxSize至少要传其中一种参数"))

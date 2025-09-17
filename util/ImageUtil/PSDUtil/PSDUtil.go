@@ -6,17 +6,6 @@ import (
 	"DairoDFS/util/ShellUtil"
 )
 
-/**
- * 生成图片缩略图
- */
-func Thumb(path string, tagetMaxSize int) ([]byte, error) {
-	pngData, err := ToPng(path)
-	if err != nil {
-		return nil, err
-	}
-	return ImageUtil.ThumbByData(pngData, tagetMaxSize, 85)
-}
-
 // 生成jpeg图片
 // -f image2 指定输出通用图片
 func ToJpg(path string) ([]byte, error) {

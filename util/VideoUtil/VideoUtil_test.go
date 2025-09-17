@@ -16,12 +16,12 @@ func init() {
 }
 
 func TestToJpg(t *testing.T) {
-	data, err := ToJpg("C:\\test\\mov\\2.mov")
+	data, err := ToJpg("C:\\test\\1.mov")
 	if err != nil {
 		t.Error(err)
 		return
 	}
-	os.WriteFile("C:\\test\\mov\\2.mov.jpg", data, os.ModePerm)
+	os.WriteFile("C:\\test\\1.mov.jpg", data, os.ModePerm)
 }
 
 func TestGetInfo(t *testing.T) {
