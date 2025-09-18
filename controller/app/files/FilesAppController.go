@@ -118,7 +118,7 @@ func GetAlbumList() []form.FileForm {
 // @Post:/v2/get_album_list
 func GetAlbumListV2() string {
 	loginId := LoginState.LoginId()
-	list := DfsFileDao.SelectAlbum(loginId)
+	list := DfsFileDao.SelectAlbumV2(loginId)
 	var sb strings.Builder
 	for _, it := range list {
 
