@@ -28,4 +28,7 @@ type FilePropertyForm struct {
 
 	/** 历史记录(文件属性专用) **/
 	HistoryList []FilePropertyHistoryForm `json:"historyList"`
+
+	/** 扩展文件列表 **/
+	ExtraList []FilePropertyExtraForm `json:"extraList"`
 }

@@ -266,6 +266,7 @@ func Share(inForm form.ShareForm) int64 {
 }
 
 // 文件或文件夹属性
+// 请使用GetPropertyV2
 // paths 选择的路径列表
 // @Post:/get_property
 func GetProperty(paths []string) form.FilePropertyForm {
@@ -304,6 +305,8 @@ func GetProperty(paths []string) form.FilePropertyForm {
 		if dfsFile.IsFile() { //文件时
 			outForm.Size = Number.ToDataSize(dfsFile.Size)
 			outForm.ContentType = dfsFile.ContentType
+
+			//历史文件列表
 			historyList := make([]form.FilePropertyHistoryForm, 0)
 			for _, it := range DfsFileDao.SelectHistory(loginId, fileId) {
 				hForm := form.FilePropertyHistoryForm{
@@ -314,6 +317,91 @@ func GetProperty(paths []string) form.FilePropertyForm {
 				historyList = append(historyList, hForm)
 			}
 			outForm.HistoryList = historyList
+
+			//扩展文件列表
+			extraList := make([]form.FilePropertyExtraForm, 0)
+			for _, it := range DfsFileDao.SelectExtraById(dfsFile.Id) {
+				extraForm := form.FilePropertyExtraForm{
+					Id:          it.Id,
+					Name:        it.Name,
+					Size:        Number.ToDataSize(it.Size),
+					ContentType: it.ContentType,
+				}
+				extraList = append(extraList, extraForm)
+			}
+			outForm.ExtraList = extraList
+		} else { //文件夹时
+			totalForm := form.ComputeSubTotalForm{}
+			computeSubTotal(&totalForm, loginId, dfsFile.Id)
+			outForm.FileCount = totalForm.FileCount
+			outForm.FolderCount = totalForm.FolderCount
+			outForm.Size = Number.ToDataSize(totalForm.Size)
+		}
+	}
+	return outForm
+}
+
+// 文件或文件夹属性
+// paths 选择的路径列表
+// @Post:/v2/get_property
+func GetPropertyV2(ids []int64) form.FilePropertyForm {
+	loginId := LoginState.LoginId()
+	outForm := form.FilePropertyForm{}
+	if len(ids) > 1 { //多个文件时
+		totalForm := form.ComputeSubTotalForm{}
+		for _, it := range ids {
+			dfsFile, _ := DfsFileDao.SelectOne(it)
+			if dfsFile.UserId != loginId { //验证操作权限
+				panic(exception.NOT_ALLOW())
+			}
+			if dfsFile.IsFolder() {
+				totalForm.FolderCount += 1
+				computeSubTotal(&totalForm, loginId, dfsFile.Id)
+			} else {
+				totalForm.FileCount += 1
+				totalForm.Size += dfsFile.Size
+			}
+		}
+		outForm.Size = Number.ToDataSize(totalForm.Size)
+		outForm.FileCount = totalForm.FileCount
+		outForm.FolderCount = totalForm.FolderCount
+	} else { //单文件时
+		fileId := ids[0]
+		dfsFile, _ := DfsFileDao.SelectOne(fileId)
+		if dfsFile.UserId != loginId { //验证操作权限
+			panic(exception.NOT_ALLOW())
+		}
+		outForm.Name = dfsFile.Name
+		outForm.Date = Date.FormatByTimespan(dfsFile.Date)
+		outForm.IsFile = dfsFile.IsFile()
+		if dfsFile.IsFile() { //文件时
+			outForm.Size = Number.ToDataSize(dfsFile.Size)
+			outForm.ContentType = dfsFile.ContentType
+
+			//历史文件列表
+			historyList := make([]form.FilePropertyHistoryForm, 0)
+			for _, it := range DfsFileDao.SelectHistory(loginId, fileId) {
+				hForm := form.FilePropertyHistoryForm{
+					Id:   it.Id,
+					Size: Number.ToDataSize(it.Size),
+					Date: Date.FormatByTimespan(it.Date),
+				}
+				historyList = append(historyList, hForm)
+			}
+			outForm.HistoryList = historyList
+
+			//扩展文件列表
+			extraList := make([]form.FilePropertyExtraForm, 0)
+			for _, it := range DfsFileDao.SelectExtraById(dfsFile.Id) {
+				extraForm := form.FilePropertyExtraForm{
+					Id:          it.Id,
+					Name:        it.Name,
+					Size:        Number.ToDataSize(it.Size),
+					ContentType: it.ContentType,
+				}
+				extraList = append(extraList, extraForm)
+			}
+			outForm.ExtraList = extraList
 		} else { //文件夹时
 			totalForm := form.ComputeSubTotalForm{}
 			computeSubTotal(&totalForm, loginId, dfsFile.Id)
