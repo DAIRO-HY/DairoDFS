@@ -408,108 +408,107 @@ func makeVideo(dfsFileDto dto.DfsFileDto) {
 			panic(err)
 		}
 
-		//要转换的目标尺寸
-		//for _, it := range []string{"1920:30", "1280:25", "640:15"} {
-		for _, it := range []string{"1280:30"} {
-			targetArr := strings.Split(it, ":")
-			targetSizeInt64, _ := strconv.ParseInt(targetArr[0], 10, 16) //目标最大边
-			targetFpsInt64, _ := strconv.ParseInt(targetArr[1], 10, 16)  //目标帧数
+		//要转换的目标尺寸,TODO:应该从配置文件里获取
+		targetEncode := "1280:30"
+		targetArr := strings.Split(targetEncode, ":")
+		targetSizeInt64, _ := strconv.ParseInt(targetArr[0], 10, 16) //目标最大边
+		targetFpsInt64, _ := strconv.ParseInt(targetArr[1], 10, 16)  //目标帧数
 
-			targetSize := int(targetSizeInt64)
-			targetFps := float32(targetFpsInt64)
+		targetSize := int(targetSizeInt64)
+		targetFps := float32(targetFpsInt64)
 
-			//获取已经存在的附属文件
-			if _, isExists := DfsFileDao.SelectExtra(dfsFileDto.Id, String.ValueOf(targetSize)); isExists {
+		//获取已经存在的附属文件
+		if _, isExists := DfsFileDao.SelectExtra(dfsFileDto.Id, "preview"); isExists {
 
-				//已经存在附属文件,则跳过  重新生成附属文件时用到
-				continue
-			}
-			if existsVideo, isExists := DfsFileDao.SelectExtraFileByStorageIdAndName(dfsFileDto.StorageId, String.ValueOf(targetSize)); isExists {
-
-				//该文件预览图在其他文件中已经生成
-				existsVideo.Id = Number.ID()
-				existsVideo.ParentId = dfsFileDto.Id
-				existsVideo.UserId = dfsFileDto.UserId
-				DfsFileService.Add(existsVideo)
-				return
-			}
-
-			//是否横向视频
-			isHorizontal := videoInfo.Width > videoInfo.Height
-
-			//视频文件最最大边像素
-			maxSize := Bool.Is(isHorizontal, videoInfo.Width, videoInfo.Height)
-			if targetSize > maxSize { //视频最大边小于当前要转换的目标尺寸，则跳过
-				continue
-			}
-
-			//当视频宽度相等时,如果目标视频帧数大于或者等于原视频帧数,则不需要处理
-			if targetSize == maxSize && targetFps >= videoInfo.Fps {
-				continue
-			}
-			if targetFps > videoInfo.Fps {
-				targetFps = videoInfo.Fps
-			}
-
-			var targetW int   //目标宽
-			var targetH int   //目标高
-			if isHorizontal { //如果是横向视频
-				targetW = targetSize
-				targetH = int(math.Round(float64(targetW) / float64(videoInfo.Width) * float64(videoInfo.Height)))
-				if targetH%2 == 1 { //视频像素不能时基数
-					targetH -= 1
-				}
-			} else { //如果是竖向视频
-				targetH = targetSize
-				targetW = int(math.Round(float64(targetH) * float64(videoInfo.Width) / float64(videoInfo.Height)))
-				if targetW%2 == 1 { //视频像素不能时基数
-					targetW -= 1
-				}
-			}
-
-			//转换之后的文件
-			targetPathRelative := application.DataPath + "/temp/" + String.ValueOf(time.Now().UnixMicro())
-			targetPath, _ := filepath.Abs(targetPathRelative)
-			arg := VideoUtil.TransferArgument{
-				Input:  storagePath,
-				Width:  targetW,
-				Height: targetH,
-				Fps:    targetFps,
-				Crf:    22,
-				Output: targetPath,
-			}
-
-			//golang不建议在for循环中使用defer，因为defer会在整个函数结束之后才会调用，如果for回环次数较多可能导致内存泄露。
-			//但是这里循环次数很少，不用考虑内存泄露的问题
-			defer os.Remove(targetPath)
-
-			//将视频转码成SDR高兼容性
-			if VideoUtil.IsHDR(storagePath) {
-				if transferErr := VideoUtil.HDR2SDR(arg); transferErr != nil {
-					panic(transferErr)
-				}
-			} else {
-				if transferErr := VideoUtil.Transfer(arg); transferErr != nil {
-					panic(transferErr)
-				}
-			}
-
-			//保存到本地文件
-			storageFileDto := DfsFileService.SaveToStorageByFile(targetPath, "")
-			targetFileInfo, _ := os.Stat(targetPath)
-			extraDto := dto.DfsFileDto{
-				Id:          Number.ID(),
-				Name:        String.ValueOf(targetSize),
-				Size:        targetFileInfo.Size(),
-				StorageId:   storageFileDto.Id,
-				IsExtra:     true,
-				ParentId:    dfsFileDto.Id,
-				UserId:      dfsFileDto.UserId,
-				Date:        dfsFileDto.Date,
-				ContentType: "video/mp4",
-				State:       1,
-			}
-			DfsFileService.Add(extraDto)
+			//已经存在附属文件,则跳过  重新生成附属文件时用到
+			return
 		}
+
+		//同样的文件，是否在其他地方已经生成了预览视频
+		if existsVideo, isExists := DfsFileDao.SelectExtraFileByStorageIdAndName(dfsFileDto.StorageId, "preview"); isExists {
+
+			//该文件预览图在其他文件中已经生成
+			existsVideo.Id = Number.ID()
+			existsVideo.ParentId = dfsFileDto.Id
+			existsVideo.UserId = dfsFileDto.UserId
+			DfsFileService.Add(existsVideo)
+			return
+		}
+
+		//是否横向视频
+		isHorizontal := videoInfo.Width > videoInfo.Height
+
+		//视频文件最最大边像素
+		maxSize := Bool.Is(isHorizontal, videoInfo.Width, videoInfo.Height)
+		if targetSize > maxSize { //视频最大边小于当前要转换的目标尺寸，则跳过
+			return
+		}
+
+		//当视频宽度相等时,如果目标视频帧数大于或者等于原视频帧数,则不需要处理
+		if targetSize == maxSize && targetFps >= videoInfo.Fps {
+			return
+		}
+		if targetFps > videoInfo.Fps {
+			targetFps = videoInfo.Fps
+		}
+
+		var targetW int   //目标宽
+		var targetH int   //目标高
+		if isHorizontal { //如果是横向视频
+			targetW = targetSize
+			targetH = int(math.Round(float64(targetW) / float64(videoInfo.Width) * float64(videoInfo.Height)))
+			if targetH%2 == 1 { //视频像素不能时基数
+				targetH -= 1
+			}
+		} else { //如果是竖向视频
+			targetH = targetSize
+			targetW = int(math.Round(float64(targetH) * float64(videoInfo.Width) / float64(videoInfo.Height)))
+			if targetW%2 == 1 { //视频像素不能时基数
+				targetW -= 1
+			}
+		}
+
+		//转换之后的文件
+		targetPathRelative := application.DataPath + "/temp/" + String.ValueOf(time.Now().UnixMicro())
+		targetPath, _ := filepath.Abs(targetPathRelative)
+		arg := VideoUtil.TransferArgument{
+			Input:  storagePath,
+			Width:  targetW,
+			Height: targetH,
+			Fps:    targetFps,
+			Crf:    22,
+			Output: targetPath,
+		}
+
+		//删除转码的文件
+		defer os.Remove(targetPath)
+
+		//将视频转码成SDR高兼容性
+		if VideoUtil.IsHDR(storagePath) {
+			if transferErr := VideoUtil.HDR2SDR(arg); transferErr != nil {
+				panic(transferErr)
+			}
+		} else {
+			if transferErr := VideoUtil.Transfer(arg); transferErr != nil {
+				panic(transferErr)
+			}
+		}
+
+		//保存到本地文件
+		storageFileDto := DfsFileService.SaveToStorageByFile(targetPath, "")
+		targetFileInfo, _ := os.Stat(targetPath)
+		extraDto := dto.DfsFileDto{
+			Id:          Number.ID(),
+			Name:        "preview",
+			Size:        targetFileInfo.Size(),
+			StorageId:   storageFileDto.Id,
+			IsExtra:     true,
+			ParentId:    dfsFileDto.Id,
+			UserId:      dfsFileDto.UserId,
+			Date:        dfsFileDto.Date,
+			ContentType: "video/mp4",
+			State:       1,
+		}
+		DfsFileService.Add(extraDto)
 	}
 }

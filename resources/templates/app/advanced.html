@@ -179,7 +179,7 @@
      */
     function onDeletePreVideoClick() {
         if (confirm("重新生成预览视频")) {
-            $("#sql").val("delete from dfs_file where isExtra = 1 and name in ('1920','1280','640');update dfs_file set state = 0 where storageId > 0 and isExtra = 0")
+            $("#sql").val("delete from dfs_file where isExtra = 1 and name = 'preview' and contentType = 'video/mp4';update dfs_file set state = 0 where storageId > 0 and isExtra = 0")
             onExecClick()
         }
     }
