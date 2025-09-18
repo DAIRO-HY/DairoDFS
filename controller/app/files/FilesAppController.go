@@ -115,7 +115,7 @@ func GetAlbumList() []form.FileForm {
 }
 
 // GetAlbumListV2 -获取相册列表(版本2)
-// @Post:/v2/get_album_list
+// @Post:/get_album_list/v2
 func GetAlbumListV2() string {
 	loginId := LoginState.LoginId()
 	list := DfsFileDao.SelectAlbumV2(loginId)
@@ -343,7 +343,7 @@ func GetProperty(paths []string) form.FilePropertyForm {
 
 // 文件或文件夹属性
 // paths 选择的路径列表
-// @Post:/v2/get_property
+// @Post:/get_property/v2
 func GetPropertyV2(ids []int64) form.FilePropertyForm {
 	loginId := LoginState.LoginId()
 	outForm := form.FilePropertyForm{}
@@ -494,8 +494,7 @@ func Preview(writer http.ResponseWriter, request *http.Request, dfsId int64, nam
 		DfsFileUtil.DownloadDfs(dfsDto, writer, request)
 		return
 	}
-	previewDto, isExists := DfsFileDao.SelectExtra(dfsId, extra)
-	if isExists { //存在预览文件
+	if previewDto, isExistsPreview := DfsFileDao.SelectExtra(dfsId, extra); isExistsPreview { //存在预览文件
 		DfsFileUtil.DownloadDfs(previewDto, writer, request)
 		return
 	}

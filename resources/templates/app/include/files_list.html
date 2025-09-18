@@ -77,7 +77,14 @@
             const file = fileList[index]
             const currentFolder = getCurrentFolderByUrl()
             if (file.fileFlag) {//如果是一个文件
-                window.open("/app/files/preview/" + file.id + "/" + file.name + "?extra=" + getPreviewByName(file.name))
+                $.ajaxByData("/app/files/get_property/v2?ids=" + file.id).success(data => {
+                    const preview = data.extraList.find(it => it.name === "preview")
+                    if(preview != null) {
+                        window.open("/app/files/preview/" + file.id + "/" + file.name + "?extra=preview")
+                    } else {
+                        window.open("/app/files/preview/" + file.id + "/" + file.name)
+                    }
+                }).post()
             } else {
                 const folder = currentFolder + "/" + file.name
                 loadFileData(folder)
