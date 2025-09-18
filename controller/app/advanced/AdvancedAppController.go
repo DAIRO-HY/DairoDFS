@@ -6,12 +6,14 @@ import (
 	"DairoDFS/extension/Date"
 	"DairoDFS/extension/Number"
 	"DairoDFS/extension/String"
+	"DairoDFS/util/DBConnection"
 	"DairoDFS/util/DBUtil"
 	"DairoDFS/util/DfsFileHandleUtil"
 	"DairoDFS/util/RecycleStorageTimer"
-	"github.com/shirou/gopsutil/disk"
 	"os"
 	"strings"
+
+	"github.com/shirou/gopsutil/disk"
 )
 
 // 高级功能
@@ -63,7 +65,9 @@ func ExecSql(sql string) any {
 			"columns": columns,
 		}
 	} else {
-		DBUtil.Exec(sql)
+
+		//执行更新数据sql，防止产生日志
+		DBConnection.DBConn.Exec(sql)
 	}
 	return nil
 }
