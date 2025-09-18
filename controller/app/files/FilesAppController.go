@@ -114,6 +114,77 @@ func GetAlbumList() []form.FileForm {
 	return forms
 }
 
+// GetAlbumListV2 -获取相册列表(版本2)
+// @Post:/v2/get_album_list
+func GetAlbumListV2() string {
+	loginId := LoginState.LoginId()
+	list := DfsFileDao.SelectAlbum(loginId)
+	var sb strings.Builder
+	for _, it := range list {
+
+		//拍摄时间
+		var captureTime int64
+
+		//视频时长
+		var duration int64
+		if it.Property != "" {
+			captureTimeJson := it.Property
+
+			//拍摄时间索引位置
+			captureTimeIndex := strings.Index(captureTimeJson, "\"date\":")
+			if captureTimeIndex != -1 {
+				captureTimeStr := captureTimeJson[captureTimeIndex+7 : captureTimeIndex+7+13]
+				captureTime, _ = strconv.ParseInt(captureTimeStr, 10, 64)
+			}
+
+			durationJson := it.Property
+
+			//拍摄时间索引位置
+			durationIndex := strings.Index(durationJson, "\"duration\":")
+			if durationIndex != -1 {
+				durationStr := durationJson[durationIndex+11:]
+				durationEndIndex := strings.Index(durationStr, ",")
+				if durationEndIndex == -1 {
+					durationEndIndex = strings.Index(durationStr, "}")
+				}
+				durationStr = durationStr[:durationEndIndex]
+				duration, _ = strconv.ParseInt(durationStr, 10, 64)
+			}
+		}
+		//if captureTime == 0 { //如果没有拍摄时间，则取上传时间
+		//	captureTime = it.Date
+		//}
+		sb.WriteString(strconv.FormatInt(it.Id, 10))
+		sb.WriteString("|")
+		sb.WriteString(strconv.FormatInt(captureTime/1000, 10))
+		sb.WriteString("|")
+		sb.WriteString(it.Ext)
+		sb.WriteString("|")
+		sb.WriteString(Bool.Is(it.HasThumb, "1", "")) //是否有图片标记
+		sb.WriteString("|")
+		sb.WriteString(Bool.Is(duration > 0, Number.ToTimeFormat(duration/1000), "")) //视频时的视频时长，
+		sb.WriteString("\n")
+		//outForm := form.FileForm{
+		//	Id:   it.Id,
+		//	Name: it.Name,
+		//	Size: it.Size,
+		//	//Date:     Date.FormatByTimespan(captureTime),
+		//	Date:     captureTime,
+		//	FileFlag: it.StorageId != 0,
+		//	//Other1:   Number.ToTimeFormat(duration / 1000),
+		//	Other1: String.ValueOf(duration),
+		//	Thumb:  Bool.Is(it.HasThumb, "/app/files/thumb/"+String.ValueOf(it.Id), ""),
+		//}
+		//forms = append(forms, outForm)
+	}
+
+	//// 按拍摄时间升序排序
+	//sort.Slice(forms, func(i, j int) bool {
+	//	return forms[i].Date < forms[j].Date
+	//})
+	return sb.String()
+}
+
 // 获取扩展文件的所有key值
 // id 文件id
 // @Post:/get_extra_keys
