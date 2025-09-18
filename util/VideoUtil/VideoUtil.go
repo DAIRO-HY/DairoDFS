@@ -66,10 +66,13 @@ func GetInfo(path string) (VedioInfo, error) {
 		info := VedioInfo{}
 		info.Width = int(stream["width"].(float64))
 		info.Height = int(stream["height"].(float64))
-		info.Duration = int64(stream["duration_ts"].(float64))
-		{
-			rFrameRate := stream["r_frame_rate"].(string)
-			rFrameRates := strings.Split(rFrameRate, "/")
+		if durationStr, ok := stream["duration"]; ok { //读取视频时间
+			duration, _ := strconv.ParseFloat(durationStr.(string), 64)
+			duration = duration * 1000
+			info.Duration = int64(duration)
+		}
+		if rFrameRate, ok := stream["r_frame_rate"]; ok { //读取视频帧率
+			rFrameRates := strings.Split(rFrameRate.(string), "/")
 			fm, _ := strconv.Atoi(rFrameRates[0])
 			fz, _ := strconv.Atoi(rFrameRates[1])
 			info.Fps = float32(fm) / float32(fz)

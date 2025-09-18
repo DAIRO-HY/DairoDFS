@@ -25,12 +25,12 @@ func TestToJpg(t *testing.T) {
 }
 
 func TestGetInfo(t *testing.T) {
-	info, err := GetInfo("C:\\Users\\user\\Desktop\\dairo-dfs-test\\mov\\mm.mov")
+	info, err := GetInfo("C:\\test\\1.mov")
 	if err != nil {
 		t.Error(err)
 		return
 	}
-	fmt.Println(info)
+	fmt.Println(info.Duration)
 }
 
 func TestTransfer(t *testing.T) {
