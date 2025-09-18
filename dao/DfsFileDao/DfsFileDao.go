@@ -105,7 +105,7 @@ func SelectSubFile(userId int64, parentId int64) []dto.DfsFileDto {
         where df.userId = ?
           and df.parentId = ?
           and df.isHistory = 0
-          and df.deleteDate is null`, userId, parentId)
+          and df.deleteDate is null order by df.storageId,df.date`, userId, parentId)
 }
 
 // 获取相册数据

@@ -173,7 +173,7 @@
     function loadFileData(folder) {
         $.ajaxByData(listApi + "?folder=" + folder).success(data => {
             data.forEach(item => item.checked = false)
-            data = data.sort(item => item.fileFlag ? 1 : -1)
+            //data = data.sort(item => item.fileFlag ? 1 : -1)
 
             //开头的/替换成#,然后放到URL中
             location.href = "#" + folder
