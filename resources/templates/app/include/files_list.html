@@ -211,7 +211,7 @@
 
             let thumb
             if (item.thumb) {
-                thumb = `<img src="${item.thumb}" class="rounded" style="width: 50px;height: 50px;object-fit: cover;">`
+                thumb = `<img src="/app/files/thumb_online/${item.id}?width=80&height=80" class="rounded" style="width: 50px;height: 50px;object-fit: cover;">`
             } else if (item.fileFlag) {
                 thumb = `<div class="d-flex align-items-center" style="width: 50px;height: 50px;"><i class="bi bi-file-earmark-fill" style="font-size: 50px;"></i></div>`
             } else {
