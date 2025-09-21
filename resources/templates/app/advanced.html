@@ -188,7 +188,7 @@
      * 重置附属文件
      */
     function onDeleteExtraClick() {
-        if (confirm("重新生成预览视频")) {
+        if (confirm("重置附属文件?")) {
             $("#sql").val("delete from dfs_file where isExtra = 1;update dfs_file set state = 0 where storageId > 0 and isExtra = 0")
             onExecClick()
         }

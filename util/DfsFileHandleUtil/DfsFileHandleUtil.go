@@ -13,9 +13,11 @@ import (
 	"DairoDFS/service/DfsFileService"
 	"DairoDFS/util/DfsFileUtil"
 	"DairoDFS/util/ImageUtil"
+	"DairoDFS/util/ImageUtil/DliveUtil"
 	"DairoDFS/util/ImageUtil/HeicUtil"
 	"DairoDFS/util/ImageUtil/PSDUtil"
 	"DairoDFS/util/ImageUtil/RawUtil"
+	"DairoDFS/util/RamDiskUtil"
 	"DairoDFS/util/VideoUtil"
 	"encoding/json"
 	"fmt"
@@ -160,6 +162,8 @@ func makeProperty(dfsFileDto dto.DfsFileDto) {
 		property, makePropertyErr = RawUtil.GetInfo(storagePath)
 	} else if ext == "heic" { //Iphone手机拍摄的照片
 		property, makePropertyErr = HeicUtil.GetInfo(storagePath)
+	} else if ext == "dlive" { //实况照片
+		property, makePropertyErr = DliveUtil.GetInfo(storagePath)
 	} else if ext == "mp4" ||
 		ext == "mov" ||
 		ext == "avi" ||
@@ -276,7 +280,9 @@ func GetPreviewJpg(dfsFileDto dto.DfsFileDto) ([]byte, error) {
 		ext == "cr2" { //专业相机RAW图片
 		return RawUtil.ToJpg(storagePath)
 	} else if ext == "heic" { //Iphone手机拍摄的照片
-		return HeicUtil.ToJpg(storagePath, quality)
+		return HeicUtil.ToJpg(storagePath)
+	} else if ext == "dlive" { //实况照片
+		return DliveUtil.ToJpg(storagePath)
 	} else { //无需生成缩略图
 		return nil, nil
 	}
@@ -310,7 +316,8 @@ func makePreview(dfsFileDto dto.DfsFileDto) {
 		ext == "ai" ||
 		ext == "cr3" ||
 		ext == "cr2" ||
-		ext == "heic" {
+		ext == "heic" ||
+		ext == "dlive" {
 		previewData, err = GetPreviewJpg(dfsFileDto)
 	} else {
 		return
@@ -401,7 +408,21 @@ func makeVideo(dfsFileDto dto.DfsFileDto) {
 		ext == "flv" ||
 		ext == "rm" ||
 		ext == "rmvb" ||
-		ext == "3gp" {
+		ext == "3gp" ||
+		ext == "dlive" {
+
+		//扩展文件名
+		extraName := "preview"
+		if ext == "dlive" {
+
+			//现将实况照片的视频保存到临时目录
+			dInfo := DliveUtil.GetDliveInfo(storagePath)
+			tempPath := RamDiskUtil.GetRamFolder() + "/" + String.MakeRandStr(16)
+			defer os.Remove(tempPath)
+			os.WriteFile(tempPath, dInfo.VideoData, 0644)
+			storagePath = tempPath
+			extraName = "preview-dlive"
+		}
 
 		videoInfo, err := VideoUtil.GetInfo(storagePath)
 		if err != nil {
@@ -418,14 +439,14 @@ func makeVideo(dfsFileDto dto.DfsFileDto) {
 		targetFps := float32(targetFpsInt64)
 
 		//获取已经存在的附属文件
-		if _, isExists := DfsFileDao.SelectExtra(dfsFileDto.Id, "preview"); isExists {
+		if _, isExists := DfsFileDao.SelectExtra(dfsFileDto.Id, extraName); isExists {
 
 			//已经存在附属文件,则跳过  重新生成附属文件时用到
 			return
 		}
 
 		//同样的文件，是否在其他地方已经生成了预览视频
-		if existsVideo, isExists := DfsFileDao.SelectExtraFileByStorageIdAndName(dfsFileDto.StorageId, "preview"); isExists {
+		if existsVideo, isExists := DfsFileDao.SelectExtraFileByStorageIdAndName(dfsFileDto.StorageId, extraName); isExists {
 
 			//该文件预览图在其他文件中已经生成
 			existsVideo.Id = Number.ID()
@@ -499,7 +520,7 @@ func makeVideo(dfsFileDto dto.DfsFileDto) {
 		targetFileInfo, _ := os.Stat(targetPath)
 		extraDto := dto.DfsFileDto{
 			Id:          Number.ID(),
-			Name:        "preview",
+			Name:        extraName,
 			Size:        targetFileInfo.Size(),
 			StorageId:   storageFileDto.Id,
 			IsExtra:     true,

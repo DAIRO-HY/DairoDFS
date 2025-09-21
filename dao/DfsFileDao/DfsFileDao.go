@@ -121,7 +121,7 @@ func SelectAlbum(userId int64) []dto.DfsFileDto {
                  left join dfs_file as thumbDf
                            on thumbDf.parentId = df.id and df.storageId > 0 and thumbDf.name = 'thumb'
         where df.userId = ?
-          and df.ext in ('jpg','jpeg','png','bmp','gif','ico','svg','tiff','webp','wmf','wmz','jp2','eps','tga','jfif','psd','psb','ai','mp4','mov','avi','mkv','flv','rm','rmvb','3gp','cr3','cr2','heic')
+          and df.ext in ('jpg','jpeg','png','bmp','gif','ico','svg','tiff','webp','wmf','wmz','jp2','eps','tga','jfif','psd','psb','ai','mp4','mov','avi','mkv','flv','rm','rmvb','3gp','cr3','cr2','heic','dlive')
           and df.isHistory = 0
           and df.deleteDate is null`, userId)
 }
@@ -133,7 +133,7 @@ func SelectAlbumV2(userId int64) []dto.DfsFileDto {
                  left join dfs_file as thumbDf
                            on thumbDf.parentId = df.id and df.storageId > 0 and thumbDf.name = 'thumb'
         where df.userId = ?
-          and df.ext in ('jpg','jpeg','png','bmp','gif','ico','svg','tiff','webp','wmf','wmz','jp2','eps','tga','jfif','psd','psb','ai','mp4','mov','avi','mkv','flv','rm','rmvb','3gp','cr3','cr2','heic')
+          and df.ext in ('jpg','jpeg','png','bmp','gif','ico','svg','tiff','webp','wmf','wmz','jp2','eps','tga','jfif','psd','psb','ai','mp4','mov','avi','mkv','flv','rm','rmvb','3gp','cr3','cr2','heic','dlive')
           and df.isHistory = 0
           and df.deleteDate is null`, userId)
 }
