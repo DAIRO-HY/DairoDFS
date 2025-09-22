@@ -163,7 +163,10 @@ type TransferArgument struct {
 // SDR视频转SDR视频，HDR视频转HDR视频，
 // width,height必须是偶数
 func (mine TransferArgument) toTransferCmd() string {
-	cmd := `"${FfmpegPath}/ffmpeg" -i "${input}" -ss ${start} ${time} -vf scale=w=${width}:h=${height} -c:v libx265 -crf ${crf} -preset medium ${fps} -f mp4 ${deleteSound} -y "${output}"`
+
+	//参数解释:
+	//-tag:v hvc1兼容苹果设备,ffmpeg从H.264转H.265时,可能转-tag:v hev1得编码,导致苹果设备上无法播放
+	cmd := `"${FfmpegPath}/ffmpeg" -i "${input}" -ss ${start} ${time} -vf scale=w=${width}:h=${height} -c:v libx265 -tag:v hvc1 -crf ${crf} -preset medium ${fps} -f mp4 ${deleteSound} -y "${output}"`
 	cmd = strings.ReplaceAll(cmd, "${FfmpegPath}", application.FfmpegPath)
 	cmd = strings.ReplaceAll(cmd, "${input}", mine.Input)
 	cmd = strings.ReplaceAll(cmd, "${start}", strconv.Itoa(mine.Start))
@@ -179,7 +182,10 @@ func (mine TransferArgument) toTransferCmd() string {
 
 // /获取HDR转SDR的指令
 func (mine TransferArgument) toHDR2SDRCmd() string {
-	cmd := `"${FfmpegPath}/ffmpeg" -i "${input}" -ss ${start} ${time} -vf zscale=t=linear:npl=100,format=gbrpf32le,zscale=p=bt709,tonemap=tonemap=hable:desat=0,zscale=w=${width}:h=${height}:t=bt709:m=bt709:r=tv,format=yuv420p -c:v libx265 -crf ${crf} -preset medium ${fps} -f mp4 ${deleteSound} -y "${output}"`
+
+	//参数解释:
+	//-tag:v hvc1兼容苹果设备,ffmpeg从H.264转H.265时,可能转-tag:v hev1得编码,导致苹果设备上无法播放
+	cmd := `"${FfmpegPath}/ffmpeg" -i "${input}" -ss ${start} ${time} -vf zscale=t=linear:npl=100,format=gbrpf32le,zscale=p=bt709,tonemap=tonemap=hable:desat=0,zscale=w=${width}:h=${height}:t=bt709:m=bt709:r=tv,format=yuv420p -c:v libx265 -tag:v hvc1 -crf ${crf} -preset medium ${fps} -f mp4 ${deleteSound} -y "${output}"`
 	cmd = strings.ReplaceAll(cmd, "${FfmpegPath}", application.FfmpegPath)
 	cmd = strings.ReplaceAll(cmd, "${FfmpegPath}", application.FfmpegPath)
 	cmd = strings.ReplaceAll(cmd, "${input}", mine.Input)

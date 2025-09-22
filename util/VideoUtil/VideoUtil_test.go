@@ -2,6 +2,7 @@ package VideoUtil
 
 import (
 	"DairoDFS/application"
+	"DairoDFS/extension/File"
 	"fmt"
 	"os"
 	"testing"
@@ -78,4 +79,8 @@ func TestHDR2SDR(t *testing.T) {
 func TestIsHDR(t *testing.T) {
 	isHDR := IsHDR("C:/test/mov/2.mov")
 	fmt.Println(isHDR)
+}
+
+func TestIsHDR123(t *testing.T) {
+	fmt.Println(File.ToMd5("./data/input.mov"))
 }

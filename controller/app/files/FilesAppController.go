@@ -16,6 +16,7 @@ import (
 	"DairoDFS/util/ImageUtil"
 	"DairoDFS/util/LoginState"
 	"net/http"
+	"net/url"
 	"os"
 	"sort"
 	"strconv"
@@ -46,7 +47,7 @@ func GetList(folder string) []form.FileForm {
 			//Date:     Date.FormatByTimespan(it.Date),
 			Date:     it.Date,
 			FileFlag: it.StorageId != 0,
-			Thumb:    Bool.Is(it.HasThumb, "/app/files/thumb/"+String.ValueOf(it.Id), ""),
+			HasThumb: it.HasThumb,
 		}
 		forms = append(forms, outForm)
 	}
@@ -101,8 +102,8 @@ func GetAlbumList() []form.FileForm {
 			Date:     captureTime,
 			FileFlag: it.StorageId != 0,
 			//Other1:   Number.ToTimeFormat(duration / 1000),
-			Other1: String.ValueOf(duration),
-			Thumb:  Bool.Is(it.HasThumb, "/app/files/thumb/"+String.ValueOf(it.Id), ""),
+			Other1:   String.ValueOf(duration),
+			HasThumb: it.HasThumb,
 		}
 		forms = append(forms, outForm)
 	}
@@ -467,6 +468,7 @@ func DownloadByHistory(writer http.ResponseWriter, request *http.Request, id int
 	DfsFileUtil.DownloadDfs(dfsFile, writer, request)
 }
 
+// 请使用Extra
 // 文件预览
 // dfsId dfs文件ID
 // name 文件名
@@ -483,12 +485,50 @@ func Preview(writer http.ResponseWriter, request *http.Request, dfsId int64, nam
 		writer.WriteHeader(http.StatusNotFound)
 		return
 	}
-	if dfsDto.Name != name { // 文件名不一致，没有操作权限
+	//if dfsDto.Name != name { // 文件名不一致，没有操作权限
+	//	writer.WriteHeader(http.StatusNotFound)
+	//	return
+	//}
+
+	//在头部信息中加入文件名
+	//writer.Header().Set("File-Name", name)
+
+	if extra == "" { //下载源文件
+		DfsFileUtil.DownloadDfs(dfsDto, writer, request)
+		return
+	}
+	if previewDto, isExistsPreview := DfsFileDao.SelectExtra(dfsId, extra); isExistsPreview { //存在预览文件
+		DfsFileUtil.DownloadDfs(previewDto, writer, request)
+		return
+	}
+	writer.WriteHeader(http.StatusNotFound)
+}
+
+// Extra - 获取附属文件
+// dfsId dfs文件ID
+// name 文件名
+// extra 要预览的附属文件名
+// @Request:/extra/{dfsId}/{name}
+func Extra(writer http.ResponseWriter, request *http.Request, dfsId int64, name string, extra string) {
+	loginId := LoginState.LoginId()
+	dfsDto, isExists := DfsFileDao.SelectOne(dfsId)
+	if !isExists { //文件不存在
 		writer.WriteHeader(http.StatusNotFound)
 		return
 	}
-	//在头部信息中加入文件名
-	//writer.Header().Set("File-Name", name)
+	if dfsDto.UserId != loginId { // 没有操作权限
+		writer.WriteHeader(http.StatusNotFound)
+		return
+	}
+	//if dfsDto.Name != name { // 文件名不一致，没有操作权限
+	//	writer.WriteHeader(http.StatusNotFound)
+	//	return
+	//}
+
+	if len(name) > 0 { //下载模式
+		name = url.QueryEscape(name)
+		writer.Header().Set("Content-Disposition", "attachment;filename="+name)
+	}
 
 	if extra == "" { //下载源文件
 		DfsFileUtil.DownloadDfs(dfsDto, writer, request)
@@ -544,11 +584,12 @@ var thumbOnlineLock sync.Mutex
 // ThumbOnline - 缩略图在线生成
 // 优先使用maxSize
 // id 文件ID
+// name 文件名
 // width 宽
 // height 高
 // maxSize 最大边
-// @Get:/thumb_online/{id}
-func ThumbOnline(writer http.ResponseWriter, id int64, maxSize int, width int, height int) {
+// @Get:/thumb_online/{id}/{name}
+func ThumbOnline(writer http.ResponseWriter, id int64, name string, maxSize int, width int, height int) {
 	dfsDto, isExists := DfsFileDao.SelectOne(id)
 	if !isExists { //文件不存在
 		writer.WriteHeader(http.StatusNotFound)
@@ -613,9 +654,10 @@ func ThumbOnline(writer http.ResponseWriter, id int64, maxSize int, width int, h
 	writer.Header().Set("Expires", expiresTime)
 	writer.Header().Set("Content-Type", "image/jpeg")
 	writer.Header().Set("Content-Length", strconv.Itoa(len(thumbData)))
-
-	//告诉客户端,服务器支持请求部分数据
-	//writer.Header().Set("Accept-Ranges", "bytes")
+	if len(name) > 0 { //下载模式
+		name = url.QueryEscape(name)
+		writer.Header().Set("Content-Disposition", "attachment;filename="+name)
+	}
 
 	//http.ResponseWriter发送状态码之后，再设置头部信息将会不生效，所以发送状态码一定要等所有头部信息设置完成之后再发送
 	writer.WriteHeader(http.StatusOK)

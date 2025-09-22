@@ -94,10 +94,10 @@ func GetDliveInfoByData(data []byte) DliveInfo {
 	headArr := strings.Split(head, "|")
 
 	var info DliveInfo
-	info.PhotoExt = headArr[0]                   //图片格式
-	info.PhotoSize, _ = strconv.Atoi(headArr[1]) //图片文件大小
+	info.PhotoExt = headArr[1]                   //图片格式
+	info.PhotoSize, _ = strconv.Atoi(headArr[2]) //图片文件大小
 	info.PhotoData = data[headEndIndex+1 : headEndIndex+info.PhotoSize+1]
-	info.VideoExt = headArr[2]
+	info.VideoExt = headArr[3]
 	info.VideoSize = len(data) - info.PhotoSize - len(head) - 1
 	info.VideoData = data[len(data)-info.VideoSize:]
 	return info
