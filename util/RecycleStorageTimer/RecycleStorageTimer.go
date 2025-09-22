@@ -8,9 +8,10 @@ import (
 	"DairoDFS/extension/String"
 	"DairoDFS/service/DfsFileDeleteService"
 	"DairoDFS/util/DBConnection"
-	"github.com/robfig/cron/v3"
 	"os"
 	"time"
+
+	"github.com/robfig/cron/v3"
 )
 
 // 标记是否正在运行中
@@ -31,7 +32,7 @@ func Init() {
 	cn := cron.New(cron.WithSeconds())
 
 	// 添加一个每天凌晨3点执行的任务
-	cn.AddFunc("0 3 * * *", start)
+	cn.AddFunc("0 0 3 * * *", start)
 	//cn.AddFunc("*/5 * * * * *", start)
 
 	// 启动cron调度器
