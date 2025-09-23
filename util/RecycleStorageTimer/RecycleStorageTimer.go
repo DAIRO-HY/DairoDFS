@@ -57,10 +57,10 @@ func start() {
 	IsRunning = true
 
 	now := time.Now().UnixMilli()
-	deleteSqlLog()         // 删除超出指定时间的sql日志
-	deleteTrashTimeout()   // 删除回收站到期的文件
-	recycleDeletedFile()   // 回收已经被删除的文件
-	recycleNotUseStorage() // 回收没有被使用的存储文件
+	//deleteSqlLog()         // 删除超出指定时间的sql日志
+	//deleteTrashTimeout()   // 删除回收站到期的文件
+	//recycleDeletedFile()   // 回收已经被删除的文件
+	//recycleNotUseStorage() // 回收没有被使用的存储文件
 	LastRunTime = time.Now().UnixMilli() - now
 }
 
