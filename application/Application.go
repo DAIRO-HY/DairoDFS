@@ -54,6 +54,9 @@ var DataPath = "./data"
 // 数据库存放文件夹
 var SQLITE_PATH = DataPath + "/dairo-dfs.sqlite"
 
+// 数据库备份文件夹
+var DB_BACKUP_PATH = DataPath + "/db_backup"
+
 // 数据存放文件夹
 var TEMP_PATH = DataPath + "/temp"
 

@@ -6,6 +6,7 @@ import (
 	"DairoDFS/extension/Date"
 	"DairoDFS/extension/Number"
 	"DairoDFS/extension/String"
+	"DairoDFS/util/DBBackupUtil"
 	"DairoDFS/util/DBConnection"
 	"DairoDFS/util/DBUtil"
 	"DairoDFS/util/DfsFileHandleUtil"
@@ -100,4 +101,10 @@ func RecycleNow() {
 			RecycleStorageTimer.DeleteNotUseStorage(id)
 		}
 	}()
+}
+
+// 备份数据库
+// @Post:/db_backup
+func DBBackup() {
+	DBBackupUtil.Backup()
 }

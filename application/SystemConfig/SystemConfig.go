@@ -43,6 +43,9 @@ type SystemConfig struct {
 
 	// 忽略本机同步错误
 	IgnoreSyncError bool
+
+	// 数据库备份天数
+	DbBackupExpireDay int
 }
 
 // 读取文件锁
@@ -67,6 +70,7 @@ func Instance() *SystemConfig {
 				TrashTimeout:         30,
 				DeleteStorageTimeout: 30,
 				ThumbMaxSize:         360,
+				DbBackupExpireDay:    30,
 			}
 			Save()
 		} else {

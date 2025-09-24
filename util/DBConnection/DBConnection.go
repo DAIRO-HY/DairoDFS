@@ -10,10 +10,11 @@ import (
 	"DairoDFS/util/LogUtil"
 	"database/sql"
 	"fmt"
-	_ "github.com/mattn/go-sqlite3"
 	"log"
 	"strings"
 	"time"
+
+	_ "github.com/mattn/go-sqlite3"
 )
 
 // 事务数据库协程本地变量
@@ -29,6 +30,14 @@ const _AUTO_COMMIT_KEY = "AUTO_COMMIT_KEY"
 var DBConn *sql.DB
 
 func init() {
+	Init()
+}
+
+// Init 初始化数据库
+func Init() {
+	if DBConn != nil {
+		DBConn.Close()
+	}
 
 	//_busy_timeout：设置数据库被锁时超时
 	//经过验证，在journal_mode=WAL模式下，如果开启事务，只有遇到了修改语句才会锁库，select语句不会锁库。

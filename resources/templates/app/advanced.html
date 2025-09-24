@@ -78,6 +78,9 @@
                     id="validateFileMd5Current">0</span>/<span id="validateFileMd5Total">0</span>)
             </button>
         </div>
+        <div class="col">
+            <button type="button" class="btn w-100 btn-dark mt-2" onclick="onDbBackUpClick()">备份数据库</button>
+        </div>
     </div>
     <div class="text-start">
         <div id="result"></div>
@@ -280,6 +283,15 @@
             data: data.data,
             columns: columns
         })
+    }
+
+    /**
+     * 备份数据库
+     */
+    function onDbBackUpClick() {
+        $.ajaxByData("advanced/db_backup").success(()=>{
+            alert("备份成功")
+        }).post()
     }
 
 </script>

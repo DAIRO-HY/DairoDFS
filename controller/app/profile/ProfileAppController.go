@@ -30,6 +30,7 @@ func Init() form.ProfileForm {
 	inForm.DeleteStorageTimeout = systemConfig.DeleteStorageTimeout
 	inForm.ThumbMaxSize = systemConfig.ThumbMaxSize
 	inForm.IgnoreSyncError = systemConfig.IgnoreSyncError
+	inForm.DbBackupExpireDay = systemConfig.DbBackupExpireDay
 	return inForm
 }
 
@@ -57,6 +58,7 @@ func Update(form form.ProfileForm) {
 	systemConfig.DeleteStorageTimeout = form.DeleteStorageTimeout
 	systemConfig.ThumbMaxSize = form.ThumbMaxSize
 	systemConfig.IgnoreSyncError = form.IgnoreSyncError
+	systemConfig.DbBackupExpireDay = form.DbBackupExpireDay
 
 	if form.SyncDomains == "" {
 		systemConfig.SyncDomains = []string{}

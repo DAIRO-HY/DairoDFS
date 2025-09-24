@@ -39,6 +39,10 @@ type ProfileForm struct {
 
 	/** 忽略本机同步错误 **/
 	IgnoreSyncError bool `json:"ignoreSyncError"`
+
+	/**  数据库备份天数 **/
+	//@Limit(min = 10)
+	DbBackupExpireDay int `json:"dbBackupExpireDay"`
 }
 
 // 目录正确性检查
