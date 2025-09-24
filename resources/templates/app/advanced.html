@@ -81,6 +81,9 @@
         <div class="col">
             <button type="button" class="btn w-100 btn-danger mt-2" onclick="onDbBackUpClick()">备份数据库</button>
         </div>
+        <div class="col">
+            <button type="button" class="btn w-100 btn-success mt-2" onclick="onResetDataClick()">重置并同步本机</button>
+        </div>
     </div>
     <div class="text-start">
         <div id="result"></div>
@@ -292,6 +295,17 @@
         $.ajaxByData("advanced/db_backup").success(()=>{
             alert("备份成功")
         }).post()
+    }
+
+    /**
+     * 重置本机数据
+     */
+    function onResetDataClick() {
+        if (confirm("确定重置本机数据？可能导致本机数据丢失，请谨慎选择！！！")) {
+            $.ajaxByData("advanced/reset_data").success(() => {
+                alert("重置成功")
+            }).post()
+        }
     }
 
 </script>

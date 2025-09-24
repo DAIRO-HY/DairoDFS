@@ -10,6 +10,7 @@ import (
 	"DairoDFS/util/DBConnection"
 	"DairoDFS/util/DBUtil"
 	"DairoDFS/util/DfsFileHandleUtil"
+	"DairoDFS/util/DistributedUtil/SyncByTable"
 	"DairoDFS/util/RecycleStorageTimer"
 	"os"
 	"strings"
@@ -44,7 +45,9 @@ func Init() map[string]any {
 	recycleStorageTimerState := "回收定时器"
 	recycleStorageTimerState += Bool.Is(RecycleStorageTimer.IsRunning, "运行中；", "等待中；")
 	recycleStorageTimerState += Bool.Is(RecycleStorageTimer.Error == "", "", "错误："+RecycleStorageTimer.Error+"；")
-	recycleStorageTimerState += "上次执行时间：" + Date.FormatByTimespan(RecycleStorageTimer.LastRunTime)
+	if RecycleStorageTimer.LastRunTime > 0 {
+		recycleStorageTimerState += "上次执行时间：" + Date.FormatByTimespan(RecycleStorageTimer.LastRunTime)
+	}
 	return map[string]any{
 		"fileHandling":             Bool.Is(DfsFileHandleUtil.HasData(), "正在处理", "空闲中"),
 		"recycleStorageTimerState": recycleStorageTimerState,
@@ -107,4 +110,24 @@ func RecycleNow() {
 // @Post:/db_backup
 func DBBackup() {
 	DBBackupUtil.Backup()
+}
+
+// 重置并同步本机数据
+// @Post:/reset_data
+func ResetData() {
+	if !SystemConfig.Instance().IsReadOnly {
+		panic("该操作只允许本机在只读模式下执行")
+	}
+
+	//执行更新数据sql，防止产生日志
+	DBConnection.DBConn.Exec(`
+                        delete from dfs_file;
+                        delete from dfs_file_delete;
+                        delete from share;
+                        delete from sql_log;
+                        delete from user;
+                        delete from user_token;
+						`)
+	//开启全量同步
+	go SyncByTable.SyncAll()
 }
