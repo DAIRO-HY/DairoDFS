@@ -373,6 +373,7 @@ func GetPropertyV2(ids []int64) form.FilePropertyForm {
 			panic(exception.NOT_ALLOW())
 		}
 		outForm.Name = dfsFile.Name
+		outForm.State = dfsFile.State
 		outForm.Date = Date.FormatByTimespan(dfsFile.Date)
 		outForm.IsFile = dfsFile.IsFile()
 		if dfsFile.IsFile() { //文件时
@@ -655,6 +656,7 @@ func ThumbOnline(writer http.ResponseWriter, id int64, name string, maxSize int,
 	writer.Header().Set("Content-Type", "image/jpeg")
 	writer.Header().Set("Content-Length", strconv.Itoa(len(thumbData)))
 	if len(name) > 0 { //下载模式
+
 		name = url.QueryEscape(name)
 		writer.Header().Set("Content-Disposition", "attachment;filename="+name)
 	}

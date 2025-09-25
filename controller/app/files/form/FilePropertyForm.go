@@ -17,6 +17,9 @@ type FilePropertyForm struct {
 	/** 创建日期 **/
 	Date string `json:"date"`
 
+	/** 文件状态 **/
+	State int8 `json:"state"`
+
 	/** 是否文件 **/
 	IsFile bool `json:"isFile"`
 

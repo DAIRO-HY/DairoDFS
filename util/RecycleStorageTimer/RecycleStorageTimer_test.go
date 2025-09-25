@@ -1,11 +1,18 @@
 package RecycleStorageTimer
 
 import (
-	"fmt"
+	"DairoDFS/application"
+	"DairoDFS/application/SystemConfig"
 	"testing"
 )
 
-func TestInit(t *testing.T) {
-	fmt.Println("ok")
-	select {}
+func init() {
+	application.SQLITE_PATH = "C:\\Users\\ths.developer.1\\IdeaProjects\\DairoDFS\\data\\dairo-dfs.sqlite"
+}
+
+func TestStart(t *testing.T) {
+	sc := SystemConfig.Instance()
+	//sc.DeleteStorageTimeout = 0
+	sc.TrashTimeout = 0
+	start()
 }
