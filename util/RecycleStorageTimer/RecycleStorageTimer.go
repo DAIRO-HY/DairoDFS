@@ -67,8 +67,8 @@ func start() {
 // 删除超出指定时间的sql日志
 func deleteSqlLog() {
 
-	//删除超过一天的日志
-	deleteTime := time.Now().UnixMilli() - 1*24*60*60*1000
+	//删除超过一定时间的日志
+	deleteTime := time.Now().UnixMilli() - 100*24*60*60*1000
 	DBConnection.DBConn.Exec("delete from sql_log where date < ?", deleteTime)
 }
 

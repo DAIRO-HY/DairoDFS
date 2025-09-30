@@ -8,10 +8,11 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	_ "github.com/mattn/go-sqlite3"
 	"reflect"
 	"strings"
 	"time"
+
+	_ "github.com/mattn/go-sqlite3"
 )
 
 // 执行sql语句,忽略错误
@@ -419,16 +420,18 @@ func SelectListNull[T any](query string, args ...any) []T {
 func SelectToListMap(query string, args ...any) ([]map[string]any, []string) {
 	rows, queryErr := DBConnection.Query(query, args...)
 	if queryErr != nil {
-		LogUtil.Error(fmt.Sprintf("查询数据失败:%s: err:%q", query, queryErr))
-		return nil, nil
+		//LogUtil.Error(fmt.Sprintf("查询数据失败:%s: err:%q", query, queryErr))
+		//return nil, nil
+		panic(queryErr)
 	}
 	defer rows.Close()
 
 	// 获取列的名称
 	columns, columnsErr := rows.Columns()
 	if columnsErr != nil {
-		LogUtil.Error(fmt.Sprintf("%q: %s\n", columnsErr, query))
-		return nil, nil
+		//LogUtil.Error(fmt.Sprintf("%q: %s\n", columnsErr, query))
+		//return nil, nil
+		panic(columnsErr)
 	}
 
 	// 创建一个[]interface{}的slice, 每个元素指向values中的对应位置
@@ -446,8 +449,9 @@ func SelectToListMap(query string, args ...any) ([]map[string]any, []string) {
 
 		// 将当前行的数据扫描到valuePtrs中
 		if err := rows.Scan(valuePtrs...); err != nil {
-			LogUtil.Error(fmt.Sprintf("数据扫描失败:%s: err:%q", query, err))
-			return nil, columns
+			//LogUtil.Error(fmt.Sprintf("数据扫描失败:%s: err:%q", query, err))
+			//return nil, columns
+			panic(err)
 		}
 
 		// 使用map将列名和对应的值关联起来
