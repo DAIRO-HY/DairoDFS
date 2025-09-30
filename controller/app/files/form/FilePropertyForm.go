@@ -11,6 +11,9 @@ type FilePropertyForm struct {
 	/** 大小 **/
 	Size string `json:"size"`
 
+	/** 文件属性	 **/
+	Property string `json:"property"`
+
 	/** 文件类型(文件专用) **/
 	ContentType string `json:"contentType"`
 

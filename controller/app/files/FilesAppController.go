@@ -377,6 +377,7 @@ func GetPropertyV2(ids []int64) form.FilePropertyForm {
 		outForm.Date = Date.FormatByTimespan(dfsFile.Date)
 		outForm.IsFile = dfsFile.IsFile()
 		if dfsFile.IsFile() { //文件时
+			outForm.Property = dfsFile.Property
 			outForm.Size = Number.ToDataSize(dfsFile.Size)
 			outForm.ContentType = dfsFile.ContentType
 
