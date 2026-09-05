@@ -1,17 +1,17 @@
 package application
 
 import (
-	"fmt"
-	"log"
-	"os"
-	"reflect"
-	"strconv"
-	"strings"
-	"unicode"
+    "fmt"
+    "log"
+    "os"
+    "reflect"
+    "strconv"
+    "strings"
+    "unicode"
 )
 
 // VERSION 版本号
-const VERSION = "1.0.42-RC"
+const VERSION = "1.0.43-RC"
 
 /**
  * 基准时间戳
@@ -87,128 +87,128 @@ var Args appArgs
 // 程序启动参数
 type appArgs struct {
 
-	// WEB端口
-	Port int
+    // WEB端口
+    Port int
 
-	// 是否开发模式
-	IsDev bool
+    // 是否开发模式
+    IsDev bool
 
-	// 日志输出方式
-	LogOutType int
+    // 日志输出方式
+    LogOutType int
 
-	// 日志输出级别
-	LogLevel string
+    // 日志输出级别
+    LogLevel string
 }
 
 func Init() {
-	parseArgs()
+    parseArgs()
 
-	//创建临时目录
-	os.MkdirAll(TEMP_PATH, os.ModePerm)
+    //创建临时目录
+    os.MkdirAll(TEMP_PATH, os.ModePerm)
 }
 
 // 解析参数
 func parseArgs() {
-	fmt.Println("------------------------------------------------------------------------")
-	fmt.Println(strings.Join(os.Args, " "))
-	fmt.Println("------------------------------------------------------------------------")
-	Args = appArgs{
-		Port:  8031,
-		IsDev: false,
-	}
-	argsElem := reflect.ValueOf(&Args).Elem()
+    fmt.Println("------------------------------------------------------------------------")
+    fmt.Println(strings.Join(os.Args, " "))
+    fmt.Println("------------------------------------------------------------------------")
+    Args = appArgs{
+        Port:  8031,
+        IsDev: false,
+    }
+    argsElem := reflect.ValueOf(&Args).Elem()
 
-	for i := 0; i < len(os.Args); i++ {
-		key := os.Args[i]
-		if !strings.HasPrefix(key, "--") {
-			continue
-		}
+    for i := 0; i < len(os.Args); i++ {
+        key := os.Args[i]
+        if !strings.HasPrefix(key, "--") {
+            continue
+        }
 
-		filedName := ""
-		for _, it := range strings.Split(key[2:], "-") {
-			if len(it) == 0 {
-				continue
-			}
-			// 将字符串转换为 rune 切片以便处理 Unicode 字符
-			r := []rune(it)
+        filedName := ""
+        for _, it := range strings.Split(key[2:], "-") {
+            if len(it) == 0 {
+                continue
+            }
+            // 将字符串转换为 rune 切片以便处理 Unicode 字符
+            r := []rune(it)
 
-			// 将首字母大写
-			r[0] = unicode.ToUpper(r[0])
-			filedName += string(r)
-		}
-		field := argsElem.FieldByName(filedName)
-		if !field.IsValid() { //如果该字段不存在
-			continue
-		}
-		if i+1 > len(os.Args)-1 { //已经没有下一个元素
-			break
-		}
+            // 将首字母大写
+            r[0] = unicode.ToUpper(r[0])
+            filedName += string(r)
+        }
+        field := argsElem.FieldByName(filedName)
+        if !field.IsValid() { //如果该字段不存在
+            continue
+        }
+        if i+1 > len(os.Args)-1 { //已经没有下一个元素
+            break
+        }
 
-		//参数值
-		value := os.Args[i+1]
-		switch field.Kind() {
+        //参数值
+        value := os.Args[i+1]
+        switch field.Kind() {
 
-		//整数类型转换
-		case reflect.Int,
-			reflect.Int8,
-			reflect.Int16,
-			reflect.Int32,
-			reflect.Int64,
-			reflect.Uint,
-			reflect.Uint8,
-			reflect.Uint16,
-			reflect.Uint32,
-			reflect.Uint64:
-			v, err := strconv.ParseInt(value, 10, 64)
-			if err != nil {
-				log.Panicf("参数%s=%s发生了转换错误:%q", key, value, err)
-			}
-			field.SetInt(v)
-		case reflect.Float32, reflect.Float64:
-			v, err := strconv.ParseFloat(value, 64)
-			if err != nil {
-				log.Panicf("参数%s=%s发生了转换错误:%q", key, value, err)
-			}
-			field.SetFloat(v)
-		case reflect.Bool:
-			v, err := strconv.ParseBool(value)
-			if err != nil {
-				log.Panicf("参数%s=%s发生了转换错误:%q", key, value, err)
-			}
-			field.SetBool(v)
-		case reflect.String:
-			field.SetString(value)
-		}
-		i++
-	}
-	//for _, it := range os.Args {
-	//	paramArr := strings.Split(it, ":")
-	//	switch paramArr[0] {
-	//	case "-web-port":
-	//		WebPort, _ = strconv.Atoi(paramArr[1])
-	//	case "-log-type": //日志输出方式
-	//		switch paramArr[1] {
-	//		case "0":
-	//			LogUtil.LogOutType = LogUtil.LOG_OUT_TYPE_NO
-	//		case "1":
-	//			LogUtil.LogOutType = LogUtil.LOG_OUT_TYPE_CONSOLE
-	//		case "2":
-	//			LogUtil.LogOutType = LogUtil.LOG_OUT_TYPE_FILE
-	//		}
-	//	case "-log-level": //日志输出级别
-	//		levels := strings.Split(paramArr[1], ",")
-	//		for _, level := range levels {
-	//			LogUtil.LogLevel[level] = true
-	//		}
-	//	case "-is-dev":
-	//		IsDev = paramArr[1] == "true"
-	//	}
-	//}
+        //整数类型转换
+        case reflect.Int,
+            reflect.Int8,
+            reflect.Int16,
+            reflect.Int32,
+            reflect.Int64,
+            reflect.Uint,
+            reflect.Uint8,
+            reflect.Uint16,
+            reflect.Uint32,
+            reflect.Uint64:
+            v, err := strconv.ParseInt(value, 10, 64)
+            if err != nil {
+                log.Panicf("参数%s=%s发生了转换错误:%q", key, value, err)
+            }
+            field.SetInt(v)
+        case reflect.Float32, reflect.Float64:
+            v, err := strconv.ParseFloat(value, 64)
+            if err != nil {
+                log.Panicf("参数%s=%s发生了转换错误:%q", key, value, err)
+            }
+            field.SetFloat(v)
+        case reflect.Bool:
+            v, err := strconv.ParseBool(value)
+            if err != nil {
+                log.Panicf("参数%s=%s发生了转换错误:%q", key, value, err)
+            }
+            field.SetBool(v)
+        case reflect.String:
+            field.SetString(value)
+        }
+        i++
+    }
+    //for _, it := range os.Args {
+    //	paramArr := strings.Split(it, ":")
+    //	switch paramArr[0] {
+    //	case "-web-port":
+    //		WebPort, _ = strconv.Atoi(paramArr[1])
+    //	case "-log-type": //日志输出方式
+    //		switch paramArr[1] {
+    //		case "0":
+    //			LogUtil.LogOutType = LogUtil.LOG_OUT_TYPE_NO
+    //		case "1":
+    //			LogUtil.LogOutType = LogUtil.LOG_OUT_TYPE_CONSOLE
+    //		case "2":
+    //			LogUtil.LogOutType = LogUtil.LOG_OUT_TYPE_FILE
+    //		}
+    //	case "-log-level": //日志输出级别
+    //		levels := strings.Split(paramArr[1], ",")
+    //		for _, level := range levels {
+    //			LogUtil.LogLevel[level] = true
+    //		}
+    //	case "-is-dev":
+    //		IsDev = paramArr[1] == "true"
+    //	}
+    //}
 }
 
 // 防止程序终止
 func StopRuntimeError() {
-	if r := recover(); r != nil {
-		//防止程序终止
-	}
+    if r := recover(); r != nil {
+        //防止程序终止
+    }
 }
