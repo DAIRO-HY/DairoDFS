@@ -65,6 +65,12 @@ pub async fn get_aop_id() -> String {
     id_util::id().to_string()
 }
 
+/// 获取集群ID,分机使用第一台同步主机的集群ID
+#[GET("/distributed/{token}/{client_token}/get_cluster_id")]
+pub async fn get_cluster_id() -> String {
+    crate::system_config::get().cluster_id.clone()
+}
+
 /// 获取要同步的数据总条数
 #[GET("/distributed/{token}/{client_token}/get_table_count")]
 pub async fn get_table_count(tb_names: Vec<String>, aop_id: i64) -> Result<String, BizError> {
@@ -95,5 +101,5 @@ pub async fn download(md5: String, headers: &HeaderMap) -> Result<Stream, BizErr
     let Some(storage) = storage_file_dao::select_by_md5(&mut lib_db::get_context(), &md5).await? else {
         return Err(BizError::not_found());
     };
-    Stream::file(&storage.path, headers).await.map_err(|_| BizError::not_found())
+    Stream::file_with_etag(&storage.path, headers, &storage.md5).await.map_err(|_| BizError::not_found())
 }

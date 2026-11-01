@@ -1,0 +1,9 @@
+[bindings.kotlin]
+package_name = "cn.dairo.file.sdk"
+cdylib_name = "dairo_file_sdk_ffi"
+
+[bindings.swift]
+module_name = "DairoFileSDK"
+ffi_module_name = "DairoFileSDKFFI"
+ffi_module_filename = "DairoFileSDKFFI"
+generate_module_map = true

@@ -37,6 +37,9 @@ pub struct SystemConfig {
 
     /// 数据库备份天数
     pub db_backup_expire_day: i64,
+
+    /// 集群ID,同一个分布式集群里的服务器相同(分机从第一台同步主机获取),客户端用来判断文件是否来自同一个集群
+    pub cluster_id: String,
 }
 
 impl Default for SystemConfig {
@@ -52,6 +55,7 @@ impl Default for SystemConfig {
             thumb_max_size: 360,
             ignore_sync_error: false,
             db_backup_expire_day: 30,
+            cluster_id: String::new(),
         }
     }
 }
@@ -79,22 +83,30 @@ pub fn save(config: SystemConfig) -> std::io::Result<()> {
 /// 从配置文件读取,文件不存在时创建一份默认配置
 fn load() -> SystemConfig {
     let path = application::SYSTEM_JSON_PATH.as_path();
-    if !path.exists() {
-        let config = SystemConfig::default();
+    let mut config = if path.exists() {
+        let data = std::fs::read(path).unwrap_or_else(|e| {
+            eprintln!("-->读取配置文件:{}失败: {}", path.display(), e);
+            std::process::exit(1);
+        });
+        serde_json::from_slice(&data).unwrap_or_else(|e| {
+            eprintln!("-->配置文件:{}格式错误: {}", path.display(), e);
+            std::process::exit(1);
+        })
+    } else {
+        SystemConfig::default()
+    };
+
+    //新建的配置文件或者老版本的配置文件没有集群ID
+    if !path.exists() || config.cluster_id.is_empty() {
+        if config.cluster_id.is_empty() {
+            config.cluster_id = Alphanumeric.sample_string(&mut rand::rng(), 32);
+        }
         if let Err(e) = write(&config) {
-            eprintln!("-->创建配置文件:{}失败: {}", path.display(), e);
+            eprintln!("-->保存配置文件:{}失败: {}", path.display(), e);
             std::process::exit(1);
         }
-        return config;
     }
-    let data = std::fs::read(path).unwrap_or_else(|e| {
-        eprintln!("-->读取配置文件:{}失败: {}", path.display(), e);
-        std::process::exit(1);
-    });
-    serde_json::from_slice(&data).unwrap_or_else(|e| {
-        eprintln!("-->配置文件:{}格式错误: {}", path.display(), e);
-        std::process::exit(1);
-    })
+    config
 }
 
 /// 写入配置文件(先写临时文件再改名,避免写到一半断电导致配置文件损坏)

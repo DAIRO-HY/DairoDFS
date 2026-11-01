@@ -1,5 +1,5 @@
 [workspace]
-members = ["DairoDFS", "lib_db"]
+members = ["DairoDFS", "lib_db", "dairo-file-sdk/core", "dairo-file-sdk/ffi", "dairo-file-sdk/uniffi-bindgen", "dairo-file-sdk/flutter/rust"]
 #edition 2024的resolver:构建依赖(build.rs)与运行依赖的feature互不合并
 resolver = "3"
 
@@ -7,3 +7,10 @@ resolver = "3"
 [profile.release]
 strip = true
 lto = "thin"
+
+# SDK(Android/iOS/Flutter)发布版本:优先减小体积
+[profile.sdk]
+inherits = "release"
+opt-level = "s"
+lto = true
+codegen-units = 1

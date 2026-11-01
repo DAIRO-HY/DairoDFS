@@ -328,14 +328,17 @@ pub async fn file_stream(file: &DfsFile, headers: &HeaderMap) -> Result<Stream, 
     let Ok(storage) = storage_file_dao::select_one(&mut lib_db::get_context(), file.storageId).await else {
         return Err(BizError::not_found());
     };
-    let Ok(stream) = Stream::file(&storage.path, headers).await else {
+    //为了防止暴露文件真正的MD5，这里将MD5再次加密
+    let md5 = storage.md5.md5();
+
+    //ETag按文件内容生成,集群里所有服务器都一样,客户端切换服务器之后也能断点续传
+    let Ok(stream) = Stream::file_with_etag(&storage.path, headers, &md5).await else {
         return Err(BizError::not_found());
     };
     let mut stream = stream
         //文件ID对应的内容不会改变,允许浏览器长时间缓存
         .set_header("cache-control", "private, max-age=31536000, immutable")
-        //为了防止暴露文件真正的MD5，这里将MD5再次加密
-        .set_header("content-md5", storage.md5.md5());
+        .set_header("content-md5", md5);
     if let Some(content_type) = &file.contentType {
         stream = stream.content_type(content_type.as_str());
     }

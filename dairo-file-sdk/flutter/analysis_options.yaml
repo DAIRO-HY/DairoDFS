@@ -1,0 +1,10 @@
+include: package:flutter_lints/flutter.yaml
+
+# Additional information about this file can be found at
+# https://dart.dev/guides/language/analysis-options
+
+analyzer:
+  exclude:
+    #cargokit是编译Rust的工具,依赖在编译时才下载
+    - cargokit/**
+    - lib/src/rust/**

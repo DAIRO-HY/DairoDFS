@@ -1,0 +1,17 @@
+[package]
+name = "dairo_file_sdk_flutter"
+version = "0.1.0"
+#flutter_rust_bridge生成的代码按2021版本编写
+edition = "2021"
+publish = false
+
+[lib]
+crate-type = ["cdylib", "staticlib"]
+
+[dependencies]
+dairo-file-sdk = { path = "../../core" }
+flutter_rust_bridge = "=2.12.0"
+thiserror = "2"
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(frb_expand)'] }

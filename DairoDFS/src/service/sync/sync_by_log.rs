@@ -13,8 +13,17 @@ use std::time::Duration;
 
 /// 监听主机的日志变化
 pub async fn listen(info: Arc<SyncInfo>) {
+
+    //只有第一台同步主机需要同步集群ID
+    let mut is_cluster_id_synced = info.no != 1;
     while !info.is_stop() {
         tokio::time::sleep(Duration::from_secs(3)).await;
+        if !is_cluster_id_synced {
+            match crate::service::sync::sync_cluster_id(&info).await {
+                Ok(_) => is_cluster_id_synced = true,
+                Err(e) => info.msg(format!("获取集群ID失败:{}", e)),
+            }
+        }
         listen_once(&info).await;
     }
 }

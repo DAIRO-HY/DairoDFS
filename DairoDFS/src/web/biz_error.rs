@@ -43,6 +43,15 @@ impl BizError {
         }
     }
 
+    /// 资源正在被使用(例如同一个文件正在上传),客户端稍后重试,状态码为409
+    pub fn busy(msg: impl Into<String>) -> Self {
+        Self {
+            status: StatusCode::CONFLICT,
+            body: msg.into(),
+            is_json: false,
+        }
+    }
+
     /// 文件下载时,文件不存在
     pub fn not_found() -> Self {
         Self {

@@ -102,7 +102,10 @@ pub async fn download(eid: String, path: String, download: Option<bool>, headers
     if file.storageId == 0 {
         return Err(BizError::not_found());
     }
-    let stream = files::file_stream(&file, headers).await?;
+    let stream = files::file_stream(&file, headers)
+        .await?
+        //按路径访问,同一个路径的文件内容可能会改变,每次都要向服务器确认
+        .set_header("cache-control", "private, no-cache");
     if download == Some(true) {
         return Ok(stream.attachment(&file.name));
     }
@@ -119,7 +122,10 @@ pub async fn thumb(eid: String, path: String, headers: &HeaderMap) -> Result<Str
     let Some(thumb) = dfs_file_dao::select_extra(&mut lib_db::get_context(), file.id, "thumb").await? else {
         return Err(BizError::not_found());
     };
-    files::file_stream(&thumb, headers).await
+    let stream = files::file_stream(&thumb, headers)
+        .await?
+        .set_header("cache-control", "private, no-cache");
+    Ok(stream)
 }
 
 /// 转存到自己的文件夹(需要登录)

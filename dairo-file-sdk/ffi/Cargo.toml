@@ -1,0 +1,16 @@
+[package]
+name = "dairo-file-sdk-ffi"
+version = "0.1.0"
+edition = "2024"
+description = "dairo-file-sdk的Kotlin/Swift绑定(uniffi)"
+license = "MIT"
+
+#打包时用 cargo rustc --crate-type cdylib/staticlib 只输出一种类型,同时输出多种类型时静态库不会做LTO
+[lib]
+name = "dairo_file_sdk_ffi"
+crate-type = ["lib", "cdylib", "staticlib"]
+
+[dependencies]
+dairo-file-sdk = { path = "../core" }
+uniffi = "0.32"
+thiserror = "2"

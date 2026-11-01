@@ -65,3 +65,19 @@ pub fn get_last_id(url: &str) -> i64 {
 pub fn save_last_id(url: &str, last_id: i64) -> Result<(), String> {
     std::fs::write(last_id_path(url), last_id.to_string()).map_err(|e| e.to_string())
 }
+
+/// 将本机的集群ID设置成和同步主机一致
+pub async fn sync_cluster_id(info: &sync_info::SyncInfo) -> Result<(), String> {
+    let cluster_id = sync_http::request(&format!("{}/get_cluster_id", info.url)).await?;
+    let cluster_id = cluster_id.trim();
+    if cluster_id.is_empty() {
+        return Err("主机返回的集群ID为空".to_string());
+    }
+    let config = crate::system_config::get();
+    if config.cluster_id == cluster_id {
+        return Ok(());
+    }
+    let mut config = (*config).clone();
+    config.cluster_id = cluster_id.to_string();
+    crate::system_config::save(config).map_err(|e| e.to_string())
+}

@@ -14,6 +14,10 @@ use std::path::{Path, PathBuf};
 use std::sync::{LazyLock, Mutex};
 use tokio::io::AsyncWriteExt;
 
+/// 上传时超过这个时间没有收到数据,认为连接已经断开
+/// 网络中断时服务器可能很久都发现不了连接已经断开,这期间同一个文件无法继续上传
+const UPLOAD_READ_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(60);
+
 /// 记录当前正在上传的文件MD5,避免同一个文件同时上传导致文件数据混乱
 static UPLOADING: LazyLock<Mutex<HashSet<String>>> = LazyLock::new(|| Mutex::new(HashSet::new()));
 
@@ -23,7 +27,7 @@ struct UploadingGuard(String);
 impl UploadingGuard {
     fn new(md5: &str) -> Result<Self, BizError> {
         if !UPLOADING.lock().unwrap().insert(md5.to_string()) {
-            return Err(biz_error!("文件服务繁忙，请稍后重试。"));
+            return Err(BizError::busy("文件服务繁忙，请稍后重试。"));
         }
         Ok(Self(md5.to_string()))
     }
@@ -56,6 +60,7 @@ pub async fn upload(
 
 /// 以流的方式上传文件,支持断点续传
 /// 文件先追加到临时目录,全部上传完成并校验MD5后存放到存储目录,之后再调用by_md5添加到文件列表
+/// 临时文件已经完整时,上传空数据也会校验并保存;校验失败时删除临时文件,客户端需要从头上传
 /// - md5 文件的MD5
 #[POST("/api/file_upload/by_stream/{md5}")]
 pub async fn by_stream(md5: String, mut body: BodyStream) -> Result<(), BizError> {
@@ -68,11 +73,16 @@ pub async fn by_stream(md5: String, mut body: BodyStream) -> Result<(), BizError
         .append(true)
         .open(&temp_path)
         .await?;
-    while let Some(chunk) = body.next_chunk().await {
-        let Ok(chunk) = chunk else {
-            //可能是客户端中断,已经上传的部分保留,下次继续上传
-            temp_file.flush().await?;
-            return Err(biz_error!("上传中断"));
+    loop {
+        let chunk = match tokio::time::timeout(UPLOAD_READ_TIMEOUT, body.next_chunk()).await {
+            Ok(Some(Ok(chunk))) => chunk,
+            Ok(None) => break,
+
+            //可能是客户端中断或者网络断开,已经上传的部分保留,下次继续上传
+            Ok(Some(Err(_))) | Err(_) => {
+                temp_file.flush().await?;
+                return Err(biz_error!("上传中断"));
+            }
         };
         temp_file.write_all(&chunk).await?;
     }
@@ -102,6 +112,7 @@ pub async fn uploaded_size(md5: String) -> Result<u64, BizError> {
 }
 
 /// 通过MD5上传(文件已经存在于存储目录时,只需要添加到文件列表)
+/// 文件还没有上传时返回404,客户端接着通过by_stream上传,已经上传的部分会保留用于断点续传
 /// - md5 文件的MD5
 /// - path 文件路径
 /// - content_type 文件类型,不指定时按扩展名判断
@@ -109,9 +120,7 @@ pub async fn uploaded_size(md5: String) -> Result<u64, BizError> {
 pub async fn by_md5(login: Ext<LoginUser>, md5: String, path: String, content_type: Option<String>) -> Result<(), BizError> {
     let temp_path = temp_path(&md5)?;
     let Some(storage) = storage_file_dao::select_by_md5(&mut lib_db::get_context(), &md5).await? else {
-        //文件上传中发生了意外,删除临时文件重新上传
-        let _ = tokio::fs::remove_file(&temp_path).await;
-        return Err(biz_error!("文件夹或文件不存在"));
+        return Err(BizError::not_found());
     };
     add_dfs_file(login.id, &storage, &path, content_type).await?;
     let _ = tokio::fs::remove_file(&temp_path).await;

@@ -1,0 +1,6 @@
+#build_runner(生成freezed代码)跳过example,example里的插件符号链接会指回插件本身
+targets:
+  $default:
+    sources:
+      exclude:
+        - example/**

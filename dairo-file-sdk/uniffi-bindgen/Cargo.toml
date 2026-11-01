@@ -1,0 +1,10 @@
+[package]
+name = "uniffi-bindgen"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+#生成Kotlin/Swift代码的工具,单独一个crate,避免代码生成器被编译进SDK
+#cargo run -p uniffi-bindgen -- generate --library <动态库> --language kotlin --out-dir <目录>
+[dependencies]
+uniffi = { version = "0.32", features = ["cli"] }

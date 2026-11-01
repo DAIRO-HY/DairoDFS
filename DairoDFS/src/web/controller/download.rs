@@ -25,6 +25,7 @@ pub async fn download(url_path: String, path: String, headers: &HeaderMap) -> Re
         .await?
         //允许在其他网站上引用
         .set_header("access-control-allow-origin", "*")
-        .set_header("cache-control", "public, max-age=31536000, immutable");
+        //按路径访问,同一个路径的文件内容可能会改变,每次都要向服务器确认
+        .set_header("cache-control", "public, no-cache");
     Ok(stream)
 }
