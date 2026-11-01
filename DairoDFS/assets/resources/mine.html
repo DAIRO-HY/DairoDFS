@@ -1,0 +1,137 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    {{template include/head}}
+    <title>设置</title>
+</head>
+<body>
+{{template include/top-bar}}
+<div class="m-3 p-2 rounded shadow bg-content">
+    <form>
+        <div class="row row-cols-1 row-cols-md-2">
+            <div class="col mt-2">
+                <div class="row">
+                    <label class="col-4 col-form-label text-end">用户ID</label>
+                    <div class="col-8">
+                        <input class="form-control" name="id" disabled/>
+                    </div>
+                </div>
+            </div>
+            <div class="col mt-2">
+                <div class="row">
+                    <label class="col-4 col-form-label text-end">用户名</label>
+                    <div class="col-8">
+                        <input class="form-control" name="name" disabled/>
+                    </div>
+                </div>
+            </div>
+            <div class="col mt-2">
+                <div class="row">
+                    <label class="col-4 col-form-label text-end">邮箱</label>
+                    <div class="col-8">
+                        <input class="form-control" name="email" disabled/>
+                    </div>
+                </div>
+            </div>
+            <div class="col mt-2">
+                <div class="row">
+                    <label class="col-4 col-form-label text-end">创建日期</label>
+                    <div class="col-8">
+                        <input class="form-control" name="date" disabled/>
+                    </div>
+                </div>
+            </div>
+            <div class="col mt-2">
+                <div class="row">
+                    <label class="col-4 col-form-label text-end">WEB路径</label>
+                    <div class="col-8">
+                        <div class="input-group">
+                            <input class="form-control" name="urlPath" style="width: 100px" disabled>
+                            <button class="btn btn-outline-secondary" type="button" onclick="onMakeUrlPathClick(1)">
+                                生成
+                            </button>
+                            <button class="btn btn-outline-secondary" type="button" onclick="onMakeUrlPathClick(0)">
+                                关闭
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col mt-2">
+                <div class="row">
+                    <label class="col-4 col-form-label text-end">API-TOKEN</label>
+                    <div class="col-8">
+                        <div class="input-group">
+                            <input class="form-control" name="apiToken" disabled>
+                            <button class="btn btn-outline-secondary" type="button" onclick="onMakeApiTokenClick(1)">
+                                生成
+                            </button>
+                            <button class="btn btn-outline-secondary" type="button" onclick="onMakeApiTokenClick(0)">
+                                关闭
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col mt-2">
+                <div class="row">
+                    <label class="col-4 col-form-label text-end">端对端加密</label>
+                    <div class="col-8">
+                        <div class="input-group">
+                            <input class="form-control" name="encryptionKey" disabled>
+                            <button class="btn btn-outline-secondary" type="button" onclick="onMakeEncryptionClick(1)">
+                                生成
+                            </button>
+                            <button class="btn btn-outline-secondary" type="button" onclick="onMakeEncryptionClick(0)">
+                                关闭
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+    $(function () {
+        $.ajaxByData("/api/mine/info").success(data => {
+            $("form").bindValue(data)
+        }).get()
+    })
+
+    /**
+     * 生成API票据点击事件
+     */
+    function onMakeApiTokenClick(flag) {
+        const btnOk = confirm("生成新的票据之后,原来的票据将被废弃,确定要生成新的票据吗?")
+        if (!btnOk) {
+            return
+        }
+        $.ajaxByData("/api/mine/api_token?flag=" + flag).success(() => history.go(0)).put()
+    }
+
+    /**
+     * 生成web访问路径前缀
+     */
+    function onMakeUrlPathClick(flag) {
+        const btnOk = confirm("生成新的路径之后,原来的路径将被无法访问,确定要生成新的路径吗?")
+        if (!btnOk) {
+            return
+        }
+        $.ajaxByData("/api/mine/url_path?flag=" + flag).success(() => history.go(0)).put()
+    }
+
+    /**
+     * 生成端对端加密
+     */
+    function onMakeEncryptionClick(flag) {
+        const btnOk = confirm("生成新的密钥之后,原来的密钥将被废弃,确定要生成新的密钥吗?")
+        if (!btnOk) {
+            return
+        }
+        $.ajaxByData("/api/mine/encryption_key?flag=" + flag).success(() => history.go(0)).put()
+    }
+</script>
+</body>
+</html>

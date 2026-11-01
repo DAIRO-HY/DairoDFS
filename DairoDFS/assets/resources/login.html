@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    {{template include/head}}
+    <title>用户登录</title>
+</head>
+<body class="bg-login">
+<div class="text-center d-table" style="width: 100vw;height: 100vh;">
+    <div class="d-table-cell align-middle">
+        <div class="d-inline-block border rounded bg-white p-3 text-start" style="width: 300px;">
+            <span class="fs-4">用户登录</span>
+            <form action="/api/login/do_login">
+                <div>
+                    <input name="name" class="form-control mt-3" type="text" placeholder="用户名" autocomplete="off">
+                </div>
+                <div>
+                    <input name="pwd" class="form-control mt-3" type="password" placeholder="密码" autocomplete="off">
+                </div>
+                <button type="button" class="btn btn-primary w-100 mt-4" onclick="onLoginClick()">登录</button>
+            </form>
+            <div class="text-end mt-2">
+                <a class="text-muted small" href="javascript:void(0);" onclick="onForgetClick();">忘记密码</a>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+
+    $(function () {
+
+        //没有初始化时进入安装向导
+        $.ajaxByData("/api/common/global").hide().success(data => {
+            if (!data.isInit) {
+                location.replace("/install/ffmpeg.html")
+            }
+        }).get()
+
+        //回车登录
+        $("input[name='pwd']").on("keydown", e => {
+            if (e.key === "Enter") {
+                onLoginClick()
+            }
+        })
+    })
+
+    /**
+     * 获取设备唯一标识,第一次登录时生成并保存
+     */
+    function getDeviceId() {
+        let deviceId = localStorage.getItem("deviceId")
+        if (deviceId === null) {
+            deviceId = crypto.randomUUID().replaceAll("-", "")
+            localStorage.setItem("deviceId", deviceId)
+        }
+        return deviceId
+    }
+
+    /**
+     * 登录按钮点击事件
+     */
+    function onLoginClick() {
+        $("form").ajaxByForm().add("deviceId", getDeviceId()).success(data => {
+            localStorage.setItem("name", data.name)
+            localStorage.setItem("isAdmin", data.isAdmin)
+            location.href = "/"
+        }).post()
+    }
+
+    /**
+     * 忘记密码点击事件
+     */
+    function onForgetClick() {
+        $.ajaxByData("/api/login/forget").success(msg => {
+            alert(msg)
+        }).get()
+    }
+</script>
+</body>
+</html>

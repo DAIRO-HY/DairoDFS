@@ -1,0 +1,88 @@
+<div class="modal fade" id="modalFolderSelector" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
+     aria-labelledby="folderSelectorLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="folderSelectorLabel">选择文件夹</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="folderListDiv" style="height: 200px;overflow-y: auto;">
+                </div>
+                <div class="alert alert-primary d-flex text-nowrap mb-0 py-2">当前选择:
+                    <span id="selectedPath" class="d-flex justify-content-end overflow-x-auto no-scrollbar text-nowrap ps-2">
+                        根目录
+                    </span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button id="folderSelectorOkBtn" type="button" class="btn btn-primary">确认</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+
+    /**
+     * 当前选择的文件夹路径,空字符串代表根目录
+     */
+    let selectedFolder = ""
+
+    /**
+     * 显示文件夹选择器
+     * @param onFunc 确认后的回调,参数为选择的文件夹路径
+     */
+    function showFolderSelector(onFunc) {
+        const modal = bootstrap.Modal.getOrCreateInstance('#modalFolderSelector')
+        modal.show()
+        selectedFolder = ""
+        $("#selectedPath").text("根目录")
+        $("#folderListDiv").empty().append(makeFolderItem("", "根目录"))
+        $("#folderSelectorOkBtn").off("click").on("click", () => {
+            modal.hide()
+            onFunc(selectedFolder)
+        })
+    }
+
+    /**
+     * 生成一个文件夹节点
+     * @param folder 文件夹路径
+     * @param name 显示的名称
+     */
+    function makeFolderItem(folder, name) {
+        const $item = $(`<div class="ms-3">
+                            <i class="bi bi-plus" role="button" style="width:20px;display: inline-block;text-align: center;"></i>
+                            <span role="button"></span>
+                            <div></div>
+                        </div>`)
+        $item.find(">span").text(name).on("click", () => {
+            selectedFolder = folder
+            $("#selectedPath").text(folder === "" ? "根目录" : folder)
+        })
+        $item.find(">i").on("click", () => toggleSubFolder($item, folder))
+        return $item
+    }
+
+    /**
+     * 展开或收起子文件夹
+     */
+    function toggleSubFolder($item, folder) {
+        const $childDiv = $item.find(">div")
+        const $icon = $item.find(">i")
+        if ($icon.hasClass("bi-dash")) {//收起
+            $childDiv.empty()
+            $icon.removeClass("bi-dash").addClass("bi-plus")
+            return
+        }
+        $.ajaxByData("/api/folder_selector/list").add("folder", folder).success(data => {
+            $childDiv.empty()
+            if (data.length === 0) {//这是一个空文件夹
+                $icon.removeClass("bi-plus")
+                return
+            }
+            $icon.removeClass("bi-plus").addClass("bi-dash")
+            data.forEach(name => $childDiv.append(makeFolderItem(folder + "/" + name, name)))
+        }).get()
+    }
+</script>

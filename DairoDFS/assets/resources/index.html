@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    {{template include/head}}
+    <title>DairoDFS</title>
+</head>
+<body class="bg-login">
+<script>
+
+    $(function () {
+
+        //没有初始化时进入安装向导,否则进入首页
+        $.ajaxByData("/api/common/global").hide().success(data => {
+            if (!data.isInit) {
+                location.replace("/install/ffmpeg.html")
+            } else {
+                location.replace("/files.html")
+            }
+        }).get()
+    })
+</script>
+</body>
+</html>

@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    {{template include/head}}
+    <title>提取文件</title>
+    <style>
+        .content-menu {
+            min-width: 160px;
+            position: fixed;
+            overflow: hidden;
+        }
+
+        .content-menu > .content-menu-item {
+            line-height: 34px;
+            cursor: pointer;
+        }
+
+        .content-menu > .content-menu-item:hover {
+            background: #b0b0b0;
+        }
+    </style>
+</head>
+<body>
+<nav class="navbar bg-primary" data-bs-theme="dark">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="/">DairoDFS</a>
+        <a id="myFilesLink" class="nav-link text-white" href="/files.html" style="display: none;">我的文件</a>
+    </div>
+</nav>
+<div class="mx-3 mt-3 px-3 rounded shadow bg-content-bar" style="line-height: 44px;">
+    <span id="shareTitle" class="fs-5"></span>
+</div>
+
+<!--工具栏-->
+<div class="mx-3 mt-3 px-2 row g-0 rounded shadow bg-content-bar" style="line-height: 44px;">
+    <div class="col-10 col-sm-11 d-flex">
+        <div class="position-relative">
+            <div style="width: 62px">
+                <button class="btn btn-outline-primary rounded-circle p-0" onclick="openFolder('')"
+                        role="button" style="width: 26px;height: 26px;margin-top: -3px;">
+                    <i class="bi bi-house"></i>
+                </button>
+                <button class="btn btn-outline-primary rounded-circle p-0 ms-1" onclick="onBackClick()"
+                        role="button" style="width: 26px;height: 26px;margin-top: -3px;">
+                    <i class="bi bi-arrow-left-short"></i>
+                </button>
+            </div>
+        </div>
+        <div id="pathNavbar" class="d-flex justify-content-end overflow-x-auto no-scrollbar text-nowrap ps-2">
+        </div>
+    </div>
+    <div class="col-2 col-sm-1 d-flex justify-content-end">
+        <button id="optionBtn" type="button" class="btn btn-outline-primary rounded-circle p-0"
+                style="width: 32px;height: 32px;margin-top: 6px;">
+            <i class="bi bi-three-dots-vertical"></i>
+        </button>
+    </div>
+</div>
+
+<!--文件列表-->
+<div id="fileListDiv" class="mx-3 mt-3 p-2 rounded shadow bg-content"
+     style="min-height: 360px;padding-bottom: 60px!important;" onclick="uncheckAll();"></div>
+
+<!--右键菜单-->
+<div id="fileOptionPopGroup"
+     style="position: fixed;top: 0;left: 0;width: 100vw;height: 100vh;z-index: 9;background: #00000055;display: none;"
+     onclick="onFileOptionPopGroupClick()" oncontextmenu="onFileOptionPopGroupClick();return false;">
+    <div id="fileOptionPop" class="rounded content-menu shadow bg-content">
+        <div class="content-menu-item px-2" onclick="checkAll()"><i class="bi bi-check-all"></i>&nbsp;&nbsp;全选</div>
+        <div class="content-menu-item px-2" onclick="uncheckAll()"><i class="bi bi-x-square"></i>&nbsp;&nbsp;全取消</div>
+        <hr class="m-0">
+        <div class="content-menu-item px-2" onclick="onDownloadClick()" show-by-1-file><i
+                class="bi bi-download"></i>&nbsp;&nbsp;下载
+        </div>
+        <div class="content-menu-item px-2" onclick="onSaveToClick()" show-by-checked show-by-login><i
+                class="bi bi-save"></i>&nbsp;&nbsp;转存
+        </div>
+        <div class="content-menu-item px-2" onclick="location.href='/login.html'" show-by-not-login><i
+                class="bi bi-box-arrow-in-right"></i>&nbsp;&nbsp;登录后转存
+        </div>
+    </div>
+</div>
+
+<!--文件夹选择框(转存用)-->
+{{template include/folder_selector}}
+<script>
+
+    /**
+     * 分享ID(加密的)
+     */
+    const eid = getParam("eid").replace(/[^A-Za-z0-9_=-]/g, "")
+
+    /**
+     * 分享接口的URL前缀
+     * 分享ID只包含URL安全的字符,不能再编码,否则提取码的Cookie路径匹配不上
+     */
+    const shareApi = "/api/share/" + eid
+
+    /**
+     * 空文件夹时提示HTML
+     */
+    const NO_FILE_HTML = `<div class="text-center fs-4" style="margin-top: 150px;opacity: .2;">文件夹空空的</div>`
+
+    /**
+     * 文件列表项的HTML
+     */
+    const fileItemHtml =
+        `<div class="d-flex align-items-center justify-content-between" data-index="{index}" file-item>
+            <div class="text-white" role="button">
+                <div style="width: 50px;height: 50px;">{thumb}</div>
+            </div>
+            <div class="ms-2 {border} d-flex align-items-center" style="width:99999px;height: 60px;overflow: hidden" role="button">
+                <div>
+                <div class="text-nowrap">{name}</div>
+                <div class="small"><span>{date}</span><i class="bi bi-dot"></i><span>{size}</span></div>
+                </div>
+            </div>
+            <div class="{border} px-2" style="height: 60px;line-height: 60px;" check-icon></div>
+        </div>`
+
+    /**
+     * 当前显示的文件列表
+     */
+    let fileList = []
+
+    /**
+     * 访问者是否已经登录
+     */
+    let isLogin = false
+
+    $(function () {
+        $("#fileListDiv").on("contextmenu", e => {
+            showFileOption(e)
+            return false
+        })
+        $("#optionBtn").on("click", e => {
+            e.stopPropagation()
+            showFileOption(e)
+        })
+        $("#fileOptionPop").on("click", e => {
+            e.stopPropagation()
+            $("#fileOptionPopGroup").hide()
+        })
+        window.addEventListener("hashchange", () => reload())
+        $.ajaxByData(shareApi + "/info").success(data => {
+            if (data.state === "error") {//分享不存在或已过期
+                showError(data.msg)
+                return
+            }
+            if (data.state === "need_pwd") {
+                location.replace("/share_pwd.html?eid=" + encodeURIComponent(eid))
+                return
+            }
+            isLogin = data.isLogin
+            $("#myFilesLink").toggle(isLogin)
+            $("#shareTitle").text(data.title)
+            document.title = data.title + " - 提取文件"
+            reload()
+        }).get()
+    })
+
+    /**
+     * 显示错误信息(分享不存在、已过期等)
+     */
+    function showError(msg) {
+        $("#fileListDiv").html(`<div class="text-center fs-4" style="margin-top: 150px;opacity: .5;"></div>`)
+            .find("div").text(msg)
+    }
+
+    /**
+     * 从URL中获取当前文件夹路径(相对于分享的根目录)
+     */
+    function getCurrentFolderByUrl() {
+        const hash = location.hash
+        if (hash === "" || hash === "#") {
+            return ""
+        }
+        return decodeURIComponent(hash.substring(1))
+    }
+
+    /**
+     * 打开文件夹
+     */
+    function openFolder(folder) {
+        if (folder === getCurrentFolderByUrl()) {
+            reload()
+            return
+        }
+        location.hash = "#" + encodeURIComponent(folder)
+    }
+
+    /**
+     * 后退点击事件
+     */
+    function onBackClick() {
+        const folder = getCurrentFolderByUrl()
+        openFolder(folder.substring(0, folder.lastIndexOf("/")))
+    }
+
+    /**
+     * 文件在分享里的路径对应的URL(每一级分别编码)
+     */
+    function pathUrl(name) {
+        const path = getCurrentFolderByUrl() + "/" + name
+        return path.split("/").filter(it => it !== "").map(encodeURIComponent).join("/")
+    }
+
+    /**
+     * 重新加载列表
+     */
+    function reload() {
+        const folder = getCurrentFolderByUrl()
+        $.ajaxByData(shareApi + "/list").add("folder", folder).success(data => {
+            data.forEach(item => item.checked = false)
+            updatePathNavbar()
+            fillFileList(data)
+            updateCheckedState()
+        }).get()
+    }
+
+    /**
+     * 更新路径导航条
+     */
+    function updatePathNavbar() {
+        const folder = getCurrentFolderByUrl()
+        const $pathNavbar = $("#pathNavbar").empty()
+        if (folder === "") {
+            $pathNavbar.append(`<span class="ps-2">全部文件</span>`)
+            return
+        }
+        let tempPath = ""
+        folder.split("/").filter(it => it !== "").forEach(item => {
+            tempPath += "/" + item
+            const path = tempPath
+            $(`<span role="button"></span>`).text(item).on("click", () => openFolder(path))
+                .appendTo($pathNavbar)
+                .before(`<i class="bi bi-chevron-right"></i>`)
+        })
+    }
+
+    /**
+     * 填充文件列表
+     */
+    function fillFileList(data) {
+        fileList = data
+        const $fileListDiv = $("#fileListDiv").empty()
+        if (data.length === 0) {
+            $fileListDiv.append(NO_FILE_HTML)
+            return
+        }
+        const lastIndex = data.length - 1
+        data.forEach((item, index) => {
+            const border = index < lastIndex ? "border-bottom" : ""
+            let thumb
+            if (item.hasThumb) {
+                thumb = `<img src="${shareApi}/thumb/${pathUrl(item.name)}" class="rounded" style="width: 50px;height: 50px;object-fit: cover;">`
+            } else if (item.fileFlag) {
+                thumb = `<div class="d-flex align-items-center" style="width: 50px;height: 50px;"><i class="bi bi-file-earmark-fill" style="font-size: 50px;"></i></div>`
+            } else {
+                thumb = `<div class="d-flex align-items-center" style="width: 50px;height: 50px;"><i class="bi bi-folder-fill" style="font-size: 50px;color:#6FBEEA;"></i></div>`
+            }
+            $fileListDiv.append(
+                fileItemHtml
+                    .replace("{thumb}", thumb)
+                    .replace("{name}", escapeHtml(item.name))
+                    .replace("{size}", item.fileFlag ? item.size.toDataSize() : "")
+                    .replace("{date}", new Date(item.date).dateFormat())
+                    .replace(/{border}/g, border)
+                    .replace(/{index}/g, index)
+            )
+        })
+        $("div[file-item]").on("click", function (e) {
+            e.stopPropagation()
+            const file = fileList[parseInt($(this).data("index"))]
+            if (file.fileFlag) {
+                window.open(`${shareApi}/download/${pathUrl(file.name)}`)
+            } else {
+                openFolder(getCurrentFolderByUrl() + "/" + file.name)
+            }
+        }).on("contextmenu", function (e) {
+            const index = parseInt($(this).data("index"))
+            fileList.forEach((item, i) => item.checked = index === i)
+            updateCheckedState()
+            showFileOption(e)
+            return false
+        })
+        $("div[check-icon]").on("click", function (e) {
+            e.stopPropagation()
+            const file = fileList[parseInt($(this).parent().data("index"))]
+            file.checked = !file.checked
+            updateCheckedState()
+        })
+    }
+
+    /**
+     * 选中所有
+     */
+    function checkAll() {
+        fileList.forEach(item => item.checked = true)
+        updateCheckedState()
+    }
+
+    /**
+     * 取消所有选中
+     */
+    function uncheckAll() {
+        fileList.forEach(item => item.checked = false)
+        updateCheckedState()
+    }
+
+    /**
+     * 更新选中状态
+     */
+    function updateCheckedState() {
+        const $fileItems = $("#fileListDiv>div[file-item]")
+        fileList.forEach((item, index) => {
+            const icon = item.checked ? `<i class="bi bi-check-circle text-primary fs-5"></i>` : `<i class="bi bi-circle text-secondary"></i>`
+            $($fileItems[index]).find("div[check-icon]").html(icon)
+        })
+    }
+
+    /**
+     * 弹出菜单其他区域点击事件
+     */
+    function onFileOptionPopGroupClick() {
+        uncheckAll()
+        $("#fileOptionPopGroup").hide()
+    }
+
+    /**
+     * 显示操作菜单
+     */
+    function showFileOption(e) {
+        const checkedList = fileList.filter(item => item.checked)
+        $("[show-by-1-file]").toggle(checkedList.length === 1 && checkedList[0].fileFlag)
+        $("[show-by-checked]").toggle(checkedList.length > 0)
+        $("[show-by-login]").toggle(isLogin && checkedList.length > 0)
+        $("[show-by-not-login]").toggle(!isLogin)
+        let menuHeight = 5
+        $("#fileOptionPop > .content-menu-item").each((_, obj) => {
+            if ($(obj).css("display") !== "none") {
+                menuHeight += 34
+            }
+        })
+        const left = window.innerWidth - e.clientX > 160 ? e.clientX : e.clientX - 160
+        const top = window.innerHeight - e.clientY > menuHeight ? e.clientY : e.clientY - menuHeight
+        $("#fileOptionPop").css("left", left + "px").css("top", top + "px")
+        $("#fileOptionPopGroup").show()
+    }
+
+    /**
+     * 下载点击事件
+     */
+    function onDownloadClick() {
+        const file = fileList.find(item => item.checked)
+        window.open(`${shareApi}/download/${pathUrl(file.name)}?download=true`)
+    }
+
+    /**
+     * 转存点击事件
+     */
+    function onSaveToClick() {
+        const names = fileList.filter(item => item.checked).map(item => item.name)
+        showFolderSelector(target => {
+            $.ajaxByData(shareApi + "/save_to").addAll({
+                folder: getCurrentFolderByUrl(),
+                names: names,
+                target: target
+            }).success(() => {
+                alert("转存成功")
+            }).post()
+        })
+    }
+</script>
+</body>
+</html>

@@ -1,0 +1,65 @@
+[package]
+name = "DairoDFS"
+version = "2.0.0"
+edition = "2024"
+
+# build.rs 专用的依赖
+[build-dependencies]
+
+#build.rs里的异步运行时,与运行期统一使用tokio
+tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
+lib_db = { path = "../lib_db" }
+sqlx-dsl-dao = "0.0.3"
+
+#注解路由代码生成
+hyperoute-codegen = "0.0.6"
+
+[dependencies]
+lib_db = { path = "../lib_db" }
+md5 = "0.8"
+tokio = { version = "1", features = ["full"] }
+sqlx = { version = "0.8", features = ["runtime-tokio", "sqlite", "macros"] }
+
+#用来解析启动参数
+clap = { version = "4", features = ["derive", "env"] }
+chrono = "0.4" # 日期时间处理
+serde = { version = "1", features = ["derive", "rc"] }
+serde_json = "1.0"
+rand = { version = "0.10", features = ["std"] }
+bytes = "1"
+
+#数据库操作上下文:持有连接池,以及可选的当前事务。
+sqlx-context = "0.0.2"
+
+#注解路由
+hyperoute-core = "0.0.6"
+hyperoute-macro = "0.0.6"
+hyper = { version = "1", features = ["full"] }
+http-body-util = "0.1"
+tokio-stream = "0.1"
+
+#表单验证
+validator = { version = "0.20", features = ["derive"] }
+
+#适合读非常多,写非常少的场景,比如配置文件,全局状态等
+arc-swap = "1"
+base64 = "0.23"
+
+#获取磁盘剩余空间
+fs4 = "1"
+
+#图片解码、缩放、编码
+image = { version = "0.25", default-features = false, features = ["jpeg", "png", "bmp", "gif", "tiff", "webp", "ico", "tga"] }
+
+#读取图片EXIF信息
+kamadak-exif = "0.6"
+
+#下载媒体处理工具安装包
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls"] }
+
+#分享链接加密(与老版本的AES-CFB加密方式一致,老版本的分享链接可以继续使用)
+aes = "0.8"
+cfb-mode = "0.8"
+
+#解压媒体处理工具安装包
+zip = { version = "9", default-features = false, features = ["deflate-flate2-zlib-rs"] }

@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    {{template include/head}}
+    <title>高级功能</title>
+</head>
+<body>
+{{template include/top-bar}}
+<div class="mx-3 mt-3 p-2 rounded shadow bg-content">
+    <div class="row row-cols-1 row-cols-sm-auto">
+        <div class="col" id="validateErrFileDiv" style="display: none;">
+            <div class="alert alert-danger" id="validateErrFile"></div>
+        </div>
+        <div class="col">
+            <div class="alert alert-primary">文件处理状态：<span id="fileHandling"></span></div>
+        </div>
+        <div class="col">
+            <div class="alert alert-success"><span id="recycleStorageTimerState"></span></div>
+        </div>
+        <div class="col">
+            <div class="alert alert-info"><span id="storageState"></span></div>
+        </div>
+    </div>
+    <textarea class="form-control" id="sql"></textarea>
+    <div class="row row-cols-xl-6 row-cols-lg-5 row-cols-md-4 row-cols-sm-3 row-cols-2">
+        <div class="col">
+            <button type="button" class="btn w-100 btn-primary mt-2" onclick="onExecClick()">执行</button>
+        </div>
+        <div class="col">
+            <button type="button" class="btn w-100 btn-dark mt-2" onclick="onDeleteExtraClick()">重置附属文件</button>
+        </div>
+        <div class="col">
+            <button type="button" class="btn w-100 btn-info mt-2" onclick="onDeletePreVideoClick()">重置预览视频
+            </button>
+        </div>
+        <div class="col">
+            <button type="button" class="btn w-100 btn-danger mt-2" onclick="onDeletePreviewClick()">重置预览图片
+            </button>
+        </div>
+        <div class="col">
+            <button type="button" class="btn w-100 btn-success mt-2" onclick="onDeleteThumbClick()">重置缩略图片
+            </button>
+        </div>
+        <div class="col">
+            <button type="button" class="btn w-100 btn-warning mt-2" onclick="onUsedSizeClick()">DFS使用大小<span
+                    id="usedSize"></span></button>
+        </div>
+        <div class="col">
+            <button type="button" class="btn w-100 btn-primary mt-2" onclick="onClearPropertyClick()">重置属性</button>
+        </div>
+        <div class="col">
+            <button type="button" class="btn w-100 btn-dark mt-2" onclick="onHandlingClick()">未处理的文件</button>
+        </div>
+        <div class="col">
+            <button type="button" class="btn w-100 btn-info mt-2" onclick="onHandlingErrorClick()">处理失败的文件
+            </button>
+        </div>
+        <div class="col">
+            <button type="button" class="btn w-100 btn-danger mt-2" onclick="onHandErrorRetryClick()">处理失败全部重试
+            </button>
+        </div>
+        <div class="col">
+            <button type="button" class="btn w-100 btn-success mt-2" onclick="onReHandleClick()">开启文件处理</button>
+        </div>
+        <div class="col">
+            <button type="button" class="btn w-100 btn-warning mt-2" onclick="onWithoutStorageClick()">储存丢失的文件
+            </button>
+        </div>
+        <div class="col">
+            <button type="button" class="btn w-100 btn-primary mt-2" onclick="onNotUseCountClick()">未使用文件数量
+            </button>
+        </div>
+        <div class="col">
+            <button type="button" class="btn w-100 btn-dark mt-2" onclick="onRecycleNowClick()">回收未使用文件</button>
+        </div>
+        <div class="col">
+            <button type="button" class="btn w-100 btn-info mt-2" onclick="onValidateFileMd5Click()">验证文件完整(<span
+                    id="validateFileMd5Current">0</span>/<span id="validateFileMd5Total">0</span>)
+            </button>
+        </div>
+        <div class="col">
+            <button type="button" class="btn w-100 btn-danger mt-2" onclick="onDbBackUpClick()">备份数据库</button>
+        </div>
+        <div class="col">
+            <button type="button" class="btn w-100 btn-success mt-2" onclick="onResetDataClick()">重置并同步本机</button>
+        </div>
+        <div class="col">
+            <button type="button" class="btn w-100 btn-warning mt-2" onclick="onRecycleTimerClick()">立即执行回收任务</button>
+        </div>
+    </div>
+    <div class="text-start">
+        <div id="result"></div>
+        <div id="table"></div>
+    </div>
+</div>
+<script>
+
+    $(function () {
+        init()
+        loadValidateState()
+    })
+
+    /**
+     * 页面初始化
+     */
+    function init() {
+        $.ajaxByData("/api/advanced/info").success(data => {
+            for (let key in data) {
+                $("#" + key).text(data[key])
+            }
+        }).get()
+    }
+
+    function onExecClick() {
+        const sql = $("#sql").val()
+        if (sql === "") {
+            $("#table").empty()
+            $("#result").empty()
+            return
+        }
+        $.ajaxByData("/api/advanced/exec_sql").add("sql", $("#sql").val()).success(data => {
+            fillDataTable(data)
+        }).post()
+    }
+
+    /**
+     * 查看正在处理中的文件
+     */
+    function onHandlingClick() {
+        $("#sql").val("select count(*) from dfs_file where state = 0 and storageId > 0")
+        onExecClick()
+    }
+
+    /**
+     * 查看处理失败
+     */
+    function onHandlingErrorClick() {
+        $("#sql").val("select id,userId,name,size,date,property,state,stateMsg from dfs_file where state = 2")
+        onExecClick()
+    }
+
+    /**
+     * 重置文件属性
+     */
+    function onClearPropertyClick() {
+        if (confirm("重置文件属性")) {
+            $("#sql").val("update dfs_file set property = null,state = 0 where storageId > 0 and isExtra = 0")
+            onExecClick()
+        }
+    }
+
+    /**
+     * 处理失败全部重试
+     */
+    function onHandErrorRetryClick() {
+        if (confirm("确定要处理失败全部重试")) {
+            $("#sql").val("update dfs_file set state = 0 where state = 2")
+            onExecClick()
+        }
+    }
+
+    /**
+     * 重新生成缩略图片
+     */
+    function onDeleteThumbClick() {
+        if (confirm("确定要重新生成缩略图片")) {
+            $("#sql").val("delete from dfs_file where isExtra = 1 and name = 'thumb';update dfs_file set state = 0 where storageId > 0 and isExtra = 0")
+            onExecClick()
+        }
+    }
+
+    /**
+     * 重新生成预览图片
+     */
+    function onDeletePreviewClick() {
+        if (confirm("确定要重新生成预览图片")) {
+            $("#sql").val("delete from dfs_file where isExtra = 1 and name = 'preview';update dfs_file set state = 0 where storageId > 0 and isExtra = 0")
+            onExecClick()
+        }
+    }
+
+    /**
+     * 重新生成预览视频
+     */
+    function onDeletePreVideoClick() {
+        if (confirm("重新生成预览视频")) {
+            $("#sql").val("delete from dfs_file where isExtra = 1 and name = 'preview' and contentType = 'video/mp4';update dfs_file set state = 0 where storageId > 0 and isExtra = 0")
+            onExecClick()
+        }
+    }
+
+    /**
+     * 重置附属文件
+     */
+    function onDeleteExtraClick() {
+        if (confirm("重置附属文件?")) {
+            $("#sql").val("delete from dfs_file where isExtra = 1;update dfs_file set state = 0 where storageId > 0 and isExtra = 0")
+            onExecClick()
+        }
+    }
+
+    /**
+     * 未使用文件数量
+     */
+    function onNotUseCountClick() {
+        $("#sql").val("select count(*) from storage_file where id not in (select storageId from dfs_file where storageId > 0) and id not in (select storageId from dfs_file_delete)")
+        onExecClick()
+    }
+
+    /**
+     * 开始处理线程
+     */
+    function onReHandleClick() {
+        $.ajaxByData("/api/advanced/re_handle").success(() => init()).post()
+    }
+
+    /**
+     * 立即回收未使用的文件
+     */
+    function onRecycleNowClick() {
+        if (confirm("确定要立即回收未使用的文件")) {
+            $.ajaxByData("/api/advanced/recycle_now").post()
+        }
+    }
+
+    /**
+     * 储存丢失的文件
+     */
+    function onWithoutStorageClick() {
+        $("#sql").val("select * from dfs_file where storageId > 0 and storageId not in (select id from storage_file)")
+        onExecClick()
+    }
+
+    /**
+     * DFS使用大小点击事件
+     */
+    function onUsedSizeClick() {
+        $.ajaxByData("/api/advanced/used_size").success(data => {
+            $("#usedSize").text(`(${data})`)
+        }).get()
+    }
+
+    /**
+     * 验证文件完整点击事件,正在验证时则停止验证
+     */
+    function onValidateFileMd5Click() {
+        $.ajaxByData("/api/advanced/validate_file").success(() => loadValidateState()).post()
+    }
+
+    /**
+     * 验证文件完整进度的定时器
+     */
+    let validateTimer = null
+
+    /**
+     * 获取验证文件完整的进度,正在验证时每秒刷新
+     */
+    function loadValidateState() {
+        clearTimeout(validateTimer)
+        $.ajaxByData("/api/advanced/validate_file").hide().success(data => {
+            $("#validateFileMd5Current").text(data.current)
+            $("#validateFileMd5Total").text(data.total)
+            if (data.errors.length > 0) {
+                const $div = $("#validateErrFile").empty()
+                data.errors.forEach(it => $("<div></div>").text(it).appendTo($div))
+                $("#validateErrFileDiv").show()
+            }
+            if (data.isRunning) {
+                validateTimer = setTimeout(loadValidateState, 1000)
+            }
+        }).get()
+    }
+
+    /**
+     * 填充表格数据
+     * @param data 要填充的数据
+     */
+    function fillDataTable(data) {
+        if (!isNaN(data)) {
+            $("#table").empty()
+            $("#result").text("执行结果:" + data)
+            return
+        }
+        $("#result").empty()
+
+        const columns = []
+        if (data.columns.length > 0) {
+            for (let index in data.columns) {
+                columns.push({
+                    data: data.columns[index],
+                    title: data.columns[index],
+                    defaultContent: "",
+                    render: $.fn.dataTable.render.text()
+                })
+            }
+        }
+        $("#table").createTable({
+            data: data.data,
+            columns: columns
+        })
+    }
+
+    /**
+     * 备份数据库
+     */
+    function onDbBackUpClick() {
+        $.ajaxByData("/api/advanced/db_backup").success(path => {
+            alert("备份成功:" + path)
+        }).post()
+    }
+
+    /**
+     * 立即执行回收任务(备份数据库、清理同步日志、回收存储空间)
+     */
+    function onRecycleTimerClick() {
+        if (confirm("确定要立即执行回收任务")) {
+            $.ajaxByData("/api/advanced/recycle_timer").success(() => setTimeout(init, 1000)).post()
+        }
+    }
+
+    /**
+     * 重置本机数据
+     */
+    function onResetDataClick() {
+        if (confirm("确定重置本机数据？可能导致本机数据丢失，请谨慎选择！！！")) {
+            $.ajaxByData("/api/advanced/reset_data").success(() => {
+                alert("重置成功,正在从主机全量同步数据")
+            }).post()
+        }
+    }
+
+</script>
+</body>
+</html>

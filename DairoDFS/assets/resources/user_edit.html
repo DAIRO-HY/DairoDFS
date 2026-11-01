@@ -1,0 +1,67 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    {{template include/head}}
+    <title>用户编辑</title>
+</head>
+<body>
+{{template include/top-bar}}
+<div class="m-3 p-2 rounded shadow bg-content">
+    <form id="form" action="/api/user/edit">
+        <input type="hidden" name="id">
+        <div class="row">
+            <label class="col-2 col-form-label text-end">用户名</label>
+            <div class="col-10">
+                <input class="form-control" name="name" style="max-width: 160px" autocomplete="off">
+            </div>
+        </div>
+        <div class="row mt-2">
+            <label class="col-2 col-form-label text-end">密码</label>
+            <div class="col-10">
+                <input class="form-control" name="pwd" type="password" style="max-width: 240px" autocomplete="off">
+            </div>
+        </div>
+        <div class="row mt-2">
+            <label class="col-2 col-form-label text-end">邮箱</label>
+            <div class="col-10">
+                <input class="form-control" name="email" style="max-width: 240px" autocomplete="off">
+            </div>
+        </div>
+        <div class="row mt-2">
+            <label class="col-2 col-form-label text-end">状态</label>
+            <div class="col-10">
+                <select class="form-select w-auto" name="state">
+                    <option value="0">禁用</option>
+                    <option value="1">启用</option>
+                </select>
+            </div>
+        </div>
+        <div class="row mt-2">
+            <label class="col-2 col-form-label text-end">创建日期</label>
+            <div class="col-10">
+                <input class="form-control" name="date" style="max-width: 170px" autocomplete="off" disabled>
+            </div>
+        </div>
+        <div class="mt-3 text-end">
+            <button type="button" class="btn btn-primary" onclick="onSubmitClick()">提交</button>
+        </div>
+    </form>
+</div>
+<script>
+    $(function () {
+        $.ajaxByData("/api/user/detail").add("id", getParam("id", "0")).success(data => {
+            $("form").bindValue(data)
+            if (data.id !== 0) {//编辑已有用户时,密码为空表示不修改
+                $("input[name='pwd']").attr("placeholder", "不修改请留空")
+            }
+        }).get()
+    })
+
+    function onSubmitClick() {
+        $("form").ajaxByForm().success(() => {
+            location.href = "/user_list.html"
+        }).post()
+    }
+</script>
+</body>
+</html>

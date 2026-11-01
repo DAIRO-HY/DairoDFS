@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    {{template include/head}}
+    <title>垃圾箱</title>
+</head>
+<body>
+{{template include/top-bar}}
+
+<!--操作工具栏-->
+{{template include/trash/trash_toolbar}}
+
+<!--文件列表视图-->
+{{template include/trash/trash_list}}
+
+<!--右键菜单视图-->
+{{template include/trash/trash_right_option}}
+<script>
+    $(function () {
+        reload()
+    })
+</script>
+</body>
+</html>

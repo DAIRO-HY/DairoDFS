@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    {{template /include/head}}
+    <title>分布式部署</title>
+</head>
+<body class="bg-login">
+<div class="text-center d-table" style="width: 100vw;height: 100vh;">
+    <div class="d-table-cell align-middle" style="padding: 0 100px">
+        <div class="d-inline-block border rounded bg-white p-3" style="max-width: 700px;width: 100%;">
+            <span class="fs-4">分布式部署</span>
+            <form action="/api/install/distributed">
+                <div id="urlDiv">
+                    <input class="form-control mt-3" type="text" placeholder="同步URL" autocomplete="off">
+                </div>
+                <input type="hidden" name="syncDomains">
+                <div class="text-end mt-2">
+                    <i class="bi bi-plus-circle" style="font-size: 26px" role="button" onclick="onAddClick()"></i>
+                </div>
+                <div class="d-flex justify-content-between mt-5">
+                    <div>
+                        7/8
+                    </div>
+                    <div>
+                        <button type="button" class="btn btn-primary"
+                                onclick="window.location.href='set_storage.html'">上一步
+                        </button>
+                        <button type="button" class="btn btn-primary" onclick="onSetClick()">设置</button>
+                        <button type="button" class="btn btn-primary"
+                                onclick="window.location.href='create_admin.html'">跳过
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<script>
+    $(function () {
+        $.ajaxByData("/api/install/info").success(data => {
+            const urls = data.syncDomains.split("\n").filter(it => it !== "")
+            urls.forEach((it, i) => {
+                if (i > 0) {
+                    onAddClick()
+                }
+                $("#urlDiv>input").eq(i).val(it)
+            })
+        }).get()
+    })
+
+    /**
+     * 添加一个URL输入框点击事件
+     */
+    function onAddClick() {
+        $("#urlDiv").append('<input class="form-control mt-3" type="text" placeholder="同步URL" autocomplete="off">')
+    }
+
+    /**
+     * 设置按钮点击事件
+     */
+    function onSetClick() {
+        const urls = $("#urlDiv>input").map((_, it) => it.value.trim()).get().filter(it => it !== "")
+        $("input[name='syncDomains']").val(urls.join("\n"))
+        $("form").ajaxByForm().success(isInit => {
+            //用户数据已经从主机同步过来时,不需要再创建管理员
+            window.location.href = isInit ? "/login.html" : "create_admin.html"
+        }).post()
+    }
+</script>
+</body>
+</html>

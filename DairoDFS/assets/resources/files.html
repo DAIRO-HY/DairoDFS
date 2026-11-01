@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    {{template include/head}}
+    <title>文件</title>
+</head>
+<body>
+{{template include/top-bar}}
+
+<!--文件操作导航视图-->
+{{template include/files/files_toolbar}}
+
+<!--文件上传进度视图-->
+{{template include/files/files_upload}}
+
+<!--文件列表视图-->
+{{template include/files/files_list}}
+
+<!--右键菜单视图-->
+{{template include/files/files_right_option}}
+
+<!--分享画面-->
+{{template include/files/files_share}}
+
+<!--分享明细dialog-->
+{{template include/share_detail_dialog}}
+
+<!--文件属性dialog-->
+{{template include/files/file_property_dialog}}
+<script>
+    $(function () {
+        reload()
+    })
+</script>
+</body>
+</html>

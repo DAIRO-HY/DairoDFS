@@ -1,0 +1,26 @@
+<div class="mx-3 mt-3 px-2 row g-0 rounded shadow bg-content-bar" style="line-height: 44px;">
+    <div class="col-10 col-sm-11 d-flex">
+        <div>
+            <button class="btn btn-sm btn-outline-primary" onclick="checkAll();onLogicDeleteClick();"
+                    role="button"
+                    style="margin-top: -3px;">
+                <i class="bi bi-trash"></i>&nbsp;&nbsp;清空垃圾箱
+            </button>
+        </div>
+    </div>
+    <div class="col-2 col-sm-1 d-flex justify-content-end">
+        <button id="optionBtn" type="button"
+                class="btn btn-outline-primary rounded-circle p-0"
+                style="width: 32px;height: 32px;margin-top: 6px;">
+            <i class="bi bi-three-dots-vertical"></i>
+        </button>
+    </div>
+</div>
+<script>
+    $(function () {
+        $("#optionBtn").on("click", e => {
+            e.stopPropagation()
+            showFileOption(e)
+        })
+    })
+</script>

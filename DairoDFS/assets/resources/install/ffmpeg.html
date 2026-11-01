@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    {{template /include/head}}
+    <title>安装FFMPEG</title>
+</head>
+<body class="bg-login">
+<div class="text-center d-table" style="width: 100vw;height: 100vh;">
+    <div class="d-table-cell align-middle" style="padding: 0 100px">
+        <div id="toolInstall" class="d-inline-block border rounded bg-white p-3" style="max-width: 700px;width: 100%;"
+             data-name="ffmpeg" data-prev="" data-next="ffprobe.html" data-step="1/8">
+            <span class="fs-4">安装FFMPEG</span>
+            <div class="text-start">
+                FFmpeg 是一个非常强大的多媒体处理工具，用于处理视频、音频、字幕等多种多媒体文件。<br>用于生成视频缩略图、视频转码、PSD图片解码。
+            </div>
+            {{template /include/install_tool}}
+        </div>
+    </div>
+</div>
+</body>
+</html>

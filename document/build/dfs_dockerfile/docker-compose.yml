@@ -1,0 +1,25 @@
+services:
+  dairo-dfs:
+    image: dairopapa/dairo-dfs:2.0.0
+    restart: always
+    container_name: dairo-dfs
+    network_mode: host
+
+    #使用真root权限进入,某些linux系统需要改权限才能运行
+    privileged: true
+
+    #ports:
+    #  - 8031:8031
+
+    environment:
+      #时区,照片的拍摄时间按这个时区计算
+      TZ: Asia/Shanghai
+
+      #WEB端口,默认8031
+      #DAIRO_DFS_WEB_PORT: 8031
+
+      #上传文件大小上限,默认10GB
+      #HYPEROUTE_MAX_BODY_SIZE: 10GB
+    volumes:
+      - ./data:/app/data
+      - /mnt/data-dfs-640G/dfs-home:/mnt/dfs-data

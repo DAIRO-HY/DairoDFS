@@ -1,0 +1,218 @@
+<div id="fileListDiv" class="mx-3 mt-3 p-2 rounded shadow bg-content"
+     style="min-height: 360px;padding-bottom: 60px!important;"
+     onclick="uncheckAll();"></div>
+<script>
+
+    /**
+     * 空文件夹时提示HTML
+     */
+    const NO_FILE_HTML = `<div class="text-center fs-4" style="margin-top: 150px;opacity: .2;">文件夹空空的</div>`
+
+    /**
+     * 获取文件列表部分的HTML
+     */
+    const fileItemHtml =
+        `<div class="d-flex align-items-center justify-content-between" data-index="{index}" file-item>
+                <div class="text-white" role="button">
+                    <div style="width: 50px;height: 50px;">
+                    {thumb}
+                    </div>
+                </div>
+                <div class="ms-2 {border} d-flex align-items-center" style="width:99999px;height: 60px;overflow: hidden" role="button">
+                    <div>
+                    <div class="text-nowrap">{name}</div>
+                    <div class="small"><span>{date}</span><i class="bi bi-dot"></i><span>{size}</span></div>
+                    </div>
+                </div>
+                <div class="{border} px-2" style="height: 60px;line-height: 60px;" check-icon>
+                </div>
+            </div>`
+
+    /**
+     * 当前显示的文件列表
+     */
+    let fileList = []
+
+    /**
+     * 当前文件夹ID
+     */
+    let currentFolderId = 0
+
+    $(function () {
+
+        //绑定文件空白右键点击事件
+        $("#fileListDiv").on("contextmenu", function (e) {
+            showFileOption(e)
+            return false
+        })
+
+        //浏览器前进后退时重新加载
+        window.addEventListener("hashchange", () => reload())
+    })
+
+    /**
+     * 重新加载列表
+     */
+    function reload() {
+        loadFileData(getCurrentFolderByUrl())
+    }
+
+    /**
+     * 从URL中获取当前文件夹路径
+     */
+    function getCurrentFolderByUrl() {
+        const folderHash = location.hash
+        if (folderHash === "" || folderHash === "#") {//没有路径时,默认根目录
+            return ""
+        }
+        return decodeURIComponent(folderHash.substring(1))
+    }
+
+    /**
+     * 打开文件夹
+     */
+    function openFolder(folder) {
+        if (folder === getCurrentFolderByUrl()) {
+            reload()
+            return
+        }
+
+        //修改URL后由hashchange事件加载
+        location.hash = "#" + encodeURIComponent(folder)
+    }
+
+    /**
+     * 加载文件列表数据
+     */
+    function loadFileData(folder) {
+        $.ajaxByData("/api/files/list").add("folder", folder).success(data => {
+            currentFolderId = data.folderId
+            data.list.forEach(item => item.checked = false)
+
+            //更新路径导航条
+            updatePathNavbar()
+            fillFileList(data.list)
+            bindFileClick()
+
+            //更新选中状态
+            updateCheckedState()
+        }).get()
+    }
+
+    /**
+     * 填充文件列表
+     */
+    function fillFileList(data) {
+        fileList = data
+        const $fileListDiv = $("#fileListDiv")
+        $fileListDiv.empty()
+        if (data.length === 0) {//文件夹里没有任何文件和文件夹
+            $fileListDiv.append(NO_FILE_HTML)
+            return
+        }
+        const lastIndex = data.length - 1
+        data.forEach((item, index) => {
+            const border = index < lastIndex ? "border-bottom" : ""
+            let thumb
+            if (item.hasThumb) {
+                thumb = `<img src="/api/files/thumb_online/${item.id}?width=80&height=80" class="rounded" style="width: 50px;height: 50px;object-fit: cover;">`
+            } else if (item.fileFlag) {
+                thumb = `<div class="d-flex align-items-center" style="width: 50px;height: 50px;"><i class="bi bi-file-earmark-fill" style="font-size: 50px;"></i></div>`
+            } else {
+                thumb = `<div class="d-flex align-items-center" style="width: 50px;height: 50px;"><i class="bi bi-folder-fill" style="font-size: 50px;color:#6FBEEA;"></i></div>`
+            }
+            $fileListDiv.append(
+                fileItemHtml
+                    .replace("{thumb}", thumb)
+                    .replace("{name}", escapeHtml(item.name))
+                    .replace("{size}", item.fileFlag ? item.size.toDataSize() : "")
+                    .replace("{date}", new Date(item.date).dateFormat())
+                    .replace(/{border}/g, border)
+                    .replace(/{index}/g, index)
+            )
+        })
+    }
+
+    /**
+     * 绑定点击、右键、选中事件
+     */
+    function bindFileClick() {
+        $("div[file-item]").on("click", function (e) {
+            e.stopPropagation()
+            const file = fileList[parseInt($(this).data("index"))]
+            if (file.fileFlag) {//如果是一个文件
+                openFile(file)
+            } else {
+                openFolder(getCurrentFolderByUrl() + "/" + file.name)
+            }
+        }).on("contextmenu", function (e) {
+
+            //将当前点击的文件标记为选中状态
+            const index = parseInt($(this).data("index"))
+            fileList.forEach((item, i) => item.checked = index === i)
+            updateCheckedState()
+            showFileOption(e)
+            return false
+        })
+        $("div[check-icon]").on("click", function (e) {
+            e.stopPropagation()
+            const file = fileList[parseInt($(this).parent().data("index"))]
+            file.checked = !file.checked
+            updateCheckedState()
+        })
+    }
+
+    /**
+     * 打开文件,有预览图(比如PSD,CR3等)时打开预览图
+     */
+    function openFile(file) {
+        $.ajaxByData("/api/files/property").add("ids", file.id).success(data => {
+            if (data.extraList.some(it => it.name === "preview")) {
+                window.open(`/api/files/extra/${file.id}/preview`)
+            } else {
+                window.open(`/api/files/download/${file.id}/${encodeURIComponent(file.name)}`)
+            }
+        }).get()
+    }
+
+    /**
+     * 选中所有
+     */
+    function checkAll() {
+        fileList.forEach(item => item.checked = true)
+        updateCheckedState()
+    }
+
+    /**
+     * 取消所有选中
+     */
+    function uncheckAll() {
+        fileList.forEach(item => item.checked = false)
+        updateCheckedState()
+    }
+
+    /**
+     * 更新选中状态
+     */
+    function updateCheckedState() {
+        const $fileItems = $("#fileListDiv>div[file-item]")
+        let hasChecked = false
+        fileList.forEach((item, index) => {
+            const checkIcon = $($fileItems[index]).find("div[check-icon]")
+            if (item.checked) {
+                hasChecked = true
+                checkIcon.html(`<i class="bi bi-check-circle text-primary fs-5"></i>`)
+            } else {
+                checkIcon.html(`<i class="bi bi-circle text-secondary"></i>`)
+            }
+        })
+        updateOptionBtn(hasChecked)
+    }
+
+    /**
+     * 获取选中的文件列表
+     */
+    function getCheckedList() {
+        return fileList.filter(item => item.checked)
+    }
+</script>

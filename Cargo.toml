@@ -1,0 +1,9 @@
+[workspace]
+members = ["DairoDFS", "lib_db"]
+#edition 2024的resolver:构建依赖(build.rs)与运行依赖的feature互不合并
+resolver = "3"
+
+# 发布版本:去掉调试符号,减小程序体积
+[profile.release]
+strip = true
+lto = "thin"

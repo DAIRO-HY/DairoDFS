@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    {{template /include/head}}
+    <title>安装LibRaw</title>
+</head>
+<body class="bg-login">
+<div class="text-center d-table" style="width: 100vw;height: 100vh;">
+    <div class="d-table-cell align-middle" style="padding: 0 100px">
+        <div id="toolInstall" class="d-inline-block border rounded bg-white p-3" style="max-width: 700px;width: 100%;"
+             data-name="libraw" data-prev="ffprobe.html" data-next="magick.html" data-step="3/8">
+            <span class="fs-4">安装LibRaw</span>
+            <div class="text-start">
+                LibRaw 是一个用于读取相机RAW图片的库。<br>当RAW图片(CR3,CR2)中没有内嵌预览图时，用它来解码图片。
+            </div>
+            {{template /include/install_tool}}
+        </div>
+    </div>
+</div>
+</body>
+</html>

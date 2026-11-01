@@ -1,0 +1,215 @@
+<style>
+    .content-menu {
+        min-width: 160px;
+        position: fixed;
+        overflow: hidden;
+    }
+
+    .content-menu > .content-menu-item {
+        line-height: 34px;
+        cursor: pointer;
+    }
+
+    .content-menu > .content-menu-item:hover {
+        background: #b0b0b0;
+    }
+</style>
+<div id="fileOptionPopGroup"
+     style="position: fixed;top: 0;left: 0;width: 100vw;height: 100vh;z-index: 9;background: #00000055;display: none;"
+     onclick="onFileOptionPopGroupClick()" oncontextmenu="onFileOptionPopGroupClick();return false;">
+    <div id="fileOptionPop" class="rounded content-menu shadow bg-content">
+        <div class="content-menu-item px-2" onclick="onFileUploadClick()"><i class="bi bi-cloud-upload"></i>&nbsp;&nbsp;上传文件
+        </div>
+        <div class="content-menu-item px-2" onclick="onCreateFolderClick()"><i class="bi bi-folder-plus"></i>&nbsp;&nbsp;新建文件夹
+        </div>
+        <hr class="m-0">
+        <div class="content-menu-item px-2" onclick="checkAll()"><i class="bi bi-check-all"></i>&nbsp;&nbsp;全选
+        </div>
+        <div class="content-menu-item px-2" onclick="uncheckAll()"><i class="bi bi-x-square"></i>&nbsp;&nbsp;全取消
+        </div>
+        <hr class="m-0">
+        <div class="content-menu-item px-2" onclick="reload()"><i class="bi bi-arrow-clockwise"></i>&nbsp;&nbsp;刷新
+        </div>
+        <div class="content-menu-item px-2" onclick="onRenameClick()" show-by-1><i
+                class="bi bi-pencil-square"></i>&nbsp;&nbsp;重命名
+        </div>
+        <div class="content-menu-item px-2" onclick="onDownloadClick()" show-by-1-file><i
+                class="bi bi-download"></i>&nbsp;&nbsp;下载
+        </div>
+        <div class="content-menu-item px-2" onclick="toClipboard(2)" show-by-checked><i class="bi bi-copy"></i>&nbsp;&nbsp;复制
+        </div>
+        <div class="content-menu-item px-2" onclick="toClipboard(1)" show-by-checked><i class="bi bi-scissors"></i>&nbsp;&nbsp;剪切
+        </div>
+        <div id="rightPasteBtn" class="content-menu-item px-2" onclick="onPasteClick()"><i
+                class="bi bi-clipboard"></i>&nbsp;&nbsp;粘贴
+        </div>
+        <div class="content-menu-item px-2" onclick="onDeleteClick()" show-by-checked><i class="bi bi-trash"></i>&nbsp;&nbsp;删除
+        </div>
+        <hr class="m-0">
+        <div class="content-menu-item px-2" onclick="showShareModal()" show-by-checked><i
+                class="bi bi-share"></i>&nbsp;&nbsp;分享
+        </div>
+        <div class="content-menu-item px-2" onclick="onPropertyClick()"><i class="bi bi-info-circle"></i>&nbsp;&nbsp;属性
+        </div>
+    </div>
+</div>
+<script>
+    $(function () {
+        $("#fileOptionPop").on("click", e => {
+            e.stopPropagation()
+            $('#fileOptionPopGroup').hide()
+        })
+    })
+
+    /**
+     * 弹出菜单其他区域点击事件
+     */
+    function onFileOptionPopGroupClick() {
+        uncheckAll()
+        $('#fileOptionPopGroup').hide()
+    }
+
+    /**
+     * 显示文件操作视图
+     */
+    function showFileOption(e) {
+        const checkedFileList = getCheckedList()
+        $("[show-by-1]").toggle(checkedFileList.length === 1)
+        $("[show-by-1-file]").toggle(checkedFileList.length === 1 && checkedFileList[0].fileFlag)
+        $("[show-by-checked]").toggle(checkedFileList.length > 0)
+        $("#rightPasteBtn").toggle(sessionStorage.getItem("clipboard") != null)
+
+        //计算功能菜单高度
+        let menuHeight = 5
+        $("#fileOptionPop > .content-menu-item").each((index, obj) => {
+            if ($(obj).css("display") !== "none") {
+                menuHeight += 34
+            }
+        })
+        const left = window.innerWidth - e.clientX > 160 ? e.clientX : e.clientX - 160
+        const top = window.innerHeight - e.clientY > menuHeight ? e.clientY : e.clientY - menuHeight
+        const $fileOptionPop = $("#fileOptionPop")
+        $fileOptionPop.css("left", left + "px")
+        $fileOptionPop.css("top", top + "px")
+        $("#fileOptionPopGroup").show()
+    }
+
+    /**
+     * 文件上传按钮点击事件
+     */
+    function onFileUploadClick() {
+        openUpload(getCurrentFolderByUrl())
+    }
+
+    /**
+     * 创建文件夹事件
+     */
+    function onCreateFolderClick() {
+        const folderName = prompt("请输入文件夹名")
+        if (folderName == null || folderName === "") {
+            return
+        }
+        $.ajaxByData("/api/files/create_folder").add("folder", getCurrentFolderByUrl() + "/" + folderName).success(() => {
+            reload()
+        }).post()
+    }
+
+    /**
+     * 删除点击事件
+     */
+    function onDeleteClick() {
+        const ids = getCheckedList().map(item => item.id)
+        if (ids.length === 0) {
+            return
+        }
+        if (!confirm(`确定要删除选中的${ids.length}个项目吗?`)) {
+            return
+        }
+        $.ajaxByData("/api/files/delete").add("ids", ids).success(() => {
+            reload()
+        }).delete()
+    }
+
+    /**
+     * 重命名点击事件
+     */
+    function onRenameClick() {
+        const file = getCheckedList()[0]
+        const name = prompt("请输入新的名称", file.name)
+        if (name == null || name === file.name) {
+            return
+        }
+        $.ajaxByData("/api/files/rename").addAll({
+            id: file.id,
+            name: name
+        }).success(() => {
+            reload()
+        }).put()
+    }
+
+    /**
+     * 下载点击事件
+     */
+    function onDownloadClick() {
+        const file = getCheckedList()[0]
+        window.open(`/api/files/download/${file.id}/${encodeURIComponent(file.name)}?download=true`)
+    }
+
+    /**
+     * 放到剪贴板
+     * @param clipboardType 剪贴板类型,1:剪切  2:复制
+     */
+    function toClipboard(clipboardType) {
+        const checkedList = getCheckedList()
+        if (checkedList.length === 0) {
+            return
+        }
+        const clipboard = {
+            folderId: currentFolderId,
+            ids: checkedList.map(item => item.id),
+            names: checkedList.map(item => item.name)
+        }
+        sessionStorage.setItem("clipboard", JSON.stringify(clipboard))
+        sessionStorage.setItem("clipboardType", clipboardType)
+    }
+
+    /**
+     * 粘贴点击事件
+     */
+    function onPasteClick() {
+        const clipboard = JSON.parse(sessionStorage.getItem("clipboard"))
+        const type = sessionStorage.getItem("clipboardType")
+
+        //检查目标目录是否存在同名文件或文件夹,同一个文件夹下复制时会自动加上序号
+        let isOverWrite = false
+        if (clipboard.folderId !== currentFolderId) {
+            const nameSet = new Set(clipboard.names.map(it => it.toLowerCase()))
+            if (fileList.some(item => nameSet.has(item.name.toLowerCase()))) {
+                if (!confirm("目标文件或文件夹已经存在,是否替换?")) {
+                    return
+                }
+                isOverWrite = true
+            }
+        }
+        $.ajaxByData(type === "1" ? "/api/files/move" : "/api/files/copy").addAll({
+            ids: clipboard.ids,
+            targetFolder: getCurrentFolderByUrl(),
+            isOverWrite: isOverWrite
+        }).success(() => {
+            sessionStorage.removeItem("clipboard")
+            sessionStorage.removeItem("clipboardType")
+            reload()
+        }).post()
+    }
+
+    /**
+     * 属性点击事件,没有选中时显示当前文件夹的属性
+     */
+    function onPropertyClick() {
+        let ids = getCheckedList().map(item => item.id)
+        if (ids.length === 0) {
+            ids = [currentFolderId]
+        }
+        showFilePropertyDialog(ids)
+    }
+</script>

@@ -29,8 +29,8 @@ pipeline {
         stage("编译") {
             steps {
                 dir("DairoDFS"){
-                    sh "chmod +x build-linux.sh"
-                    sh "./build-linux.sh"
+                    sh "chmod +x document/build/*.sh"
+                    sh "./document/build/build_all.sh"
                 }
             }
         }

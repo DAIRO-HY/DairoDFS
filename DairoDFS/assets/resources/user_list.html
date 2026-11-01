@@ -1,0 +1,62 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    {{template include/head}}
+    <title>用户</title>
+</head>
+<body>
+{{template include/top-bar}}
+<div class="m-3 p-2 rounded shadow bg-content">
+    <div id="table"></div>
+</div>
+<script>
+    addContentBarBtn("添加", () => {
+        location.href = "/user_edit.html"
+    })
+    $(function () {
+        $.ajaxByData("/api/user/list").success(data => fillDataTable(data)).get()
+    })
+
+    /**
+     * 填充表格数据
+     * @param data 要填充的数据
+     */
+    function fillDataTable(data) {
+        $("#table").createTable({
+            data: data,
+            csv: true,
+            searching: true,
+            paging: true,
+            checkbox: true,
+            iconBtns: {
+                "bi-pencil-square": function (item) {
+                    location.href = "/user_edit.html?id=" + item.id
+                }
+            },
+            columns: [
+                {
+                    data: "id",
+                    title: "ID"
+                },
+                {
+                    data: "name",
+                    title: "用户名"
+                },
+                {
+                    data: "email",
+                    title: "邮箱"
+                },
+                {
+                    data: "state",
+                    title: "状态"
+                },
+                {
+                    data: "date",
+                    title: "注册时间"
+                }
+            ]
+        })
+    }
+</script>
+</body>
+</html>

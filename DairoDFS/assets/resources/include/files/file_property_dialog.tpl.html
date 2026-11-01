@@ -1,0 +1,143 @@
+<div class="modal fade" id="modalFileProperty" data-bs-keyboard="false" tabindex="-1"
+     aria-labelledby="filePropertyLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="filePropertyLabel">属性</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body pt-0">
+                <div class="row mt-2">
+                    <div class="col-4">名称</div>
+                    <div class="col-8 text-end text-break" field="name">
+                    </div>
+                </div>
+                <div class="row mt-2">
+                    <div class="col-4">大小</div>
+                    <div class="col-8 text-end" field="size">
+                    </div>
+                </div>
+                <div class="row mt-2">
+                    <div class="col-4">创建时间</div>
+                    <div class="col-8 text-end" field="date">
+                    </div>
+                </div>
+                <div class="row mt-2">
+                    <div class="col-4">路径</div>
+                    <div class="col-8 text-end text-break" field="path">
+                    </div>
+                </div>
+                <div class="row mt-2">
+                    <div class="col-4">文件类型</div>
+                    <div class="col-7 text-end pe-0" field="contentType">
+                    </div>
+                    <div class="col-1 text-center px-0" role="button" onclick="onModifyContentTypeClick()">
+                        <i class="bi bi-pencil-square"></i>
+                    </div>
+                </div>
+                <div class="row mt-2">
+                    <div class="col-4">处理状态</div>
+                    <div class="col-8 text-end text-break" field="stateText">
+                    </div>
+                </div>
+                <div class="row mt-2">
+                    <div class="col-4">文件夹数</div>
+                    <div class="col-8 text-end" field="folderCount">
+                    </div>
+                </div>
+                <div class="row mt-2">
+                    <div class="col-4">文件数</div>
+                    <div class="col-8 text-end" field="fileCount">
+                    </div>
+                </div>
+                <div class="mt-2">
+                    历史版本:
+                    <div id="historyList">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+
+    /**
+     * 文件属性数据
+     */
+    let filePropertyData
+
+    /**
+     * 显示文件属性
+     * @param ids 文件ID列表
+     */
+    function showFilePropertyDialog(ids) {
+        $.ajaxByData("/api/files/property").add("ids", ids).success(data => {
+            filePropertyData = data
+            if (data.isFile) {//文件的处理状态(生成缩略图等)
+                data.stateText = ["待处理", "处理完成", "处理出错"][data.state] + (data.stateMsg ? `(${data.stateMsg})` : "")
+            }
+            $("#modalFileProperty [field]").each((_, obj) => {
+                const $obj = $(obj)
+                const value = data[$obj.attr("field")]
+                if (value == null || value === "") {
+                    $obj.parent().hide()
+                    return
+                }
+                $obj.parent().show()
+                $obj.text(value)
+            })
+            if (ids.length === 1 && data.path === "") {//根目录
+                $(`[field="path"]`).text("/").parent().show()
+                $(`[field="name"]`).text("根目录").parent().show()
+            }
+            fillHistory()
+            bootstrap.Modal.getOrCreateInstance('#modalFileProperty').show()
+        }).get()
+    }
+
+    /**
+     * 填充历史版本列表
+     */
+    function fillHistory() {
+        if (filePropertyData.historyList.length === 0) {
+            $("#historyList").parent().hide()
+            return
+        }
+        $("#historyList").parent().show()
+        $("#historyList").createTable({
+            data: filePropertyData.historyList,
+            iconBtns: {
+                "bi-download": function (item) {
+                    window.open(`/api/files/download/${item.id}/${encodeURIComponent(filePropertyData.name)}?download=true`)
+                }
+            },
+            columns: [
+                {
+                    data: "date",
+                    title: "日期"
+                },
+                {
+                    data: "size",
+                    title: "大小"
+                }
+            ]
+        })
+    }
+
+    /**
+     * 修改文件类型点击事件
+     */
+    function onModifyContentTypeClick() {
+        const contentType = prompt("修改文件类型", filePropertyData.contentType)
+        if (contentType == null || contentType === filePropertyData.contentType) {
+            return
+        }
+        $.ajaxByData("/api/files/content_type").addAll({
+            id: filePropertyData.id,
+            contentType: contentType
+        }).success(() => {
+            filePropertyData.contentType = contentType
+            $(`[field="contentType"]`).text(contentType)
+        }).put()
+    }
+</script>

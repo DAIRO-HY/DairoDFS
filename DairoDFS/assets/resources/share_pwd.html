@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    {{template include/head}}
+    <title>提取文件</title>
+</head>
+<body class="bg-login">
+<div class="text-center d-table" style="width: 100vw;height: 100vh;">
+    <div class="d-table-cell align-middle">
+        <div class="d-inline-block border rounded bg-white p-3" style="width: 300px;">
+            <div id="shareTitle" class="fs-5 text-break"></div>
+            <form>
+                <div>
+                    <input name="pwd" class="form-control mt-3" type="text" placeholder="请输入提取码"
+                           autocomplete="off">
+                </div>
+                <button type="button" class="btn btn-primary w-100 mt-4" onclick="onValidClick()">提取文件</button>
+            </form>
+        </div>
+    </div>
+</div>
+<script>
+
+    /**
+     * 分享ID(加密的)
+     */
+    const eid = getParam("eid").replace(/[^A-Za-z0-9_=-]/g, "")
+
+    /**
+     * 分享接口的URL前缀
+     * 分享ID只包含URL安全的字符,不能再编码,否则提取码的Cookie路径匹配不上
+     */
+    const shareApi = "/api/share/" + eid
+
+    $(function () {
+        $.ajaxByData(shareApi + "/info").success(data => {
+            if (data.state !== "need_pwd") {//不需要提取码、已经验证过、分享不存在等情况都到分享页面
+                toShare()
+                return
+            }
+            $("#shareTitle").text(data.title)
+        }).get()
+
+        //回车提交
+        $("input[name='pwd']").on("keydown", e => {
+            if (e.key === "Enter") {
+                e.preventDefault()
+                onValidClick()
+            }
+        })
+    })
+
+    /**
+     * 验证提取码点击事件
+     */
+    function onValidClick() {
+        if ($("input[name='pwd']").val().trim() === "") {
+            alert("请输入提取码")
+            return
+        }
+        $("form").ajaxByForm(shareApi + "/valid_pwd").success(toShare).post()
+    }
+
+    /**
+     * 跳转到分享页面
+     */
+    function toShare() {
+        location.replace("/share.html?eid=" + encodeURIComponent(eid))
+    }
+</script>
+</body>
+</html>

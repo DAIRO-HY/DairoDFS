@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    {{template include/head}}
+    <title>同步状态</title>
+    <style>
+        /* 定义旋转动画 */
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* 应用动画到图标 */
+        .rotate-icon {
+            animation: spin 2s linear infinite;
+        }
+    </style>
+</head>
+<body>
+{{template include/top-bar}}
+<div class="m-3 p-2 rounded shadow bg-content">
+    <div class="text-start">
+        <div id="table"></div>
+    </div>
+    <button class="btn btn-primary" type="button" onclick="onSyncClick()">日志同步</button>
+    <button class="btn btn-primary" type="button" onclick="onSyncAllClick()">全量同步</button>
+</div>
+<script>
+
+    /**
+     * 实时推送同步状态的WebSocket连接
+     */
+    let socket = null
+
+    $(function () {
+        $.ajaxByData("/api/sync/list").success(data => {
+            fillDataTable(data)
+            openSocket()
+        }).get()
+    })
+
+    /**
+     * 填充表格数据
+     * @param data 要填充的数据
+     */
+    function fillDataTable(data) {
+        $("#table").createTable({
+            data: data,
+            columns: [
+                {
+                    data: "no",
+                    title: "NO"
+                },
+                {
+                    data: "url",
+                    title: "URL",
+                    render: $.fn.dataTable.render.text()
+                },
+                {
+                    data: "state",
+                    title: "状态",
+                    render: function (value) {
+                        if (value === 1) {
+                            return `<div class="d-inline-block rotate-icon"><i class="bi bi-fan text-success"></i></div> 同步中`
+                        } else if (value === 2) {
+                            return `<i class="bi bi-emoji-angry-fill text-danger"></i> 出错`
+                        }
+                        return `<i class="bi bi-clock-fill text-secondary"></i> 空闲`
+                    }
+                },
+                {
+                    data: "lastTime",
+                    title: "最后同步时间"
+                },
+                {
+                    data: "lastHeartTime",
+                    title: "最后心跳时间"
+                },
+                {
+                    data: "progress",
+                    title: "进度"
+                },
+                {
+                    data: "msg",
+                    title: "消息",
+                    render: $.fn.dataTable.render.text()
+                }
+            ]
+        })
+    }
+
+    /**
+     * 日志同步按钮点击事件
+     */
+    function onSyncClick() {
+        $.ajaxByData("/api/sync/by_log").post()
+    }
+
+    /**
+     * 全量同步按钮点击事件
+     */
+    function onSyncAllClick() {
+        $.ajaxByData("/api/sync/by_table").post()
+    }
+
+    /**
+     * 通过WebSocket实时刷新同步状态
+     */
+    function openSocket() {
+        if (socket != null) {
+            socket.close()
+        }
+        const protocol = location.protocol === "https:" ? "wss:" : "ws:"
+        socket = new WebSocket(`${protocol}//${location.host}/api/sync/info`)
+        socket.onmessage = event => fillDataTable(JSON.parse(event.data))
+    }
+</script>
+</body>
+</html>
