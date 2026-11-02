@@ -128,6 +128,7 @@ pub async fn property(login: Ext<LoginUser>, ids: Vec<i64>) -> Result<model::Fil
     out.id = file.id;
     out.path = dfs_file_service::get_path_by_id(&mut ctx, file.id).await?;
     out.date = file.date.date_format();
+    out.upload_date = file.date;
     out.is_file = file.storageId > 0;
     out.state = file.state;
     out.state_msg = file.stateMsg.clone().unwrap_or_default();
@@ -400,6 +401,9 @@ pub mod model {
 
         // 创建日期
         pub date: String,
+
+        // 上传日期(时间戳毫秒,单个文件或文件夹时),上传、覆盖上传、复制时为当时的时间,移动、重命名不变
+        pub upload_date: i64,
 
         // 是否文件
         pub is_file: bool,
