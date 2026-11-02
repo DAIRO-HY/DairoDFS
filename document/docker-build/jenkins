@@ -3,47 +3,53 @@ pipeline {
 
     environment {
         REPO = "DAIRO-HY/DairoDFS"
-        BRANCH = "release"
+        BRANCH = "main"
+        PROJECT_DIR = "/root/develop_tool/project"
+        PROJECT_NAME = "DairoDFS"
+
+        //Jenkins容器里的/root在宿主机上的路径
+        //编译时通过宿主机的docker启动rust容器,挂载的代码目录和cargo目录必须是宿主机上的绝对路径
+        HOST_ROOT_DIR = "/home/docker/jenkins+jdk17+docker/data"
     }
+
     stages {
         stage("拉取代码") {
             steps {
                 script{
-                    if(!fileExists("DairoDFS")){
+                    if(!fileExists("${env.PROJECT_DIR}")){
+                        sh "mkdir -p ${env.PROJECT_DIR}"
+                    }
+                    dir("${env.PROJECT_DIR}"){
+                        if(!fileExists("${env.PROJECT_NAME}")){
 
-                        //克隆地址里有票据,不要输出到日志
-                        sh 'git clone --branch "$BRANCH" "https://${GITHUB_TOKEN}@github.com/${REPO}.git"'
+                            //克隆地址里有票据,用单引号由shell读取环境变量,不要输出到日志
+                            sh 'git clone --branch "$BRANCH" "https://${GITHUB_TOKEN}@github.com/${REPO}.git"'
+                        }
                     }
                 }
-                dir("DairoDFS"){
+                dir("${env.PROJECT_DIR}/${env.PROJECT_NAME}"){
 
                     //撤销所有修改
                     sh "git reset --hard HEAD"
 
                     //删除所有未被跟踪的文件和目录
-                    sh "git clean -fd"
+                    // sh "git clean -fd"
                     sh "git pull"
-                }
-            }
-        }
-        stage("构建镜像") {
-            steps {
-                dir("DairoDFS/document/docker-build"){
-
-                    //--no-cache：忽略缓存，解决一些莫名其妙的问题
-                    //--network=host：强制使用主机网络。当在容器中构建镜像时（如：jenkins容器中构建镜像），否则可能会导致网络连接失败而无法通过Dockerfile构建镜像
-                    sh "docker build --no-cache --network=host -t dairo-dfs-build ."
-                    sh "yes|docker image prune"
                 }
             }
         }
         stage("编译") {
             steps {
+                dir("${env.PROJECT_DIR}/${env.PROJECT_NAME}"){
 
-                //用单引号,票据和密码由shell从环境变量传给docker,不会出现在Jenkins日志里
-                //dairo-dfs-src:源码和编译缓存(命名卷,会一直保留,下次只编译有变化的部分)
-                //dairo-dfs-cargo-registry:cargo依赖缓存(命名卷,build-linux.sh会传给rust编译容器)
-                sh 'docker run -e GITHUB_TOKEN -e DOCKER_USER -e DOCKER_PASSWORD -e BRANCH -v /var/run/docker.sock:/var/run/docker.sock -v dairo-dfs-src:/home/DairoDFS --rm dairo-dfs-build'
+                    //build_dfs.sh通过这两个环境变量获取挂载到rust容器的宿主机路径
+                    //每个架构使用单独的编译目录(target/linux-amd64、target/linux-arm64),下次只编译有变化的部分
+                    sh '''
+                        export HOST_PROJECT_DIR="$HOST_ROOT_DIR/develop_tool/project/$PROJECT_NAME"
+                        export HOST_CARGO_DIR="$HOST_ROOT_DIR/develop_tool/.cargo"
+                        ./document/build/build_all.sh
+                    '''
+                }
             }
         }
     }
