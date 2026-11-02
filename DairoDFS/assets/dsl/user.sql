@@ -14,10 +14,50 @@ select * from user where email = :email;
 
 -- ------------------------------
 
--- 获取管理员ID(最早创建的用户就是管理员)
+-- 获取管理员ID(最早创建的主账户就是管理员)
 -- @name select_admin_id
 -- @return i64?
-select id from user order by id limit 1;
+select id from user where parentId = 0 order by id limit 1;
+
+-- ------------------------------
+
+-- 获取所有主账户(用户管理)
+-- @name select_main_list
+-- @return List<User>
+select * from user where parentId = 0 order by id;
+
+-- ------------------------------
+
+-- 获取主账户的子账户(不包括已删除的)
+-- @name select_sub_list
+-- @param parent_id:i64
+-- @return List<User>
+select * from user where parentId = :parent_id and state != 2 order by id;
+
+-- ------------------------------
+
+-- 获取主账户的所有子账户(包括已删除的)
+-- @name select_sub_list_all
+-- @param parent_id:i64
+-- @return List<User>
+select * from user where parentId = :parent_id order by id;
+
+-- ------------------------------
+
+-- 更新子账户信息
+-- @name update_sub
+-- @param id:i64
+-- @param name:String
+-- @param nickname:String?
+-- @param state:i64
+update user set name = :name, nickname = :nickname, state = :state where id = :id;
+
+-- ------------------------------
+
+-- 删除子账户:保留记录,文件和日志里还能显示昵称;清空用户名,之后可以重新使用这个用户名
+-- @name set_sub_deleted
+-- @param id:i64
+update user set state = 2, name = null, pwd = null, apiToken = null, urlPath = null where id = :id;
 
 -- ------------------------------
 
@@ -83,3 +123,19 @@ update user set pwd = :pwd where id = :id;
 -- @param url_path:String
 -- @return i64?
 select id from user where urlPath = :url_path and state = 1;
+
+-- ------------------------------
+
+-- 设置昵称
+-- @name set_nickname
+-- @param id:i64
+-- @param nickname:String?
+update user set nickname = :nickname where id = :id;
+
+-- ------------------------------
+
+-- 设置头像
+-- @name set_avatar
+-- @param id:i64
+-- @param avatar:String?
+update user set avatar = :avatar where id = :id;

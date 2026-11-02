@@ -22,6 +22,7 @@ pub async fn info() -> model::ProfileInfo {
         thumb_max_size: config.thumb_max_size,
         ignore_sync_error: config.ignore_sync_error,
         db_backup_expire_day: config.db_backup_expire_day,
+        operate_log_days: config.operate_log_days,
     }
 }
 
@@ -44,6 +45,9 @@ pub async fn update(form: form::Profile) -> Result<(), BizError> {
     config.thumb_max_size = form.thumb_max_size;
     config.ignore_sync_error = form.ignore_sync_error;
     config.db_backup_expire_day = form.db_backup_expire_day;
+    if let Some(days) = form.operate_log_days {
+        config.operate_log_days = days;
+    }
     system_config::save(config)?;
 
     //同步主机可能有变化,重新开始监听
@@ -99,5 +103,8 @@ pub mod model {
 
         // 数据库备份天数
         pub db_backup_expire_day: i64,
+
+        // 操作日志保存天数
+        pub operate_log_days: i64,
     }
 }

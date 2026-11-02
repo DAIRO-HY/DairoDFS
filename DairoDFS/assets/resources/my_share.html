@@ -37,7 +37,7 @@
                 <div class="ms-2 {border} d-flex align-items-center" style="width:99999px;height: 60px;overflow: hidden" role="button">
                     <div>
                     <div class="text-nowrap">{title}</div>
-                    <div class="small"><span>{date}</span><i class="bi bi-dot"></i><span>{size}</span></div>
+                    <div class="small"><span>{date}</span><i class="bi bi-dot"></i><span>{size}</span>{creator}</div>
                     </div>
                 </div>
                 <div class="{border} px-2" style="height: 60px;line-height: 60px;" check-icon>
@@ -80,6 +80,7 @@
                     .replace("{title}", escapeHtml(item.title))
                     .replace("{size}", item.endDate)
                     .replace("{date}", item.date)
+                    .replace("{creator}", item.creatorName ? `<i class="bi bi-dot"></i><span>${escapeHtml(item.creatorName)}创建</span>` : "")
                     .replace(/{border}/g, border)
                     .replace(/{index}/g, index)
             )

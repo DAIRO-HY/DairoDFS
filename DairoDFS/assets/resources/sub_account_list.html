@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    {{template include/head}}
+    <title>子账户</title>
+</head>
+<body>
+{{template include/top-bar}}
+<div class="m-3 p-2 rounded shadow bg-content">
+    <div class="small text-secondary px-2">子账户只能访问你授权的文件夹,上传的文件属于你,删除子账户后文件仍然保留。</div>
+    <div id="table"></div>
+</div>
+<script>
+    addContentBarBtn("添加", () => {
+        location.href = "/sub_account_edit.html"
+    })
+    $(function () {
+        $.ajaxByData("/api/sub_account/list").success(data => fillDataTable(data)).get()
+    })
+
+    /**
+     * 填充表格数据
+     * @param data 要填充的数据
+     */
+    function fillDataTable(data) {
+        $("#table").createTable({
+            data: data,
+            searching: true,
+            paging: true,
+            iconBtns: {
+                "bi-pencil-square": function (item) {
+                    location.href = "/sub_account_edit.html?id=" + item.id
+                },
+                "bi-trash": function (item) {
+                    onDeleteClick(item)
+                }
+            },
+            columns: [
+                {
+                    data: "avatar",
+                    title: "",
+                    orderable: false,
+                    render: (avatar, _, item) => avatar
+                        ? `<img src="/api/avatar/${item.id}?v=${avatar}" class="rounded-circle" style="width: 28px;height: 28px;object-fit: cover;">`
+                        : `<i class="bi bi-person-circle fs-5"></i>`
+                },
+                {
+                    data: "name",
+                    title: "用户名",
+                    render: name => escapeHtml(name)
+                },
+                {
+                    data: "nickname",
+                    title: "昵称",
+                    render: nickname => escapeHtml(nickname)
+                },
+                {
+                    data: "state",
+                    title: "状态",
+                    render: state => state === 1 ? "启用" : `<span class="text-danger">禁用</span>`
+                },
+                {
+                    data: "grantCount",
+                    title: "授权文件夹"
+                },
+                {
+                    data: "date",
+                    title: "创建时间"
+                }
+            ]
+        })
+    }
+
+    /**
+     * 删除子账户
+     */
+    function onDeleteClick(item) {
+        if (!confirm(`确定要删除子账户[${item.name}]吗?\n删除后不能再登录,已经上传的文件仍然保留在你的文件里。`)) {
+            return
+        }
+        $.ajaxByData("/api/sub_account/delete").add("ids", [item.id]).success(() => history.go(0)).delete()
+    }
+</script>
+</body>
+</html>

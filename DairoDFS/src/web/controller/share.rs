@@ -1,4 +1,6 @@
 use crate::dao::dfs_file_dao;
+use crate::service::sub_account_service::{perm, Scope};
+use crate::service::operate_log_service::{self, op};
 use crate::service::share_service::ShareError;
 use crate::service::{file_handle_service, share_service};
 use crate::web::biz_error::BizError;
@@ -6,7 +8,7 @@ use crate::web::controller::files;
 use crate::web::filter::auth;
 use crate::{biz_error, db};
 use hyper::{HeaderMap, StatusCode};
-use hyperoute_core::{Raw, Stream};
+use hyperoute_core::{Raw, RemoteAddr, Stream};
 use hyperoute_macro::{GET, POST};
 use std::collections::HashSet;
 
@@ -22,7 +24,7 @@ pub async fn init(eid: String) -> Raw {
 /// state: ok:可以访问 need_pwd:需要提取码 error:分享不存在或已过期等,原因在msg里
 #[GET("/api/share/{eid}/info")]
 pub async fn info(eid: String, headers: &HeaderMap) -> Result<model::ShareInfo, BizError> {
-    let is_login = auth::find_login_user(headers).await?.is_some();
+    let is_login = auth::find_login_user(headers, None).await?.is_some();
     let (share, state) = match share_service::get(&eid, headers).await {
         Ok(it) => (it, "ok"),
         Err(ShareError::NeedPwd(it)) => (it, "need_pwd"),
@@ -133,14 +135,28 @@ pub async fn thumb(eid: String, path: String, headers: &HeaderMap) -> Result<Str
 /// - names 选中的文件名
 /// - target 转存到的目标文件夹
 #[POST("/api/share/{eid}/save_to")]
-pub async fn save_to(eid: String, folder: String, names: Vec<String>, target: String, headers: &HeaderMap) -> Result<(), BizError> {
-    let Some(login) = auth::find_login_user(headers).await? else {
+pub async fn save_to(
+    eid: String,
+    folder: String,
+    names: Vec<String>,
+    target: String,
+    headers: &HeaderMap,
+    addr: RemoteAddr,
+) -> Result<(), BizError> {
+    let Some(login) = auth::find_login_user(headers, Some(&addr)).await? else {
         return Err(BizError::unauthorized());
     };
     let share = get_share(&eid, headers).await?;
     let mut ctx = db::begin().await?;
-    share_service::save_to(&mut ctx, &share, login.id, &folder, &names, &target).await?;
+    let mut scope = Scope::load(&mut ctx, &login).await?;
+    scope.check_path(&mut ctx, login.owner_id, &target, perm::UPLOAD).await?;
+    let creator_id = login.is_sub.then_some(login.id);
+    share_service::save_to(&mut ctx, &share, login.owner_id, &folder, &names, &target, creator_id).await?;
     db::commit(ctx).await?;
+    for name in &names {
+        let detail = serde_json::json!({"shareId": share.id, "from": format!("{}/{}", folder, name)});
+        operate_log_service::add(&login, op::SAVE_TO, None, Some(format!("{}/{}", target, name)), Some(detail));
+    }
 
     //转存的文件需要生成附属文件(同一个存储文件已经生成过的会直接复用)
     file_handle_service::notify();

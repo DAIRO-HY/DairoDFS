@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    {{template include/head}}
+    <title>操作日志</title>
+</head>
+<body>
+{{template include/top-bar}}
+<div class="m-3 p-2 rounded shadow bg-content">
+    <form id="form" class="d-flex flex-wrap align-items-center" onsubmit="return false">
+        <select class="form-select form-select-sm w-auto me-2 mb-2" name="userId">
+            <option value="">全部操作人</option>
+        </select>
+        <select class="form-select form-select-sm w-auto me-2 mb-2" name="opType">
+            <option value="">全部操作</option>
+        </select>
+        <div class="input-group input-group-sm w-auto me-2 mb-2">
+            <input class="form-control" type="date" name="startDate">
+            <span class="input-group-text">至</span>
+            <input class="form-control" type="date" name="endDate">
+        </div>
+        <input class="form-control form-control-sm w-auto me-2 mb-2" name="keyword" placeholder="路径关键字" autocomplete="off">
+        <button type="button" class="btn btn-primary btn-sm mb-2" onclick="search(0)">查询</button>
+    </form>
+    <div class="table-responsive">
+        <table class="table table-bordered table-sm align-middle w-100 mb-2">
+            <thead>
+            <tr>
+                <th class="text-nowrap">时间</th>
+                <th class="text-nowrap">操作人</th>
+                <th class="text-nowrap">操作</th>
+                <th>对象</th>
+                <th>详情</th>
+                <th class="text-nowrap">IP</th>
+                <th class="text-nowrap">客户端</th>
+            </tr>
+            </thead>
+            <tbody id="logBody"></tbody>
+        </table>
+    </div>
+    <div class="d-flex align-items-center justify-content-end">
+        <span id="pageInfo" class="small me-3"></span>
+        <button id="prevBtn" type="button" class="btn btn-outline-primary btn-sm me-2" onclick="search(offset - PAGE_SIZE)">上一页</button>
+        <button id="nextBtn" type="button" class="btn btn-outline-primary btn-sm" onclick="search(offset + PAGE_SIZE)">下一页</button>
+    </div>
+</div>
+<script>
+
+    /**
+     * 每页显示的条数
+     */
+    const PAGE_SIZE = 50
+
+    /**
+     * 当前页的起始位置
+     */
+    let offset = 0
+
+    /**
+     * 客户端名称
+     */
+    const CLIENT_NAMES = {"-1": "API", "0": "WEB", "1": "Android", "2": "iOS", "3": "Windows", "4": "Mac", "5": "Linux"}
+
+    /**
+     * 详情里的字段名称
+     */
+    const DETAIL_NAMES = {
+        name: "名称", target: "目标文件夹", overWrite: "覆盖", size: "大小", md5: "MD5", contentType: "文件类型",
+        extra: "附属文件", shareId: "分享ID", from: "来源", nickname: "昵称", state: "状态", pwdChanged: "修改了密码",
+        grants: "授权", subId: "子账户ID"
+    }
+
+    /**
+     * 子账户权限的名称,和服务器端一致
+     */
+    const PERM_NAMES = {1: "浏览", 2: "打开/下载", 4: "上传", 8: "修改", 16: "删除", 32: "彻底删除", 64: "分享"}
+
+    /**
+     * 权限值转换成名称
+     */
+    function permNames(perms) {
+        return Object.keys(PERM_NAMES).filter(it => (perms & it) !== 0).map(it => PERM_NAMES[it]).join("、")
+    }
+
+    $(function () {
+        $.ajaxByData("/api/operate_log/users").success(users => {
+            users.forEach(it => $("select[name='userId']").append($("<option>").val(it.id).text(it.name)))
+        }).get()
+        $.ajaxByData("/api/operate_log/types").success(types => {
+            types.forEach(it => $("select[name='opType']").append($("<option>").val(it.value).text(it.name)))
+        }).get()
+        $("input[name='keyword']").on("keydown", e => {
+            if (e.key === "Enter") {
+                search(0)
+            }
+        })
+        search(0)
+    })
+
+    /**
+     * 查询日志
+     * @param start 起始位置
+     */
+    function search(start) {
+        offset = Math.max(0, start)
+        const form = $("form").formData()
+        const http = $.ajaxByData("/api/operate_log/list").add("offset", offset).add("limit", PAGE_SIZE)
+        if (form.userId) {
+            http.add("userId", form.userId)
+        }
+        if (form.opType) {
+            http.add("opType", form.opType)
+        }
+        if (form.keyword) {
+            http.add("keyword", form.keyword)
+        }
+        if (form.startDate) {//按浏览器的时区计算
+            http.add("start", new Date(form.startDate + "T00:00:00").getTime())
+        }
+        if (form.endDate) {//包括结束日期当天
+            http.add("end", new Date(form.endDate + "T00:00:00").getTime() + 24 * 60 * 60 * 1000)
+        }
+        http.success(data => fillData(data)).get()
+    }
+
+    /**
+     * 填充日志数据
+     */
+    function fillData(data) {
+        const $body = $("#logBody").empty()
+        if (data.list.length === 0) {
+            $body.append(`<tr><td colspan="7" class="text-center text-secondary py-4">没有日志</td></tr>`)
+        }
+        data.list.forEach(it => {
+            const user = escapeHtml(it.userName) + (it.isSub ? ` <span class="badge text-bg-secondary">子账户</span>` : "")
+            $body.append(`<tr>
+                            <td class="text-nowrap small">${new Date(it.date).dateFormat()}</td>
+                            <td class="text-nowrap">${user}</td>
+                            <td class="text-nowrap">${escapeHtml(it.opName)}</td>
+                            <td class="text-break">${escapeHtml(it.path)}</td>
+                            <td class="small text-break">${formatDetail(it)}</td>
+                            <td class="text-nowrap small">${escapeHtml(it.ip)}</td>
+                            <td class="text-nowrap small">${CLIENT_NAMES[it.clientFlag] || it.clientFlag}</td>
+                          </tr>`)
+        })
+        const end = Math.min(data.total, offset + data.list.length)
+        $("#pageInfo").text(data.total === 0 ? "" : `${offset + 1}-${end} / 共${data.total}条`)
+        $("#prevBtn").prop("disabled", offset === 0)
+        $("#nextBtn").prop("disabled", end >= data.total)
+    }
+
+    /**
+     * 把详情转换成便于阅读的文字
+     */
+    function formatDetail(it) {
+        const detail = it.detail
+        if (!detail) {
+            return ""
+        }
+        return Object.keys(detail).map(key => {
+            let value = detail[key]
+            if (key === "size") {
+                value = Number(value).toDataSize()
+            } else if (key === "grants") {
+                value = value.map(g => (g.path === "" ? "根目录" : g.path) + "(" + permNames(g.perms) + ")").join(",")
+            } else if (typeof value === "boolean") {
+                value = value ? "是" : "否"
+            } else if (key === "state") {
+                value = value === 1 ? "启用" : "禁用"
+            }
+            return escapeHtml((DETAIL_NAMES[key] || key) + ":" + (value ?? ""))
+        }).join("<br>")
+    }
+</script>
+</body>
+</html>

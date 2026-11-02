@@ -7,3 +7,5 @@ pub mod tool_install_service;
 pub mod share_service;
 pub mod sync;
 pub mod recycle_service;
+pub mod sub_account_service;
+pub mod operate_log_service;

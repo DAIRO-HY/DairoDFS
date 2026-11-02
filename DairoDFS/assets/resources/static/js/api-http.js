@@ -168,6 +168,10 @@ class ApiHttp {
                     window.location.href = "/login.html"
                     return
                 }
+                if (xhr.status === 403) {//例如子账户访问了主账户才能使用的功能
+                    alert("没有权限")
+                    return
+                }
                 const resText = xhr.responseText
                 if (resText === undefined) {
                     alert("网络连接失败")

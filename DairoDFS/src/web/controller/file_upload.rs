@@ -2,6 +2,8 @@ use crate::application;
 use crate::dao::storage_file_dao::StorageFile;
 use crate::dao::{dfs_file_dao, storage_file_dao};
 use crate::dao::dfs_file_dao::DfsFile;
+use crate::service::operate_log_service::{self, op};
+use crate::service::sub_account_service::{perm, Scope};
 use crate::service::{dfs_file_service, file_handle_service, storage_service};
 use crate::util::file_util;
 use crate::web::biz_error::BizError;
@@ -51,11 +53,12 @@ pub async fn upload(
 ) -> Result<(), BizError> {
     let path = format!("{}/{}", folder, file.name);
     file_util::check_path(&path)?;
+    check_upload(&login, &path).await?;
     let md5 = file_util::md5(file.body).await?;
 
     //上传的临时文件在请求结束后会被删除,这里直接移动到存储目录
     let storage = storage_service::save(file.body, &md5).await?;
-    add_dfs_file(login.id, &storage, &path, content_type).await
+    add_dfs_file(&login, &storage, &path, content_type).await
 }
 
 /// 以流的方式上传文件,支持断点续传
@@ -119,10 +122,12 @@ pub async fn uploaded_size(md5: String) -> Result<u64, BizError> {
 #[POST("/api/file_upload/by_md5")]
 pub async fn by_md5(login: Ext<LoginUser>, md5: String, path: String, content_type: Option<String>) -> Result<(), BizError> {
     let temp_path = temp_path(&md5)?;
+    file_util::check_path(&path)?;
+    check_upload(&login, &path).await?;
     let Some(storage) = storage_file_dao::select_by_md5(&mut lib_db::get_context(), &md5).await? else {
         return Err(BizError::not_found());
     };
-    add_dfs_file(login.id, &storage, &path, content_type).await?;
+    add_dfs_file(&login, &storage, &path, content_type).await?;
     let _ = tokio::fs::remove_file(&temp_path).await;
     Ok(())
 }
@@ -131,8 +136,20 @@ pub async fn by_md5(login: Ext<LoginUser>, md5: String, path: String, content_ty
 /// - md5 文件的MD5
 #[GET("/api/file_upload/exists")]
 pub async fn exists(login: Ext<LoginUser>, md5: String) -> Result<bool, BizError> {
-    let count = dfs_file_dao::count_by_md5(&mut lib_db::get_context(), login.id, &md5).await?;
-    Ok(count > 0)
+    let mut ctx = lib_db::get_context();
+    if !login.is_sub {
+        let count = dfs_file_dao::count_by_md5(&mut ctx, login.id, &md5).await?;
+        return Ok(count > 0);
+    }
+
+    //子账户只检查自己能看到的文件
+    let mut scope = Scope::load(&mut ctx, &login).await?;
+    for it in dfs_file_dao::select_by_md5(&mut ctx, login.owner_id, &md5).await? {
+        if scope.perms(&mut ctx, &it).await? & perm::VIEW != 0 {
+            return Ok(true);
+        }
+    }
+    Ok(false)
 }
 
 /// 断点续传的临时文件路径,MD5会用作文件名,必须验证格式
@@ -143,10 +160,26 @@ fn temp_path(md5: &str) -> Result<PathBuf, BizError> {
     Ok(application::TEMP_PATH.join(md5))
 }
 
+/// 检查上传权限:需要文件夹的上传权限,覆盖已经存在的文件时还需要修改权限
+/// 上传之前检查一次,避免没有权限时白白上传
+async fn check_upload(login: &LoginUser, path: &str) -> Result<(), BizError> {
+    if !login.is_sub {
+        return Ok(());
+    }
+    let mut ctx = lib_db::get_context();
+    let mut scope = Scope::load(&mut ctx, login).await?;
+    scope.check_path(&mut ctx, login.owner_id, file_util::file_parent(path), perm::UPLOAD).await?;
+    if let Some(exists) = dfs_file_service::select_by_path(&mut ctx, login.owner_id, path).await? {
+        scope.check(&mut ctx, &exists, perm::MODIFY).await?;
+    }
+    Ok(())
+}
+
 /// 添加到文件列表
 /// - path 文件路径
 /// - content_type 文件类型,不指定时按扩展名判断
-async fn add_dfs_file(user_id: i64, storage: &StorageFile, path: &str, content_type: Option<String>) -> Result<(), BizError> {
+async fn add_dfs_file(login: &LoginUser, storage: &StorageFile, path: &str, content_type: Option<String>) -> Result<(), BizError> {
+    let user_id = login.owner_id;
     let name = file_util::file_name(path);
     let content_type = match content_type.filter(|it| !it.is_empty()) {
         Some(it) => it,
@@ -164,10 +197,13 @@ async fn add_dfs_file(user_id: i64, storage: &StorageFile, path: &str, content_t
         size,
         contentType: Some(content_type),
         storageId: storage.id,
+        creatorId: login.is_sub.then_some(login.id),
         ..Default::default()
     };
-    dfs_file_service::add_file(&mut ctx, file, true).await?;
+    let file_id = dfs_file_service::add_file(&mut ctx, file, true).await?;
     db::commit(ctx).await?;
+    let detail = serde_json::json!({"size": size, "md5": storage.md5});
+    operate_log_service::add(login, op::UPLOAD, Some(file_id), Some(path.to_string()), Some(detail));
 
     //生成缩略图等
     file_handle_service::notify();

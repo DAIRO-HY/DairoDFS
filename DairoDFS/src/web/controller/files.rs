@@ -2,6 +2,8 @@ use crate::dao::dfs_file_dao::DfsFile;
 use crate::dao::{dfs_file_dao, storage_file_dao};
 use crate::extension::number::NumberExtension;
 use crate::extension::string::StringExtension;
+use crate::service::operate_log_service::{self, op};
+use crate::service::sub_account_service::{perm, Scope};
 use crate::service::{dfs_file_service, file_handle_service};
 use crate::web::biz_error::BizError;
 use crate::web::filter::auth::LoginUser;
@@ -19,16 +21,15 @@ use std::collections::HashSet;
 #[GET("/api/files/list")]
 pub async fn list(login: Ext<LoginUser>, folder: String) -> Result<model::FileList, BizError> {
     let mut ctx = lib_db::get_context();
-    let Some(folder_id) = dfs_file_service::get_folder_id(&mut ctx, login.id, &folder, false).await? else {
-        return Err(biz_error!("文件夹不存在"));
-    };
-    let thumb_ids: HashSet<i64> = dfs_file_dao::select_has_thumb_ids(&mut ctx, login.id, folder_id)
+    let (scope, folder_id, folder_perms) = list_folder(&mut ctx, &login, &folder).await?;
+    let thumb_ids: HashSet<i64> = dfs_file_dao::select_has_thumb_ids(&mut ctx, login.owner_id, folder_id)
         .await?
         .into_iter()
         .collect();
-    let list = dfs_file_dao::select_sub_list(&mut ctx, login.id, folder_id)
+    let list = dfs_file_dao::select_sub_list(&mut ctx, login.owner_id, folder_id)
         .await?
         .into_iter()
+        .filter(|it| scope.visible(folder_perms, it.id))
         .map(|it| model::FileItem {
             id: it.id,
             has_thumb: thumb_ids.contains(&it.id),
@@ -41,16 +42,33 @@ pub async fn list(login: Ext<LoginUser>, folder: String) -> Result<model::FileLi
     Ok(model::FileList { folder_id, list })
 }
 
+/// 获取要显示列表的文件夹,并检查浏览权限
+/// - return 访问范围、文件夹ID、对文件夹的权限
+pub async fn list_folder(ctx: &mut sqlx_context::DbContext, login: &LoginUser, folder: &str) -> Result<(Scope, i64, i64), BizError> {
+    let mut scope = Scope::load(ctx, login).await?;
+    let folder = match dfs_file_service::select_by_path(ctx, login.owner_id, folder).await? {
+        Some(it) if it.storageId == 0 => it,
+        _ => return Err(biz_error!("文件夹不存在")),
+    };
+    let perms = scope.perms(ctx, &folder).await?;
+    if perms & (perm::VIEW | perm::PASS) == 0 {
+        return Err(biz_error!("文件夹不存在"));
+    }
+    Ok((scope, folder.id, perms))
+}
+
 /// 创建文件夹
 /// - folder 文件夹路径
 #[POST("/api/files/create_folder")]
 pub async fn create_folder(login: Ext<LoginUser>, folder: String) -> Result<(), BizError> {
     let mut ctx = db::begin().await?;
-    if dfs_file_service::select_by_path(&mut ctx, login.id, &folder).await?.is_some() {
+    if dfs_file_service::select_by_path(&mut ctx, login.owner_id, &folder).await?.is_some() {
         return Err(biz_errorf!("文件或文件夹[{}]已存在", folder));
     }
-    dfs_file_service::mkdirs(&mut ctx, login.id, &folder).await?;
+    Scope::load(&mut ctx, &login).await?.check_path(&mut ctx, login.owner_id, &folder, perm::UPLOAD).await?;
+    let id = dfs_file_service::mkdirs(&mut ctx, login.owner_id, &folder).await?;
     db::commit(ctx).await?;
+    operate_log_service::add(&login, op::CREATE_FOLDER, Some(id), Some(folder), None);
     Ok(())
 }
 
@@ -58,8 +76,12 @@ pub async fn create_folder(login: Ext<LoginUser>, folder: String) -> Result<(), 
 #[PUT("/api/files/rename")]
 pub async fn rename(login: Ext<LoginUser>, id: i64, name: String) -> Result<(), BizError> {
     let mut ctx = db::begin().await?;
-    dfs_file_service::rename(&mut ctx, login.id, id, &name).await?;
+    let file = dfs_file_service::select_operable(&mut ctx, login.owner_id, id).await?;
+    Scope::load(&mut ctx, &login).await?.check_in_parent(&mut ctx, &file, perm::MODIFY).await?;
+    let path = dfs_file_service::get_path_by_id(&mut ctx, file.id).await?;
+    dfs_file_service::rename(&mut ctx, login.owner_id, id, &name).await?;
     db::commit(ctx).await?;
+    operate_log_service::add_file(&login, op::RENAME, &file, path, Some(serde_json::json!({"name": name})));
     Ok(())
 }
 
@@ -70,8 +92,22 @@ pub async fn rename(login: Ext<LoginUser>, id: i64, name: String) -> Result<(), 
 #[POST("/api/files/copy")]
 pub async fn copy(login: Ext<LoginUser>, ids: Vec<i64>, target_folder: String, is_over_write: bool) -> Result<(), BizError> {
     let mut ctx = db::begin().await?;
-    dfs_file_service::copy(&mut ctx, login.id, &ids, &target_folder, is_over_write).await?;
+    let mut scope = Scope::load(&mut ctx, &login).await?;
+    let mut files = Vec::new();
+    for id in &ids {
+        let file = dfs_file_service::select_operable(&mut ctx, login.owner_id, *id).await?;
+        scope.check(&mut ctx, &file, perm::MODIFY).await?;
+        let path = dfs_file_service::get_path_by_id(&mut ctx, file.id).await?;
+        files.push((file, path));
+    }
+    check_target(&mut ctx, &mut scope, &login, &target_folder, is_over_write).await?;
+    let creator_id = login.is_sub.then_some(login.id);
+    dfs_file_service::copy(&mut ctx, login.owner_id, &ids, &target_folder, is_over_write, creator_id).await?;
     db::commit(ctx).await?;
+    let detail = serde_json::json!({"target": target_folder, "overWrite": is_over_write});
+    for (file, path) in files {
+        operate_log_service::add_file(&login, op::COPY, &file, path, Some(detail.clone()));
+    }
 
     //复制出来的文件需要重新生成附属文件(同一个存储文件已经生成过的会直接复用)
     file_handle_service::notify();
@@ -85,8 +121,36 @@ pub async fn copy(login: Ext<LoginUser>, ids: Vec<i64>, target_folder: String, i
 #[POST("/api/files/move")]
 pub async fn move_to(login: Ext<LoginUser>, ids: Vec<i64>, target_folder: String, is_over_write: bool) -> Result<(), BizError> {
     let mut ctx = db::begin().await?;
-    dfs_file_service::move_to(&mut ctx, login.id, &ids, &target_folder, is_over_write).await?;
+    let mut scope = Scope::load(&mut ctx, &login).await?;
+    let mut files = Vec::new();
+    for id in &ids {
+        let file = dfs_file_service::select_operable(&mut ctx, login.owner_id, *id).await?;
+        scope.check_in_parent(&mut ctx, &file, perm::MODIFY).await?;
+        let path = dfs_file_service::get_path_by_id(&mut ctx, file.id).await?;
+        files.push((file, path));
+    }
+    check_target(&mut ctx, &mut scope, &login, &target_folder, is_over_write).await?;
+    dfs_file_service::move_to(&mut ctx, login.owner_id, &ids, &target_folder, is_over_write).await?;
     db::commit(ctx).await?;
+    let detail = serde_json::json!({"target": target_folder, "overWrite": is_over_write});
+    for (file, path) in files {
+        operate_log_service::add_file(&login, op::MOVE, &file, path, Some(detail.clone()));
+    }
+    Ok(())
+}
+
+/// 检查复制、移动的目标文件夹的权限:需要上传权限,覆盖目标文件时还需要修改权限
+async fn check_target(
+    ctx: &mut sqlx_context::DbContext,
+    scope: &mut Scope,
+    login: &LoginUser,
+    target_folder: &str,
+    is_over_write: bool,
+) -> Result<(), BizError> {
+    scope.check_path(ctx, login.owner_id, target_folder, perm::UPLOAD).await?;
+    if is_over_write {
+        scope.check_path(ctx, login.owner_id, target_folder, perm::MODIFY).await?;
+    }
     Ok(())
 }
 
@@ -94,10 +158,19 @@ pub async fn move_to(login: Ext<LoginUser>, ids: Vec<i64>, target_folder: String
 #[DELETE("/api/files/delete")]
 pub async fn delete(login: Ext<LoginUser>, ids: Vec<i64>) -> Result<(), BizError> {
     let mut ctx = db::begin().await?;
+    let mut scope = Scope::load(&mut ctx, &login).await?;
+    let mut files = Vec::new();
     for id in ids {
-        dfs_file_service::set_delete(&mut ctx, login.id, id).await?;
+        let file = dfs_file_service::select_operable(&mut ctx, login.owner_id, id).await?;
+        scope.check_in_parent(&mut ctx, &file, perm::DELETE).await?;
+        let path = dfs_file_service::get_path_by_id(&mut ctx, file.id).await?;
+        dfs_file_service::set_delete(&mut ctx, login.owner_id, id).await?;
+        files.push((file, path));
     }
     db::commit(ctx).await?;
+    for (file, path) in files {
+        operate_log_service::add_file(&login, op::DELETE, &file, path, None);
+    }
     Ok(())
 }
 
@@ -106,11 +179,13 @@ pub async fn delete(login: Ext<LoginUser>, ids: Vec<i64>) -> Result<(), BizError
 #[GET("/api/files/property")]
 pub async fn property(login: Ext<LoginUser>, ids: Vec<i64>) -> Result<model::FileProperty, BizError> {
     let mut ctx = lib_db::get_context();
+    let mut scope = Scope::load(&mut ctx, &login).await?;
     let mut out = model::FileProperty::default();
     if ids.len() != 1 {
         let mut total = model::SubTotal::default();
         for id in ids {
-            let file = dfs_file_service::select_own(&mut ctx, login.id, id).await?;
+            let file = dfs_file_service::select_own(&mut ctx, login.owner_id, id).await?;
+            scope.check(&mut ctx, &file, perm::VIEW).await?;
             if file.storageId > 0 {
                 total.file_count += 1;
                 total.size += file.size;
@@ -124,7 +199,8 @@ pub async fn property(login: Ext<LoginUser>, ids: Vec<i64>) -> Result<model::Fil
         out.folder_count = Some(total.folder_count);
         return Ok(out);
     }
-    let file = dfs_file_service::select_own(&mut ctx, login.id, ids[0]).await?;
+    let file = dfs_file_service::select_own(&mut ctx, login.owner_id, ids[0]).await?;
+    scope.check(&mut ctx, &file, perm::VIEW).await?;
     out.id = file.id;
     out.path = dfs_file_service::get_path_by_id(&mut ctx, file.id).await?;
     out.date = file.date.date_format();
@@ -141,7 +217,7 @@ pub async fn property(login: Ext<LoginUser>, ids: Vec<i64>) -> Result<model::Fil
         out.folder_count = Some(total.folder_count);
         return Ok(out);
     }
-    out.history_list = dfs_file_dao::select_history(&mut ctx, login.id, file.parentId, &file.name)
+    out.history_list = dfs_file_dao::select_history(&mut ctx, login.owner_id, file.parentId, &file.name)
         .await?
         .into_iter()
         .map(|it| model::FileHistory {
@@ -192,9 +268,12 @@ pub async fn content_type(login: Ext<LoginUser>, id: i64, content_type: String) 
         return Err(biz_error!("文件类型不能为空"));
     }
     let mut ctx = db::begin().await?;
-    dfs_file_service::select_own(&mut ctx, login.id, id).await?;
+    let file = dfs_file_service::select_own(&mut ctx, login.owner_id, id).await?;
+    Scope::load(&mut ctx, &login).await?.check(&mut ctx, &file, perm::MODIFY).await?;
     dfs_file_dao::set_content_type(&mut ctx, id, content_type).await?;
+    let path = dfs_file_service::get_path_by_id(&mut ctx, file.id).await?;
     db::commit(ctx).await?;
+    operate_log_service::add_file(&login, op::CONTENT_TYPE, &file, path, Some(serde_json::json!({"contentType": content_type})));
     Ok(())
 }
 
@@ -204,13 +283,15 @@ pub async fn content_type(login: Ext<LoginUser>, id: i64, content_type: String) 
 #[GET("/api/files/download/{id}/{name}")]
 pub async fn download(login: Ext<LoginUser>, id: i64, name: String, download: Option<bool>, headers: &HeaderMap) -> Result<Stream, BizError> {
     let mut ctx = lib_db::get_context();
-    let Ok(file) = dfs_file_service::select_own(&mut ctx, login.id, id).await else {
+    let Ok(file) = dfs_file_service::select_own(&mut ctx, login.owner_id, id).await else {
         return Err(BizError::not_found());
     };
     if file.storageId == 0 || file.isExtra == 1 {
         return Err(BizError::not_found());
     }
+    check_file(&mut ctx, &login, &file, perm::OPEN).await?;
     let stream = file_stream(&file, headers).await?;
+    operate_log_service::add_open(&login, &file, None).await;
     if download == Some(true) {
         return Ok(stream.attachment(&name));
     }
@@ -223,13 +304,21 @@ pub async fn download(login: Ext<LoginUser>, id: i64, name: String, download: Op
 #[GET("/api/files/extra/{id}/{extra}")]
 pub async fn extra(login: Ext<LoginUser>, id: i64, extra: String, headers: &HeaderMap) -> Result<Stream, BizError> {
     let mut ctx = lib_db::get_context();
-    if dfs_file_service::select_own(&mut ctx, login.id, id).await.is_err() {
+    let Ok(file) = dfs_file_service::select_own(&mut ctx, login.owner_id, id).await else {
         return Err(BizError::not_found());
-    }
+    };
+
+    //缩略图只需要浏览权限,预览图、转码后的视频等需要打开权限
+    check_file(&mut ctx, &login, &file, if extra == "thumb" { perm::VIEW } else { perm::OPEN }).await?;
     let Some(extra_file) = dfs_file_dao::select_extra(&mut ctx, id, &extra).await? else {
         return Err(BizError::not_found());
     };
-    file_stream(&extra_file, headers).await
+    let stream = file_stream(&extra_file, headers).await?;
+    if extra != "thumb" {
+        //预览图、转码后的视频等也算打开了文件,缩略图不记录
+        operate_log_service::add_open(&login, &file, Some(serde_json::json!({"extra": extra}))).await;
+    }
+    Ok(stream)
 }
 
 /// 获取缩略图
@@ -255,12 +344,13 @@ pub async fn thumb_online(
     name: Option<String>,
 ) -> Result<Raw, BizError> {
     let mut ctx = lib_db::get_context();
-    let Ok(file) = dfs_file_service::select_own(&mut ctx, login.id, id).await else {
+    let Ok(file) = dfs_file_service::select_own(&mut ctx, login.owner_id, id).await else {
         return Err(BizError::not_found());
     };
     if file.storageId == 0 {
         return Err(BizError::not_found());
     }
+    check_file(&mut ctx, &login, &file, perm::VIEW).await?;
 
     //有缩略图时用缩略图生成,否则用原文件的预览图
     let source = match dfs_file_dao::select_extra(&mut ctx, id, "thumb").await? {
@@ -300,12 +390,23 @@ pub async fn thumb_online(
 #[GET("/api/files/album")]
 pub async fn album(login: Ext<LoginUser>) -> Result<Vec<(i64, i64, String, bool, i64)>, BizError> {
     let mut ctx = lib_db::get_context();
-    let thumb_ids: HashSet<i64> = dfs_file_dao::select_thumb_parent_ids(&mut ctx, login.id)
+    let thumb_ids: HashSet<i64> = dfs_file_dao::select_thumb_parent_ids(&mut ctx, login.owner_id)
         .await?
         .into_iter()
         .collect();
-    let mut list: Vec<(i64, i64, String, bool, i64)> = dfs_file_dao::select_album(&mut ctx, login.id)
-        .await?
+    let mut files = dfs_file_dao::select_album(&mut ctx, login.owner_id).await?;
+    let mut scope = Scope::load(&mut ctx, &login).await?;
+    if scope.is_sub() {
+        //子账户只显示有浏览权限的文件
+        let mut visible = Vec::new();
+        for it in files {
+            if scope.perms(&mut ctx, &it).await? & perm::VIEW != 0 {
+                visible.push(it);
+            }
+        }
+        files = visible;
+    }
+    let mut list: Vec<(i64, i64, String, bool, i64)> = files
         .into_iter()
         .map(|it| {
             let property: serde_json::Value = it
@@ -322,6 +423,17 @@ pub async fn album(login: Ext<LoginUser>) -> Result<Vec<(i64, i64, String, bool,
         .collect();
     list.sort_by_key(|it| it.1);
     Ok(list)
+}
+
+/// 检查对文件的权限,没有权限时返回404(下载、缩略图等接口给播放器和图片组件使用,只需要知道不能访问)
+async fn check_file(ctx: &mut sqlx_context::DbContext, login: &LoginUser, file: &DfsFile, need: i64) -> Result<(), BizError> {
+    if !login.is_sub {
+        return Ok(());
+    }
+    if Scope::load(ctx, login).await?.check(ctx, file, need).await.is_err() {
+        return Err(BizError::not_found());
+    }
+    Ok(())
 }
 
 /// 文件下载响应,支持断点续传

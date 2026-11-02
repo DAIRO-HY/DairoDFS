@@ -5,7 +5,7 @@ use sqlx::{Arguments, Column, Row, TypeInfo, ValueRef};
 use sqlx_context::DbContext;
 
 /// 全量同步的表(按同步顺序排列),只允许同步这些表
-pub const TABLES: [&str; 6] = ["user", "user_token", "dfs_file", "dfs_file_delete", "share", "storage_file"];
+pub const TABLES: [&str; 7] = ["user", "user_token", "dfs_file", "dfs_file_delete", "share", "storage_file", "sub_account_grant"];
 
 /// 检查表名是否允许同步
 pub fn check_table(name: &str) -> Result<&'static str, String> {

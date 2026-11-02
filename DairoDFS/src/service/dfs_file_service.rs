@@ -100,7 +100,8 @@ async fn add_folder(ctx: &mut DbContext, user_id: i64, parent_id: i64, name: &st
 
 /// 添加一个文件
 /// - is_over_write 是否覆盖,true时,将原来的文件设置为历史版本
-pub async fn add_file(ctx: &mut DbContext, mut file: DfsFile, is_over_write: bool) -> Result<(), BizError> {
+/// - return 文件ID(同一个文件已经存在时返回已经存在的文件ID)
+pub async fn add_file(ctx: &mut DbContext, mut file: DfsFile, is_over_write: bool) -> Result<i64, BizError> {
     if file.storageId == 0 {
         return Err(biz_error!("本地存储文件ID不能为空"));
     }
@@ -111,7 +112,7 @@ pub async fn add_file(ctx: &mut DbContext, mut file: DfsFile, is_over_write: boo
         }
         if exists.storageId == file.storageId {
             //同一个文件,直接成功
-            return Ok(());
+            return Ok(exists.id);
         }
         if !is_over_write {
             return Err(biz_errorf!("文件[{}]已存在", file.name));
@@ -127,7 +128,7 @@ pub async fn add_file(ctx: &mut DbContext, mut file: DfsFile, is_over_write: boo
     file.isHistory = 0;
     file.deleteDate = None;
     dfs_file_dao::insert(&mut *ctx, &file).await?;
-    Ok(())
+    Ok(file.id)
 }
 
 /// 通过文件ID获取文件全路径,根目录为空字符串
@@ -177,7 +178,15 @@ async fn make_name_no(ctx: &mut DbContext, file: &DfsFile) -> Result<String, Biz
 /// - ids 要复制的文件ID
 /// - target_folder 目标文件夹路径
 /// - is_over_write 是否覆盖目标文件
-pub async fn copy(ctx: &mut DbContext, user_id: i64, ids: &[i64], target_folder: &str, is_over_write: bool) -> Result<(), BizError> {
+/// - creator_id 子账户操作时,记录为复制出来的文件的上传者
+pub async fn copy(
+    ctx: &mut DbContext,
+    user_id: i64,
+    ids: &[i64],
+    target_folder: &str,
+    is_over_write: bool,
+    creator_id: Option<i64>,
+) -> Result<(), BizError> {
     let target_id = get_folder_id(ctx, user_id, target_folder, true).await?.unwrap();
     for id in ids {
         let source = select_operable(ctx, user_id, *id).await?;
@@ -190,7 +199,7 @@ pub async fn copy(ctx: &mut DbContext, user_id: i64, ids: &[i64], target_folder:
         if source.storageId == 0 && is_self_or_sub_folder(ctx, source.id, target_id).await? {
             return Err(biz_error!("不能复制文件夹到它自己或者它的子文件夹下"));
         }
-        copy_one(ctx, source, user_id, target_id, name, is_over_write).await?;
+        copy_one(ctx, source, user_id, target_id, name, is_over_write, creator_id).await?;
     }
     Ok(())
 }
@@ -204,6 +213,7 @@ pub async fn copy_one(
     target_parent_id: i64,
     name: String,
     is_over_write: bool,
+    creator_id: Option<i64>,
 ) -> Result<(), BizError> {
     if source.storageId > 0 {
         let file = DfsFile {
@@ -213,9 +223,11 @@ pub async fn copy_one(
             size: source.size,
             contentType: source.contentType,
             storageId: source.storageId,
+            creatorId: creator_id,
             ..Default::default()
         };
-        return add_file(ctx, file, is_over_write).await;
+        add_file(ctx, file, is_over_write).await?;
+        return Ok(());
     }
     let folder_id = match dfs_file_dao::select_by_parent_id_and_name(&mut *ctx, target_user_id, target_parent_id, &name).await? {
         Some(it) if it.storageId > 0 => return Err(biz_errorf!("文件或文件夹[{}]已存在", name)),
@@ -224,7 +236,7 @@ pub async fn copy_one(
     };
     for it in dfs_file_dao::select_sub_list(&mut *ctx, source.userId, source.id).await? {
         let name = it.name.clone();
-        Box::pin(copy_one(ctx, it, target_user_id, folder_id, name, is_over_write)).await?;
+        Box::pin(copy_one(ctx, it, target_user_id, folder_id, name, is_over_write, creator_id)).await?;
     }
     Ok(())
 }

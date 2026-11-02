@@ -15,7 +15,8 @@ CREATE TABLE dfs_file
     isHistory   INTEGER                        NOT NULL DEFAULT 0, -- 是否历史版本(文件专用),1:历史版本 0:当前版本
     deleteDate  INT8                        NULL,               -- 删除日期
     state       INTEGER                        NOT NULL DEFAULT 0, -- 文件处理状态，0：待处理 1：处理完成 2：处理出错，比如视频文件，需要转码；图片需要获取尺寸等信息
-    stateMsg    TEXT                        NULL                -- 文件处理出错信息
+    stateMsg    TEXT                        NULL,               -- 文件处理出错信息
+    creatorId   INT8                        NULL                -- 上传者的用户ID(子账户上传时),为空表示所属用户本人
 );
 -- sqlite创建索引，在使用链接查询时，可能会拖慢性能，实测300万条数据查询几乎都是几十微妙就能完成，所以没必要创建索引
 -- CREATE INDEX idx_userId ON dfs_file (userId);

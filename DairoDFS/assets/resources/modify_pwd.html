@@ -16,6 +16,7 @@
                 </div>
                 <div>
                     <input name="pwd" class="form-control mt-3" type="password" placeholder="新密码" autocomplete="off">
+                    <div id="subPwdTip" class="form-text d-none">8到32位,必须同时包含字母和数字</div>
                 </div>
                 <div>
                     <input id="repwd" class="form-control mt-3" type="password" placeholder="确认新密码"
@@ -43,6 +44,12 @@
             location.href = "/login.html"
         }).put()
     }
+
+    $(function () {
+        if (localStorage.getItem("isSub") === "true") {//子账户的密码有更严格的要求
+            $("#subPwdTip").removeClass("d-none")
+        }
+    })
 </script>
 </body>
 </html>

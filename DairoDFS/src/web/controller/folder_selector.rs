@@ -1,6 +1,5 @@
-use crate::biz_error;
 use crate::dao::dfs_file_dao;
-use crate::service::dfs_file_service;
+use crate::web::controller::files;
 use crate::web::biz_error::BizError;
 use crate::web::filter::auth::LoginUser;
 use hyperoute_core::Ext;
@@ -11,13 +10,11 @@ use hyperoute_macro::GET;
 #[GET("/api/folder_selector/list")]
 pub async fn list(login: Ext<LoginUser>, folder: String) -> Result<Vec<String>, BizError> {
     let mut ctx = lib_db::get_context();
-    let Some(folder_id) = dfs_file_service::get_folder_id(&mut ctx, login.id, &folder, false).await? else {
-        return Err(biz_error!("文件夹不存在"));
-    };
-    let list = dfs_file_dao::select_sub_list(&mut ctx, login.id, folder_id)
+    let (scope, folder_id, folder_perms) = files::list_folder(&mut ctx, &login, &folder).await?;
+    let list = dfs_file_dao::select_sub_list(&mut ctx, login.owner_id, folder_id)
         .await?
         .into_iter()
-        .filter(|it| it.storageId == 0)
+        .filter(|it| it.storageId == 0 && scope.visible(folder_perms, it.id))
         .map(|it| it.name)
         .collect();
     Ok(list)

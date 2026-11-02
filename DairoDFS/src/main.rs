@@ -36,6 +36,9 @@ async fn main() -> tokio::io::Result<()> {
     system_config::init();
     web::server::ready();
 
+    //启动操作日志写入和清理任务
+    service::operate_log_service::start();
+
     //启动文件处理任务(生成缩略图、预览图等)
     service::file_handle_service::start();
 

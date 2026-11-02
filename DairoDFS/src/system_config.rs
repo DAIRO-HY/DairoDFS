@@ -40,6 +40,9 @@ pub struct SystemConfig {
 
     /// 集群ID,同一个分布式集群里的服务器相同(分机从第一台同步主机获取),客户端用来判断文件是否来自同一个集群
     pub cluster_id: String,
+
+    /// 操作日志保存天数
+    pub operate_log_days: i64,
 }
 
 impl Default for SystemConfig {
@@ -56,6 +59,7 @@ impl Default for SystemConfig {
             ignore_sync_error: false,
             db_backup_expire_day: 30,
             cluster_id: String::new(),
+            operate_log_days: 30,
         }
     }
 }

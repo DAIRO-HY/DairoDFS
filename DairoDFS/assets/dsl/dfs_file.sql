@@ -194,6 +194,20 @@ where storageId = (select id from storage_file where md5 = :md5)
 
 -- ------------------------------
 
+-- 获取某个用户指定MD5的文件
+-- @name select_by_md5
+-- @param user_id:i64
+-- @param md5:String
+-- @return List<DfsFile>
+select * from dfs_file
+where storageId = (select id from storage_file where md5 = :md5)
+  and userId = :user_id
+  and isHistory = 0
+  and isExtra = 0
+  and deleteDate is null;
+
+-- ------------------------------
+
 -- 本地存储文件是否还在被使用
 -- @name count_by_storage_id
 -- @param storage_id:i64

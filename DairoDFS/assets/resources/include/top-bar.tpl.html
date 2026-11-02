@@ -10,6 +10,12 @@
                 <li class="nav-item">
                     <a class="nav-link" href="/files.html">文件</a>
                 </li>
+                <li class="nav-item" main>
+                    <a class="nav-link" href="/sub_account_list.html">子账户</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/operate_log.html">操作日志</a>
+                </li>
                 <li class="nav-item" admin>
                     <a class="nav-link" href="/user_list.html">用户</a>
                 </li>
@@ -30,7 +36,8 @@
                 <button type="button"
                         class="btn btn-link dropdown-toggle px-0"
                         data-bs-toggle="dropdown">
-                    <i class="bi bi-person-fill me-1"></i><span id="loginName"></span>
+                    <img id="loginAvatar" class="rounded-circle me-1 d-none" style="width: 24px;height: 24px;object-fit: cover;" alt="">
+                    <i id="loginIcon" class="bi bi-person-fill me-1"></i><span id="loginName"></span>
                 </button>
                 <ul class="dropdown-menu">
                     <li>
@@ -74,12 +81,22 @@
         if (localStorage.getItem("isAdmin") !== "true") {//移除需要管理员权限的标签
             $("li[admin]").remove()
         }
+        if (localStorage.getItem("isSub") === "true") {//移除子账户不能使用的标签
+            $("li[main]").remove()
+        }
     })
 
     function initTopBar() {
 
-        //显示当前登录用户名
+        //显示当前登录用户名,之后获取昵称和头像
         $("#loginName").text(localStorage.getItem("name"))
+        $.ajaxByData("/api/mine/info").hide().success(data => {
+            $("#loginName").text(data.nickname || data.name)
+            if (data.avatar) {
+                $("#loginAvatar").attr("src", `/api/avatar/${data.id}?v=${data.avatar}`).removeClass("d-none")
+                $("#loginIcon").addClass("d-none")
+            }
+        }).get()
 
         //得到当前url路劲部分
         const pathname = window.location.pathname;

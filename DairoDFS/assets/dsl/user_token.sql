@@ -33,3 +33,11 @@ delete from user_token where userId = :user_id;
 -- @name delete_by_token
 -- @param token:String
 delete from user_token where token = :token;
+
+-- ------------------------------
+
+-- 通过登录票据获取登录记录
+-- @name select_by_token
+-- @param token:String
+-- @return UserToken?
+select * from user_token where token = :token;

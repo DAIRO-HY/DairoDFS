@@ -11,6 +11,7 @@ CREATE TABLE share
     folderFlag INTEGER,-- 是否分享的仅仅是一个文件夹
     fileCount  INT              NOT NULL, -- 文件数
     endDate    INT8             NULL,     -- 结束日期
-    date       INT8             NOT NULL  -- 创建日期
+    date       INT8             NOT NULL, -- 创建日期
+    creatorId  INT8             NULL      -- 创建分享的子账户ID,为空表示所属用户本人
 );
 CREATE INDEX index_userId ON share (userId);

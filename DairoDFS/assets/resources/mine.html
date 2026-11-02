@@ -8,6 +8,16 @@
 {{template include/top-bar}}
 <div class="m-3 p-2 rounded shadow bg-content">
     <form>
+        <div class="d-flex align-items-center mb-2 ms-2">
+            <img id="avatarImg" class="rounded-circle border d-none" style="width: 72px;height: 72px;object-fit: cover;" alt="">
+            <i id="avatarIcon" class="bi bi-person-circle" style="font-size: 72px;line-height: 72px;"></i>
+            <div class="ms-3">
+                <input id="avatarFile" type="file" accept="image/*" class="d-none" onchange="onAvatarFileChange(this)">
+                <button type="button" class="btn btn-outline-primary btn-sm" onclick="$('#avatarFile').click()">更换头像</button>
+                <button id="avatarDeleteBtn" type="button" class="btn btn-outline-danger btn-sm d-none" onclick="onAvatarDeleteClick()">删除头像</button>
+                <div class="form-text">图片会裁剪成正方形</div>
+            </div>
+        </div>
         <div class="row row-cols-1 row-cols-md-2">
             <div class="col mt-2">
                 <div class="row">
@@ -27,6 +37,17 @@
             </div>
             <div class="col mt-2">
                 <div class="row">
+                    <label class="col-4 col-form-label text-end">昵称</label>
+                    <div class="col-8">
+                        <div class="input-group">
+                            <input class="form-control" name="nickname" autocomplete="off" placeholder="最多32个字">
+                            <button class="btn btn-outline-secondary" type="button" onclick="onSaveNicknameClick()">保存</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col mt-2">
+                <div class="row">
                     <label class="col-4 col-form-label text-end">邮箱</label>
                     <div class="col-8">
                         <input class="form-control" name="email" disabled/>
@@ -41,7 +62,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col mt-2">
+            <div class="col mt-2" main-only>
                 <div class="row">
                     <label class="col-4 col-form-label text-end">WEB路径</label>
                     <div class="col-8">
@@ -57,7 +78,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col mt-2">
+            <div class="col mt-2" main-only>
                 <div class="row">
                     <label class="col-4 col-form-label text-end">API-TOKEN</label>
                     <div class="col-8">
@@ -73,7 +94,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col mt-2">
+            <div class="col mt-2" main-only>
                 <div class="row">
                     <label class="col-4 col-form-label text-end">端对端加密</label>
                     <div class="col-8">
@@ -97,8 +118,76 @@
     $(function () {
         $.ajaxByData("/api/mine/info").success(data => {
             $("form").bindValue(data)
+            if (data.isSub) {//子账户不能使用WEB路径、API票据、端对端加密
+                $("[main-only]").remove()
+            }
+            showAvatar(data)
         }).get()
     })
+
+    /**
+     * 显示头像
+     */
+    function showAvatar(data) {
+        if (data.avatar) {
+            $("#avatarImg").attr("src", `/api/avatar/${data.id}?v=${data.avatar}`).removeClass("d-none")
+            $("#avatarIcon").addClass("d-none")
+            $("#avatarDeleteBtn").removeClass("d-none")
+        } else {
+            $("#avatarImg").addClass("d-none")
+            $("#avatarIcon").removeClass("d-none")
+            $("#avatarDeleteBtn").addClass("d-none")
+        }
+    }
+
+    /**
+     * 保存昵称
+     */
+    function onSaveNicknameClick() {
+        $("form").find("span[error-valid]").remove()
+        $("form").find(".is-invalid").removeClass("is-invalid")
+        $.ajaxByData("/api/mine/nickname").add("nickname", $("input[name='nickname']").val()).success(() => {
+            history.go(0)
+        }).put()
+    }
+
+    /**
+     * 选择了头像图片
+     */
+    function onAvatarFileChange(input) {
+        const file = input.files[0]
+        input.value = ""
+        if (!file) {
+            return
+        }
+        const formData = new FormData()
+        formData.append("file", file)
+        $.ajax({
+            url: "/api/mine/avatar",
+            method: "POST",
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: () => history.go(0),
+            error: xhr => {
+                if (xhr.status === 401) {
+                    window.location.href = "/login.html"
+                    return
+                }
+                alert(xhr.responseText || "上传失败")
+            }
+        })
+    }
+
+    /**
+     * 删除头像
+     */
+    function onAvatarDeleteClick() {
+        if (!confirm("确定要删除头像吗?")) {
+            return
+        }
+        $.ajaxByData("/api/mine/avatar").success(() => history.go(0)).delete()
+    }
 
     /**
      * 生成API票据点击事件

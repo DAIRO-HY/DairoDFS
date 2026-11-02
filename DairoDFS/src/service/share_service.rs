@@ -22,7 +22,15 @@ pub fn share_url(id: i64) -> String {
 /// - ids 要分享的文件ID,必须在同一个文件夹下
 /// - end_date_time 分享截止时间戳,0代表永久有效
 /// - pwd 提取码,空字符串代表不需要提取码
-pub async fn add(ctx: &mut DbContext, user_id: i64, ids: &[i64], end_date_time: i64, pwd: &str) -> Result<i64, BizError> {
+/// - creator_id 子账户创建分享时的子账户ID
+pub async fn add(
+    ctx: &mut DbContext,
+    user_id: i64,
+    ids: &[i64],
+    end_date_time: i64,
+    pwd: &str,
+    creator_id: Option<i64>,
+) -> Result<i64, BizError> {
     if ids.is_empty() {
         return Err(biz_error!("请选择要分享的文件"));
     }
@@ -67,6 +75,7 @@ pub async fn add(ctx: &mut DbContext, user_id: i64, ids: &[i64], end_date_time: 
         fileCount: files.len() as i64,
         endDate: Some(end_date_time),
         date: time_util::current_millis(),
+        creatorId: creator_id,
     };
     share_dao::insert(&mut *ctx, &share).await?;
     Ok(share.id)
@@ -167,7 +176,16 @@ pub async fn list(share: &Share, folder: &str) -> Result<Vec<DfsFile>, BizError>
 /// - folder 分享里的文件夹(相对路径)
 /// - names 选中的文件名
 /// - target 转存到的目标文件夹
-pub async fn save_to(ctx: &mut DbContext, share: &Share, user_id: i64, folder: &str, names: &[String], target: &str) -> Result<(), BizError> {
+/// - creator_id 子账户转存时的子账户ID
+pub async fn save_to(
+    ctx: &mut DbContext,
+    share: &Share,
+    user_id: i64,
+    folder: &str,
+    names: &[String],
+    target: &str,
+    creator_id: Option<i64>,
+) -> Result<(), BizError> {
     if names.is_empty() {
         return Err(biz_error!("请选择要转存的文件"));
     }
@@ -178,7 +196,7 @@ pub async fn save_to(ctx: &mut DbContext, share: &Share, user_id: i64, folder: &
             //分享者转存自己分享的文件夹到它的子文件夹下
             return Err(biz_error!("不能转存文件夹到它自己或者它的子文件夹下"));
         }
-        dfs_file_service::copy_one(ctx, source, user_id, target_id, name.clone(), false).await?;
+        dfs_file_service::copy_one(ctx, source, user_id, target_id, name.clone(), false, creator_id).await?;
     }
     Ok(())
 }

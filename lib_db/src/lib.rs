@@ -12,7 +12,7 @@ use std::time::Duration;
 struct Assets;
 
 // VERSION 数据库版本号
-const VERSION: i32 = 1;
+const VERSION: i32 = 2;
 
 /// 数据库文件名
 pub const DB_FILE_NAME: &str = "dairo-dfs2.sqlite";
@@ -21,7 +21,7 @@ pub const DB_FILE_NAME: &str = "dairo-dfs2.sqlite";
 const OLD_DB_FILE_NAME: &str = "dairo-dfs.sqlite";
 
 /// 建表顺序
-const SQL_FILES: [&str; 7] = [
+const SQL_FILES: [&str; 9] = [
     "dfs_file.sql",
     "dfs_file_delete.sql",
     "storage_file.sql",
@@ -29,7 +29,18 @@ const SQL_FILES: [&str; 7] = [
     "sql_log.sql",
     "user.sql",
     "user_token.sql",
+    "sub_account_grant.sql",
+    "operate_log.sql",
 ];
+
+/// 版本1升级到版本2:子账户、操作日志
+const UPGRADE_V2: &str = "
+alter table user add parentId INT8 NOT NULL default 0;
+alter table user add nickname VARCHAR(32);
+alter table user add avatar CHAR(32);
+alter table dfs_file add creatorId INT8 NULL;
+alter table share add creatorId INT8 NULL;
+";
 
 /// 需要从老库迁移数据的表(sql_log是Go版的同步日志,新版不再使用,不迁移)
 const MIGRATE_TABLES: [&str; 6] = [
@@ -127,6 +138,13 @@ async fn upgrade() -> Result<(), Box<dyn Error>> {
     if version == 0 {
         //创建表
         create_table(&mut *conn).await?;
+    } else if version < 2 {
+        //一个事务里完成,中途失败时不会只升级一半
+        let mut tx = (&mut *conn).begin().await?;
+        sqlx::raw_sql(UPGRADE_V2).execute(&mut *tx).await?;
+        execute_sql_file(&mut tx, "sub_account_grant.sql").await?;
+        execute_sql_file(&mut tx, "operate_log.sql").await?;
+        tx.commit().await?;
     }
 
     //设置数据库版本号(版本号没变时不写库)
@@ -141,12 +159,18 @@ async fn upgrade() -> Result<(), Box<dyn Error>> {
 // 创建表
 async fn create_table(conn: &mut SqliteConnection) -> Result<(), Box<dyn Error>> {
     for sql_file in SQL_FILES {
-        let Some(sql_mbed) = Assets::get(sql_file) else {
-            return Err(From::from(format!("{} not found", sql_file)));
-        };
-        let sql_str = std::str::from_utf8(sql_mbed.data.as_ref())?;
-        sqlx::raw_sql(sql_str).execute(&mut *conn).await?;
+        execute_sql_file(conn, sql_file).await?;
     }
+    Ok(())
+}
+
+/// 执行一个建表文件
+async fn execute_sql_file(conn: &mut SqliteConnection, sql_file: &str) -> Result<(), Box<dyn Error>> {
+    let Some(sql_mbed) = Assets::get(sql_file) else {
+        return Err(From::from(format!("{} not found", sql_file)));
+    };
+    let sql_str = std::str::from_utf8(sql_mbed.data.as_ref())?;
+    sqlx::raw_sql(sql_str).execute(&mut *conn).await?;
     Ok(())
 }
 
@@ -177,28 +201,23 @@ async fn migrate_from_old(old_db_path: &Path, db_path: &Path) -> Result<(), Box<
         let old_columns = table_columns(&mut tx, "old", table).await?;
 
         //按列名对应复制,user_token.version改名为client_version
-        let select_columns = new_columns
+        //老库没有的列不复制,使用新表的默认值(插入NULL时,NOT NULL的列会失败)
+        let (insert_columns, select_columns): (Vec<_>, Vec<_>) = new_columns
             .iter()
-            .map(|it| {
+            .filter_map(|it| {
                 let old_name = if table == "user_token" && it == "client_version" {
                     "version"
                 } else {
                     it.as_str()
                 };
-                if old_columns.iter().any(|old| old == old_name) {
-                    format!("\"{}\"", old_name)
-                } else {
-                    //老库没有这一列,用新表的默认值
-                    "NULL".to_string()
-                }
+                old_columns
+                    .iter()
+                    .any(|old| old == old_name)
+                    .then(|| (format!("\"{}\"", it), format!("\"{}\"", old_name)))
             })
-            .collect::<Vec<_>>()
-            .join(",");
-        let insert_columns = new_columns
-            .iter()
-            .map(|it| format!("\"{}\"", it))
-            .collect::<Vec<_>>()
-            .join(",");
+            .unzip();
+        let insert_columns = insert_columns.join(",");
+        let select_columns = select_columns.join(",");
         let sql = format!(
             "insert into main.{table}({insert_columns}) select {select_columns} from old.{table}"
         );

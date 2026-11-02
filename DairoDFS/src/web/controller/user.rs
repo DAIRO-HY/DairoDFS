@@ -11,7 +11,7 @@ use validator::Validate;
 /// 用户列表
 #[GET("/api/user/list")]
 pub async fn list() -> Result<Vec<model::UserList>, BizError> {
-    let list = user_dao::select_all(&mut lib_db::get_context())
+    let list = user_dao::select_main_list(&mut lib_db::get_context())
         .await?
         .into_iter()
         .map(|it| model::UserList {
@@ -38,6 +38,10 @@ pub async fn detail(id: i64) -> Result<model::UserDetail, BizError> {
     let Ok(user) = user_dao::select_one(&mut lib_db::get_context(), id).await else {
         return Err(biz_error!("用户不存在"));
     };
+    if user.parentId != 0 {
+        //子账户由所属的主账户管理
+        return Err(biz_error!("用户不存在"));
+    }
     Ok(model::UserDetail {
         id: user.id,
         name: user.name.unwrap_or_default(),
@@ -78,7 +82,7 @@ pub async fn edit(mut form: form::UserEdit) -> Result<(), BizError> {
         };
         user_service::add(&mut ctx, form.name, pwd.md5(), form.email, form.state).await?;
     } else {
-        if user_dao::select_one(&mut ctx, form.id).await.is_err() {
+        if !user_dao::select_one(&mut ctx, form.id).await.is_ok_and(|it| it.parentId == 0) {
             return Err(biz_error!("用户不存在"));
         }
         if form.state != 1 && user_dao::select_admin_id(&mut ctx).await? == Some(form.id) {

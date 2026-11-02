@@ -34,3 +34,27 @@ pub async fn add(
     dfs_file_dao::insert(&mut *ctx, &root_folder).await?;
     Ok(user.id)
 }
+
+/// 添加一个子账户,子账户没有自己的根目录,使用主账户授权的文件夹
+/// - pwd 已经做过MD5的密码
+pub async fn add_sub(
+    ctx: &mut DbContext,
+    parent_id: i64,
+    name: String,
+    pwd: String,
+    nickname: Option<String>,
+    state: i64,
+) -> Result<i64, sqlx::Error> {
+    let user = User {
+        id: id_util::id(),
+        name: Some(name),
+        pwd: Some(pwd),
+        state,
+        date: time_util::current_millis(),
+        parentId: parent_id,
+        nickname,
+        ..Default::default()
+    };
+    user_dao::insert(&mut *ctx, &user).await?;
+    Ok(user.id)
+}

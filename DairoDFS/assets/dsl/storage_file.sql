@@ -14,4 +14,5 @@ select id from storage_file
 where id < :time
   and id not in (select storageId from dfs_file)
   and id not in (select storageId from dfs_file_delete)
+  and md5 not in (select avatar from user where avatar is not null)
 limit 1000;

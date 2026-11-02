@@ -2,8 +2,10 @@ use crate::application;
 use crate::dao::user_token_dao::UserToken;
 use crate::dao::{user_dao, user_token_dao};
 use crate::extension::string::StringExtension;
+use crate::service::operate_log_service::{self, op};
 use crate::util::{id_util, request_util, time_util};
 use crate::web::biz_error::BizError;
+use crate::web::filter::auth;
 use crate::web::form;
 use crate::{biz_error, db};
 use hyper::HeaderMap;
@@ -28,6 +30,9 @@ pub async fn do_login(form: form::Login, headers: &HeaderMap, addr: RemoteAddr) 
     }
     if user.state != 1 {
         return Err(biz_error!("该用户已被禁用"));
+    }
+    if user.parentId != 0 && user_dao::select_one(&mut ctx, user.parentId).await.is_ok_and(|it| it.state != 1) {
+        return Err(biz_error!("该用户所属的主账户已被禁用"));
     }
 
     //同一台设备只保留一条登录记录
@@ -56,11 +61,24 @@ pub async fn do_login(form: form::Login, headers: &HeaderMap, addr: RemoteAddr) 
     }
     let admin_id = user_dao::select_admin_id(&mut ctx).await?;
     db::commit(ctx).await?;
+    let owner_id = if user.parentId == 0 { user.id } else { user.parentId };
+    operate_log_service::add_raw(
+        user.id,
+        user.name.as_deref().unwrap_or_default(),
+        owner_id,
+        &user_token.ip,
+        user_token.clientFlag,
+        op::LOGIN,
+        None,
+        None,
+        None,
+    );
 
     let data = model::LoginResult {
         token: token.clone(),
         name: user.name.unwrap_or_default(),
         is_admin: admin_id == Some(user.id),
+        is_sub: user.parentId != 0,
     };
 
     // 写入 Cookie，全站生效，HttpOnly防止 JS 读取（安全）;APP从返回的数据里获取token
@@ -71,7 +89,10 @@ pub async fn do_login(form: form::Login, headers: &HeaderMap, addr: RemoteAddr) 
 
 /// 退出登录
 #[DELETE("/api/login/logout")]
-pub async fn logout(headers: &HeaderMap) -> Result<Raw, BizError> {
+pub async fn logout(headers: &HeaderMap, addr: RemoteAddr) -> Result<Raw, BizError> {
+    if let Some(login) = auth::find_login_user(headers, Some(&addr)).await? {
+        operate_log_service::add(&login, op::LOGOUT, None, None, None);
+    }
     if let Some(token) = request_util::get_token(headers) {
         let mut ctx = db::begin().await?;
         user_token_dao::delete_by_token(&mut ctx, token.to_string()).await?;
@@ -102,5 +123,8 @@ pub mod model {
 
         // 是否管理员
         pub is_admin: bool,
+
+        // 是否子账户
+        pub is_sub: bool,
     }
 }

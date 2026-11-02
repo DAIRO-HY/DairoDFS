@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    {{template include/head}}
+    <title>子账户编辑</title>
+</head>
+<body>
+{{template include/top-bar}}
+<div class="m-3 p-2 rounded shadow bg-content">
+    <form id="form" action="/api/sub_account/edit">
+        <input type="hidden" name="id">
+        <div class="row">
+            <label class="col-2 col-form-label text-end">用户名</label>
+            <div class="col-10">
+                <input class="form-control" name="name" style="max-width: 160px" autocomplete="off">
+            </div>
+        </div>
+        <div class="row mt-2">
+            <label class="col-2 col-form-label text-end">密码</label>
+            <div class="col-10">
+                <input class="form-control" name="pwd" type="password" style="max-width: 240px" autocomplete="new-password">
+                <div class="form-text">8到32位,必须同时包含字母和数字</div>
+            </div>
+        </div>
+        <div class="row mt-2">
+            <label class="col-2 col-form-label text-end">昵称</label>
+            <div class="col-10">
+                <input class="form-control" name="nickname" style="max-width: 240px" autocomplete="off">
+            </div>
+        </div>
+        <div class="row mt-2">
+            <label class="col-2 col-form-label text-end">状态</label>
+            <div class="col-10">
+                <select class="form-select w-auto" name="state">
+                    <option value="0">禁用</option>
+                    <option value="1">启用</option>
+                </select>
+            </div>
+        </div>
+        <div class="row mt-2">
+            <label class="col-2 col-form-label text-end">创建日期</label>
+            <div class="col-10">
+                <input class="form-control" name="date" style="max-width: 170px" autocomplete="off" disabled>
+            </div>
+        </div>
+        <div class="row mt-2">
+            <label class="col-2 col-form-label text-end">授权文件夹</label>
+            <div class="col-10">
+                <div class="form-text mt-0 mb-2">
+                    子账户只能看到授权的文件夹,权限对文件夹里的所有内容生效;授权了子文件夹时,子文件夹使用自己的权限。
+                </div>
+                <div id="grantList"></div>
+                <button type="button" class="btn btn-outline-primary btn-sm" onclick="onAddGrantClick()">
+                    <i class="bi bi-plus-lg me-1"></i>添加文件夹
+                </button>
+            </div>
+        </div>
+        <div class="mt-3 text-end">
+            <button type="button" class="btn btn-primary" onclick="onSubmitClick()">提交</button>
+        </div>
+    </form>
+</div>
+
+<!--选择文件夹dialog-->
+{{template include/folder_selector}}
+<script>
+
+    /**
+     * 权限分类,从服务器获取
+     */
+    let permGroups = []
+
+    /**
+     * 所有权限的值
+     */
+    let allPerms = 0
+
+    // 权限值,和服务器端一致
+    const PERM_VIEW = 1
+    const PERM_OPEN = 2
+    const PERM_DELETE = 16
+    const PERM_PURGE = 32
+    const PERM_SHARE = 64
+
+    $(function () {
+        $.ajaxByData("/api/sub_account/perms").success(groups => {
+            permGroups = groups
+            groups.forEach(group => group.list.forEach(it => allPerms |= it.value))
+            $.ajaxByData("/api/sub_account/detail").add("id", getParam("id", "0")).success(data => {
+                $("form").bindValue(data)
+                if (data.id !== 0) {//编辑已有子账户时,密码为空表示不修改
+                    $("input[name='pwd']").attr("placeholder", "不修改请留空")
+                }
+                data.grants.forEach(it => addGrant(it.path, it.perms))
+            }).get()
+        }).get()
+    })
+
+    /**
+     * 添加文件夹按钮点击事件
+     */
+    function onAddGrantClick() {
+        showFolderSelector(folder => addGrant(folder, PERM_VIEW | PERM_OPEN))
+    }
+
+    /**
+     * 添加一个授权的文件夹
+     * @param path 文件夹路径,空字符串代表根目录
+     * @param perms 权限
+     */
+    function addGrant(path, perms) {
+        const $item = $(`<div class="border rounded p-2 mb-2" grant-item>
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-folder-fill me-2" style="color:#6FBEEA;"></i>
+                                <span class="text-truncate me-auto" grant-path></span>
+                                <button type="button" class="btn btn-link btn-sm" perm-quick="read">只读</button>
+                                <button type="button" class="btn btn-link btn-sm" perm-quick="all">完全控制</button>
+                                <button type="button" class="btn btn-link btn-sm text-danger" grant-remove>移除</button>
+                            </div>
+                            <div class="d-flex flex-wrap" perm-groups></div>
+                        </div>`)
+        $item.data("path", path)
+        $item.find("[grant-path]").text(path === "" ? "根目录(全部文件)" : path)
+        const $groups = $item.find("[perm-groups]")
+        permGroups.forEach(group => {
+            const $group = $(`<div class="me-4 mt-1"><span class="text-secondary small me-2"></span></div>`)
+            $group.find("span").text(group.name)
+            group.list.forEach(it => {
+                const $check = $(`<label class="form-check form-check-inline mb-0" title="">
+                                    <input class="form-check-input" type="checkbox">
+                                    <span class="form-check-label"></span>
+                                  </label>`)
+                $check.attr("title", it.desc)
+                $check.find("span").text(it.name)
+                $check.find("input").val(it.value).prop("checked", (perms & it.value) !== 0)
+                $group.append($check)
+            })
+            $groups.append($group)
+        })
+        $groups.find("input").on("change", function () {
+            onPermChange($item, parseInt(this.value), this.checked)
+        })
+        $item.find("[perm-quick='read']").on("click", () => setPerms($item, PERM_VIEW | PERM_OPEN))
+        $item.find("[perm-quick='all']").on("click", () => setPerms($item, allPerms))
+        $item.find("[grant-remove]").on("click", () => $item.remove())
+        $("#grantList").append($item)
+    }
+
+    /**
+     * 勾选权限时补全依赖的权限,取消时去掉依赖它的权限(和服务器端的规则一致)
+     */
+    function onPermChange($item, value, checked) {
+        let perms = getPerms($item)
+        if (checked) {
+            perms |= PERM_VIEW
+            if (value === PERM_PURGE) {
+                perms |= PERM_DELETE
+            }
+            if (value === PERM_SHARE) {
+                perms |= PERM_OPEN
+            }
+        } else {
+            if (value === PERM_VIEW) {//不能浏览时,其他权限都没有意义
+                perms = 0
+            }
+            if (value === PERM_DELETE) {
+                perms &= ~PERM_PURGE
+            }
+            if (value === PERM_OPEN) {
+                perms &= ~PERM_SHARE
+            }
+        }
+        setPerms($item, perms)
+    }
+
+    /**
+     * 获取一个文件夹勾选的权限
+     */
+    function getPerms($item) {
+        let perms = 0
+        $item.find("[perm-groups] input:checked").each((_, it) => perms |= parseInt(it.value))
+        return perms
+    }
+
+    /**
+     * 设置一个文件夹的权限
+     */
+    function setPerms($item, perms) {
+        $item.find("[perm-groups] input").each((_, it) => {
+            it.checked = (perms & parseInt(it.value)) !== 0
+        })
+    }
+
+    function onSubmitClick() {
+        const paths = []
+        const perms = []
+        let error = null
+        $("#grantList [grant-item]").each((_, it) => {
+            const $item = $(it)
+            const value = getPerms($item)
+            if (value === 0) {
+                error = `请选择文件夹[${$item.find("[grant-path]").text()}]的权限`
+                return false
+            }
+            paths.push($item.data("path"))
+            perms.push(value)
+        })
+        if (error) {
+            alert(error)
+            return
+        }
+        $("form").ajaxByForm().add("paths", paths).add("perms", perms).success(() => {
+            location.href = "/sub_account_list.html"
+        }).post()
+    }
+</script>
+</body>
+</html>

@@ -89,6 +89,7 @@ function logout() {
     $.ajaxByData("/api/login/logout").success(() => {
         localStorage.removeItem("name")
         localStorage.removeItem("isAdmin")
+        localStorage.removeItem("isSub")
         window.location.href = "/login.html"
     }).delete()
 }

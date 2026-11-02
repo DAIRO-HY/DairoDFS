@@ -1,6 +1,10 @@
-use crate::dao::share_dao;
+use crate::dao::{share_dao, user_dao};
+use std::collections::HashMap;
 use crate::extension::number::NumberExtension;
 use crate::service::share_service;
+use crate::service::operate_log_service::{self, op};
+use crate::service::sub_account_service::{perm, Scope};
+use crate::service::dfs_file_service;
 use crate::util::time_util;
 use crate::web::biz_error::BizError;
 use crate::web::filter::auth::LoginUser;
@@ -15,8 +19,20 @@ use hyperoute_macro::{DELETE, GET, POST};
 #[POST("/api/files/share")]
 pub async fn share(login: Ext<LoginUser>, ids: Vec<i64>, end_date_time: i64, pwd: Option<String>) -> Result<i64, BizError> {
     let mut ctx = db::begin().await?;
-    let id = share_service::add(&mut ctx, login.id, &ids, end_date_time, pwd.unwrap_or_default().trim()).await?;
+    let mut scope = Scope::load(&mut ctx, &login).await?;
+    let mut files = Vec::new();
+    for id in &ids {
+        let file = dfs_file_service::select_own(&mut ctx, login.owner_id, *id).await?;
+        scope.check(&mut ctx, &file, perm::SHARE).await?;
+        let path = dfs_file_service::get_path_by_id(&mut ctx, file.id).await?;
+        files.push((file, path));
+    }
+    let creator_id = login.is_sub.then_some(login.id);
+    let id = share_service::add(&mut ctx, login.owner_id, &ids, end_date_time, pwd.unwrap_or_default().trim(), creator_id).await?;
     db::commit(ctx).await?;
+    for (file, path) in files {
+        operate_log_service::add(&login, op::SHARE, Some(file.id), Some(path), Some(serde_json::json!({"shareId": id})));
+    }
     Ok(id)
 }
 
@@ -24,9 +40,19 @@ pub async fn share(login: Ext<LoginUser>, ids: Vec<i64>, end_date_time: i64, pwd
 #[GET("/api/my_share/list")]
 pub async fn list(login: Ext<LoginUser>) -> Result<Vec<model::MyShare>, BizError> {
     let now = time_util::current_millis();
-    let list = share_dao::select_by_user_id(&mut lib_db::get_context(), login.id)
+    let mut ctx = lib_db::get_context();
+
+    //创建分享的子账户名称(子账户已经删除时用户名为空,显示昵称)
+    let mut creator_names = HashMap::new();
+    if !login.is_sub {
+        for it in user_dao::select_sub_list_all(&mut ctx, login.id).await? {
+            creator_names.insert(it.id, it.name.or(it.nickname).unwrap_or_else(|| "已删除的子账户".to_string()));
+        }
+    }
+    let list = share_dao::select_by_user_id(&mut ctx, login.owner_id)
         .await?
         .into_iter()
+        .filter(|it| is_own(&login, it))
         .map(|it| {
             let end_date = match it.endDate.unwrap_or(0) {
                 0 => "永久有效".to_string(),
@@ -53,6 +79,7 @@ pub async fn list(login: Ext<LoginUser>) -> Result<Vec<model::MyShare>, BizError
                 end_date,
                 date: it.date.date_format(),
                 thumb: it.thumb.filter(|it| *it > 0),
+                creator_name: it.creatorId.and_then(|id| creator_names.get(&id).cloned()),
             }
         })
         .collect();
@@ -65,7 +92,7 @@ pub async fn detail(login: Ext<LoginUser>, id: i64) -> Result<model::MyShareDeta
     let Ok(share) = share_dao::select_one(&mut lib_db::get_context(), id).await else {
         return Err(biz_error!("分享链接不存在"));
     };
-    if share.userId != login.id {
+    if !is_own(&login, &share) {
         return Err(biz_error!("非法操作"));
     }
     Ok(model::MyShareDetail {
@@ -91,9 +118,25 @@ pub async fn delete(login: Ext<LoginUser>, ids: Vec<i64>) -> Result<(), BizError
         return Err(biz_error!("请选择要取消的分享"));
     }
     let mut ctx = db::begin().await?;
-    share_dao::delete_by_user_id_and_ids(&mut ctx, login.id, ids).await?;
+    let mut shares = Vec::new();
+    for id in &ids {
+        match share_dao::select_one(&mut ctx, *id).await {
+            Ok(it) if is_own(&login, &it) => shares.push(it),
+            _ => return Err(biz_error!("非法操作")),
+        }
+    }
+    share_dao::delete_by_user_id_and_ids(&mut ctx, login.owner_id, ids).await?;
     db::commit(ctx).await?;
+    for it in shares {
+        let path = format!("{}/{}", it.folder, it.names.replace('|', ","));
+        operate_log_service::add(&login, op::SHARE_DELETE, None, Some(path), Some(serde_json::json!({"shareId": it.id})));
+    }
     Ok(())
+}
+
+/// 是否可以管理的分享:主账户可以管理自己和子账户创建的分享,子账户只能管理自己创建的分享
+fn is_own(login: &LoginUser, share: &share_dao::Share) -> bool {
+    share.userId == login.owner_id && (!login.is_sub || share.creatorId == Some(login.id))
 }
 
 pub mod model {
@@ -123,6 +166,9 @@ pub mod model {
 
         // 缩略图的文件ID
         pub thumb: Option<i64>,
+
+        // 创建分享的子账户名称,主账户自己创建的为空
+        pub creator_name: Option<String>,
     }
 
     #[derive(Debug, Serialize)]

@@ -56,7 +56,7 @@ async fn check(name: &str, headers: &HeaderMap) -> Result<&'static str, BizError
     if user_dao::count(&mut lib_db::get_context()).await? == 0 {
         return Ok(tool);
     }
-    match auth::find_login_user(headers).await? {
+    match auth::find_login_user(headers, None).await? {
         Some(it) if it.is_admin => Ok(tool),
         Some(_) => Err(BizError::forbidden()),
         None => Err(BizError::unauthorized()),

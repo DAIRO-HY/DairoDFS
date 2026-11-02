@@ -62,6 +62,7 @@
         $("form").ajaxByForm().add("deviceId", getDeviceId()).success(data => {
             localStorage.setItem("name", data.name)
             localStorage.setItem("isAdmin", data.isAdmin)
+            localStorage.setItem("isSub", data.isSub)
             location.href = "/"
         }).post()
     }

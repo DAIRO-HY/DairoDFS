@@ -132,6 +132,10 @@ pub struct Profile {
     // 数据库备份天数
     #[validate(range(min = 1, message = "数据库备份天数不能小于1"))]
     pub db_backup_expire_day: i64,
+
+    // 操作日志保存天数(老页面没有这一项时保持原来的设置)
+    #[validate(range(min = 1, message = "操作日志保存天数不能小于1"))]
+    pub operate_log_days: Option<i64>,
 }
 
 /// 将空字符串转换为None(表单里没有填写的项目会提交空字符串)
