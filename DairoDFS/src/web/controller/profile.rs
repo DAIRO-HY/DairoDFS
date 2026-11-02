@@ -23,6 +23,7 @@ pub async fn info() -> model::ProfileInfo {
         ignore_sync_error: config.ignore_sync_error,
         db_backup_expire_day: config.db_backup_expire_day,
         operate_log_days: config.operate_log_days,
+        recycle_keep_days: config.recycle_keep_days,
     }
 }
 
@@ -47,6 +48,9 @@ pub async fn update(form: form::Profile) -> Result<(), BizError> {
     config.db_backup_expire_day = form.db_backup_expire_day;
     if let Some(days) = form.operate_log_days {
         config.operate_log_days = days;
+    }
+    if let Some(days) = form.recycle_keep_days {
+        config.recycle_keep_days = days;
     }
     system_config::save(config)?;
 
@@ -106,5 +110,8 @@ pub mod model {
 
         // 操作日志保存天数
         pub operate_log_days: i64,
+
+        // 隔离区保留天数
+        pub recycle_keep_days: i64,
     }
 }

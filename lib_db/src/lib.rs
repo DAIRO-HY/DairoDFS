@@ -12,7 +12,7 @@ use std::time::Duration;
 struct Assets;
 
 // VERSION 数据库版本号
-const VERSION: i32 = 2;
+const VERSION: i32 = 3;
 
 /// 数据库文件名
 pub const DB_FILE_NAME: &str = "dairo-dfs2.sqlite";
@@ -21,7 +21,7 @@ pub const DB_FILE_NAME: &str = "dairo-dfs2.sqlite";
 const OLD_DB_FILE_NAME: &str = "dairo-dfs.sqlite";
 
 /// 建表顺序
-const SQL_FILES: [&str; 9] = [
+const SQL_FILES: [&str; 10] = [
     "dfs_file.sql",
     "dfs_file_delete.sql",
     "storage_file.sql",
@@ -31,6 +31,7 @@ const SQL_FILES: [&str; 9] = [
     "user_token.sql",
     "sub_account_grant.sql",
     "operate_log.sql",
+    "storage_recycle.sql",
 ];
 
 /// 版本1升级到版本2:子账户、操作日志
@@ -138,13 +139,21 @@ async fn upgrade() -> Result<(), Box<dyn Error>> {
     if version == 0 {
         //创建表
         create_table(&mut *conn).await?;
-    } else if version < 2 {
-        //一个事务里完成,中途失败时不会只升级一半
-        let mut tx = (&mut *conn).begin().await?;
-        sqlx::raw_sql(UPGRADE_V2).execute(&mut *tx).await?;
-        execute_sql_file(&mut tx, "sub_account_grant.sql").await?;
-        execute_sql_file(&mut tx, "operate_log.sql").await?;
-        tx.commit().await?;
+    } else {
+        //每个版本的升级在一个事务里完成,中途失败时不会只升级一半
+        if version < 2 {
+            let mut tx = (&mut *conn).begin().await?;
+            sqlx::raw_sql(UPGRADE_V2).execute(&mut *tx).await?;
+            execute_sql_file(&mut tx, "sub_account_grant.sql").await?;
+            execute_sql_file(&mut tx, "operate_log.sql").await?;
+            tx.commit().await?;
+        }
+        if version < 3 {
+            //版本3:存储文件隔离区
+            let mut tx = (&mut *conn).begin().await?;
+            execute_sql_file(&mut tx, "storage_recycle.sql").await?;
+            tx.commit().await?;
+        }
     }
 
     //设置数据库版本号(版本号没变时不写库)

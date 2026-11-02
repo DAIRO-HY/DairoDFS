@@ -25,6 +25,7 @@ pub async fn sync_all() {
     }
     if !sync_info::has_error() {
         //全量同步完成,开始日志同步
+        crate::service::sync::clear_full_sync_pending();
         crate::service::sync::start_listen(infos);
     }
 }

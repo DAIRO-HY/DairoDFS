@@ -43,6 +43,9 @@ pub struct SystemConfig {
 
     /// 操作日志保存天数
     pub operate_log_days: i64,
+
+    /// 隔离区保留天数:没有被使用的存储文件先移到隔离区,超过这个天数才真正删除
+    pub recycle_keep_days: i64,
 }
 
 impl Default for SystemConfig {
@@ -60,6 +63,7 @@ impl Default for SystemConfig {
             db_backup_expire_day: 30,
             cluster_id: String::new(),
             operate_log_days: 30,
+            recycle_keep_days: 30,
         }
     }
 }

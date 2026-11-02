@@ -136,6 +136,10 @@ pub struct Profile {
     // 操作日志保存天数(老页面没有这一项时保持原来的设置)
     #[validate(range(min = 1, message = "操作日志保存天数不能小于1"))]
     pub operate_log_days: Option<i64>,
+
+    // 隔离区保留天数(老页面没有这一项时保持原来的设置)
+    #[validate(range(min = 1, message = "隔离区保留天数不能小于1"))]
+    pub recycle_keep_days: Option<i64>,
 }
 
 /// 将空字符串转换为None(表单里没有填写的项目会提交空字符串)

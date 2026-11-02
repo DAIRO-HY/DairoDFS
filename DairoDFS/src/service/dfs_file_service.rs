@@ -121,6 +121,7 @@ pub async fn add_file(ctx: &mut DbContext, mut file: DfsFile, is_over_write: boo
         //将已经存在的文件标记为历史版本
         dfs_file_dao::set_history(&mut *ctx, exists.id).await?;
     }
+    check_storage(ctx, file.storageId).await?;
     file.id = id_util::id();
     file.date = time_util::current_millis();
     file.ext = file_util::file_ext(&file.name);
@@ -129,6 +130,17 @@ pub async fn add_file(ctx: &mut DbContext, mut file: DfsFile, is_over_write: boo
     file.deleteDate = None;
     dfs_file_dao::insert(&mut *ctx, &file).await?;
     Ok(file.id)
+}
+
+/// 确认存储文件还在(在添加文件的事务里检查)
+/// 存储文件可能刚刚被回收到隔离区,这时返回404,客户端会重新上传文件内容
+/// 回收是"判断没有被使用并删除记录"一条语句完成的,检查之后如果被回收,提交事务时会因为数据已经变化而失败,不会产生指向不存在文件的记录
+pub async fn check_storage(ctx: &mut DbContext, storage_id: i64) -> Result<(), BizError> {
+    match crate::dao::storage_file_dao::select_one(&mut *ctx, storage_id).await {
+        Ok(_) => Ok(()),
+        Err(sqlx::Error::RowNotFound) => Err(BizError::not_found()),
+        Err(e) => Err(e.into()),
+    }
 }
 
 /// 通过文件ID获取文件全路径,根目录为空字符串

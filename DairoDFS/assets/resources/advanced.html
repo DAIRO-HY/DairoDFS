@@ -20,6 +20,13 @@
         <div class="col">
             <div class="alert alert-info"><span id="storageState"></span></div>
         </div>
+        <div class="col">
+            <div class="alert alert-secondary"><span id="recycleState"></span></div>
+        </div>
+    </div>
+    <div class="alert alert-danger d-none" id="recycleBlockedDiv">
+        <span id="recycleBlocked"></span>
+        <button type="button" class="btn btn-danger btn-sm ms-2" onclick="onRecycleConfirmClick()">确认继续回收</button>
     </div>
     <textarea class="form-control" id="sql"></textarea>
     <div class="row row-cols-xl-6 row-cols-lg-5 row-cols-md-4 row-cols-sm-3 row-cols-2">
@@ -74,6 +81,9 @@
             <button type="button" class="btn w-100 btn-dark mt-2" onclick="onRecycleNowClick()">回收未使用文件</button>
         </div>
         <div class="col">
+            <button type="button" class="btn w-100 btn-success mt-2" onclick="onRecycleRestoreClick()">恢复误回收文件</button>
+        </div>
+        <div class="col">
             <button type="button" class="btn w-100 btn-info mt-2" onclick="onValidateFileMd5Click()">验证文件完整(<span
                     id="validateFileMd5Current">0</span>/<span id="validateFileMd5Total">0</span>)
             </button>
@@ -106,8 +116,9 @@
     function init() {
         $.ajaxByData("/api/advanced/info").success(data => {
             for (let key in data) {
-                $("#" + key).text(data[key])
+                $("#" + key).text(data[key] ?? "")
             }
+            $("#recycleBlockedDiv").toggleClass("d-none", !data.recycleBlocked)
         }).get()
     }
 
@@ -218,7 +229,7 @@
      * 立即回收未使用的文件
      */
     function onRecycleNowClick() {
-        if (confirm("确定要立即回收未使用的文件")) {
+        if (confirm("确定要把未使用的文件移到隔离区吗?隔离区的文件超过保留天数后才会真正删除")) {
             $.ajaxByData("/api/advanced/recycle_now").post()
         }
     }
@@ -329,6 +340,22 @@
         }
     }
 
+
+    /**
+     * 确认继续因为数量异常暂停的回收
+     */
+    function onRecycleConfirmClick() {
+        if (confirm("确定最近删除了这么多文件,继续回收吗?回收的文件会先移到隔离区,超过保留天数后才真正删除")) {
+            $.ajaxByData("/api/advanced/recycle_confirm").success(() => setTimeout(init, 1000)).post()
+        }
+    }
+
+    /**
+     * 检查并恢复隔离区里仍然被使用的文件
+     */
+    function onRecycleRestoreClick() {
+        $.ajaxByData("/api/advanced/recycle_restore").success(() => setTimeout(init, 1000)).post()
+    }
 </script>
 </body>
 </html>

@@ -38,10 +38,31 @@ pub async fn info() -> model::AdvancedInfo {
             (Err(e), _) | (_, Err(e)) => storage_state += &format!("{}({});", it, e),
         }
     }
+    let recycle_state = match recycle_service::recycle_stats().await {
+        Ok(it) if it.count > 0 => format!(
+            "隔离区：{}个文件，{}，最早移入时间{}，保留{}天后删除",
+            it.count,
+            it.size.data_size(),
+            it.minDate.unwrap_or(0).date_format(),
+            system_config::get().recycle_keep_days.max(1)
+        ),
+        Ok(_) => "隔离区：空".to_string(),
+        Err(e) => format!("隔离区：{}", e),
+    };
+    let recycle_blocked = recycle_service::state().blocked.map(|it| {
+        format!(
+            "{}发现本次需要回收{}个存储文件(共{}个)，数量异常，已暂停回收。请确认最近确实删除了这么多文件之后再继续。",
+            it.date.date_format(),
+            it.count,
+            it.total
+        )
+    });
     model::AdvancedInfo {
         file_handling: if file_handle_service::IS_HANDLING.load(Ordering::Relaxed) { "正在处理" } else { "空闲中" }.to_string(),
         recycle_storage_timer_state: recycle_service::state_text(),
         storage_state,
+        recycle_state,
+        recycle_blocked,
     }
 }
 
@@ -93,15 +114,23 @@ pub async fn used_size() -> Result<String, BizError> {
     Ok(text)
 }
 
-/// 立即回收没有被使用的存储文件(在后台执行)
+/// 立即把没有被使用的存储文件移到隔离区(在后台执行)
 #[POST("/api/advanced/recycle_now")]
 pub async fn recycle_now() {
-    tokio::spawn(async {
-        let time = time_util::current_millis() - RECYCLE_NOW_SAFE_MILLIS;
-        if let Err(e) = recycle_service::recycle_not_use_storage(time).await {
-            eprintln!("-->回收未使用的文件失败: {}", e);
-        }
-    });
+    let time = time_util::current_millis() - RECYCLE_NOW_SAFE_MILLIS;
+    tokio::spawn(recycle_service::recycle_now(time));
+}
+
+/// 确认继续因为数量异常暂停的回收(在后台执行)
+#[POST("/api/advanced/recycle_confirm")]
+pub async fn recycle_confirm() {
+    tokio::spawn(recycle_service::confirm_blocked());
+}
+
+/// 检查并恢复隔离区里仍然被使用的文件(在后台执行)
+#[POST("/api/advanced/recycle_restore")]
+pub async fn recycle_restore() {
+    tokio::spawn(recycle_service::restore_used_now());
 }
 
 /// 立即执行一次回收定时任务(在后台执行)
@@ -123,6 +152,9 @@ pub async fn reset_data() -> Result<(), BizError> {
     if !system_config::get().is_read_only {
         return Err(biz_error!("该操作只允许本机在只读模式下执行"));
     }
+
+    //先标记全量同步未完成,同步完成之前不回收存储文件
+    sync::set_full_sync_pending()?;
 
     //直接操作数据库,不记录同步日志
     let sql = "delete from dfs_file;delete from dfs_file_delete;delete from share;delete from sql_log;delete from user;delete from user_token;";
@@ -192,6 +224,12 @@ pub mod model {
 
         // 磁盘使用状态
         pub storage_state: String,
+
+        // 隔离区状态
+        pub recycle_state: String,
+
+        // 因为数量异常暂停的回收,为空表示没有
+        pub recycle_blocked: Option<String>,
     }
 
     #[derive(Debug, Default, Clone, Serialize)]

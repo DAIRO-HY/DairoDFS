@@ -1,6 +1,6 @@
 use crate::dao::dfs_file_dao::DfsFile;
 use crate::dao::{dfs_file_dao, storage_file_dao};
-use crate::service::storage_service;
+use crate::service::{dfs_file_service, storage_service};
 use crate::util::media::video_util::TransferArgument;
 use crate::util::media::{image_util, video_util, DliveInfo};
 use crate::util::{file_util, id_util, media};
@@ -269,6 +269,7 @@ async fn add_extra(file: &DfsFile, name: &str, storage_id: i64, size: i64, conte
         ..Default::default()
     };
     let mut ctx = db::begin().await.map_err(|e| e.to_string())?;
+    dfs_file_service::check_storage(&mut ctx, storage_id).await.map_err(|_| "存储文件不存在".to_string())?;
     dfs_file_dao::insert(&mut ctx, &extra).await.map_err(|e| e.to_string())?;
     db::commit(ctx).await.map_err(|e| e.to_string())
 }

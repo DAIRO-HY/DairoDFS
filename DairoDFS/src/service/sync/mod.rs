@@ -48,6 +48,27 @@ pub fn stop_all() {
     }
 }
 
+/// 全量同步未完成的标记文件:重置数据之后创建,全量同步成功之后删除
+/// 标记存在时本机的文件记录不完整,不能回收存储文件(否则会把还没同步过来的文件当成没有被使用)
+fn full_sync_pending_path() -> std::path::PathBuf {
+    std::path::PathBuf::from(&application::ARGS.data_dir).join(".full_sync_pending")
+}
+
+/// 标记全量同步未完成
+pub fn set_full_sync_pending() -> std::io::Result<()> {
+    std::fs::write(full_sync_pending_path(), crate::util::time_util::current_millis().to_string())
+}
+
+/// 全量同步已经完成
+pub fn clear_full_sync_pending() {
+    let _ = std::fs::remove_file(full_sync_pending_path());
+}
+
+/// 是否有未完成的全量同步
+pub fn is_full_sync_pending() -> bool {
+    full_sync_pending_path().exists()
+}
+
 /// 记录最后一次同步到的日志ID的文件(与老版本一致)
 fn last_id_path(url: &str) -> std::path::PathBuf {
     std::path::PathBuf::from(&application::ARGS.data_dir).join(format!("sync_last_id.{}", url.md5()))
