@@ -20,14 +20,16 @@ version=$(sed -n 's/^version = "\(.*\)"/\1/p' $project_root/DairoDFS/Cargo.toml)
 
 #挂载到编译容器的目录一定是宿主机上的绝对路径
 #在Jenkins容器里调用docker时,当前目录是Jenkins容器里的路径,需要通过环境变量指定宿主机上的路径
+#也可以指定Docker命名卷的卷名(document/docker-build/build-linux.sh使用这种方式)
 host_project_dir=${HOST_PROJECT_DIR:-$project_root}
 host_cargo_dir=${HOST_CARGO_DIR:-$HOME/.cargo}
+host_cargo_registry=${HOST_CARGO_REGISTRY:-$host_cargo_dir/registry}
 
 docker_rust_build(){
   #不同架构使用不同的编译目录,避免每次都要重新编译
   docker run --platform "linux/$1" --rm \
     -v $host_project_dir:/home/rust/src \
-    -v $host_cargo_dir/registry:/usr/local/cargo/registry \
+    -v $host_cargo_registry:/usr/local/cargo/registry \
     -e CARGO_TARGET_DIR=/home/rust/src/target/linux-$1 \
     -w /home/rust/src rust:1.99.1 \
     sh -c "cargo build --release --package DairoDFS"

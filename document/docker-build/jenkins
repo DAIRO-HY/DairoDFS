@@ -10,9 +10,9 @@ pipeline {
             steps {
                 script{
                     if(!fileExists("DairoDFS")){
-                        def cloneUrl = "https://${env.GITHUB_TOKEN}@github.com/${env.REPO}.git"
-                        echo "克隆地址:${cloneUrl}"
-                        sh "git clone --branch ${env.BRANCH} ${cloneUrl}"
+
+                        //克隆地址里有票据,不要输出到日志
+                        sh 'git clone --branch "$BRANCH" "https://${GITHUB_TOKEN}@github.com/${REPO}.git"'
                     }
                 }
                 dir("DairoDFS"){
@@ -26,12 +26,24 @@ pipeline {
                 }
             }
         }
+        stage("构建镜像") {
+            steps {
+                dir("DairoDFS/document/docker-build"){
+
+                    //--no-cache：忽略缓存，解决一些莫名其妙的问题
+                    //--network=host：强制使用主机网络。当在容器中构建镜像时（如：jenkins容器中构建镜像），否则可能会导致网络连接失败而无法通过Dockerfile构建镜像
+                    sh "docker build --no-cache --network=host -t dairo-dfs-build ."
+                    sh "yes|docker image prune"
+                }
+            }
+        }
         stage("编译") {
             steps {
-                dir("DairoDFS"){
-                    sh "chmod +x document/build/*.sh"
-                    sh "./document/build/build_all.sh"
-                }
+
+                //用单引号,票据和密码由shell从环境变量传给docker,不会出现在Jenkins日志里
+                //dairo-dfs-src:源码和编译缓存(命名卷,会一直保留,下次只编译有变化的部分)
+                //dairo-dfs-cargo-registry:cargo依赖缓存(命名卷,build-linux.sh会传给rust编译容器)
+                sh 'docker run -e GITHUB_TOKEN -e DOCKER_USER -e DOCKER_PASSWORD -e BRANCH -v /var/run/docker.sock:/var/run/docker.sock -v dairo-dfs-src:/home/DairoDFS --rm dairo-dfs-build'
             }
         }
     }
