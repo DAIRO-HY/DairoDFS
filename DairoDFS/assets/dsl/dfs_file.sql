@@ -27,6 +27,20 @@ order by storageId > 0, date;
 
 -- ------------------------------
 
+-- 获取文件夹下的文件列表(文件列表显示用,只查需要的列,大文件夹下比select *快一倍左右)
+-- @name select_list_items
+-- @param user_id:i64
+-- @param parent_id:i64
+-- @return List<DfsFileListItem>
+select id, name, size, date, storageId from dfs_file
+where userId = :user_id
+  and parentId = :parent_id
+  and isHistory = 0
+  and deleteDate is null
+order by storageId > 0, date;
+
+-- ------------------------------
+
 -- 获取有缩略图的文件ID(文件列表显示缩略图用)
 -- @name select_has_thumb_ids
 -- @param user_id:i64

@@ -13,6 +13,7 @@ dependencies = [
  "cfb-mode",
  "chrono",
  "clap",
+ "flate2",
  "fs4",
  "http-body-util",
  "hyper",

@@ -12,7 +12,7 @@ use std::time::Duration;
 struct Assets;
 
 // VERSION 数据库版本号
-const VERSION: i32 = 3;
+const VERSION: i32 = 4;
 
 /// 数据库文件名
 pub const DB_FILE_NAME: &str = "dairo-dfs2.sqlite";
@@ -42,6 +42,9 @@ alter table user add avatar CHAR(32);
 alter table dfs_file add creatorId INT8 NULL;
 alter table share add creatorId INT8 NULL;
 ";
+
+/// 版本3升级到版本4:文件夹列表查询用的索引(和dfs_file.sql里的一致)
+const UPGRADE_V4: &str = "CREATE INDEX IF NOT EXISTS idx_parent_extra_name ON dfs_file (parentId, isExtra, name);";
 
 /// 需要从老库迁移数据的表(sql_log是Go版的同步日志,新版不再使用,不迁移)
 const MIGRATE_TABLES: [&str; 6] = [
@@ -153,6 +156,10 @@ async fn upgrade() -> Result<(), Box<dyn Error>> {
             let mut tx = (&mut *conn).begin().await?;
             execute_sql_file(&mut tx, "storage_recycle.sql").await?;
             tx.commit().await?;
+        }
+        if version < 4 {
+            //版本4:文件夹列表查询用的索引
+            sqlx::raw_sql(UPGRADE_V4).execute(&mut *conn).await?;
         }
     }
 

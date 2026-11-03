@@ -26,7 +26,7 @@ pub async fn list(login: Ext<LoginUser>, folder: String) -> Result<model::FileLi
         .await?
         .into_iter()
         .collect();
-    let list = dfs_file_dao::select_sub_list(&mut ctx, login.owner_id, folder_id)
+    let list = dfs_file_dao::select_list_items(&mut ctx, login.owner_id, folder_id)
         .await?
         .into_iter()
         .filter(|it| scope.visible(folder_perms, it.id))

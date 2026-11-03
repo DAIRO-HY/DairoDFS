@@ -27,3 +27,7 @@ CREATE TABLE dfs_file
 -- 非历史文件且未删除时，同一文件夹下文件名不允许重复
 CREATE UNIQUE INDEX idx_name
     ON dfs_file (parentId, name) WHERE parentId != 0 and isHistory = 0 and deleteDate is null;
+
+-- 文件夹列表、附属文件(缩略图等)查询用,上面的idx_name是部分索引,使用绑定参数查询时用不上
+-- 没有这个索引时,1万个文件的文件夹列表要7秒以上(查缩略图时每个文件都要扫描一遍整表)
+CREATE INDEX idx_parent_extra_name ON dfs_file (parentId, isExtra, name);
