@@ -28,7 +28,16 @@ printf '*\n!build/amd64\n!build/arm64\n' > .dockerignore
 echo "$docker_pwd" | docker login -u $docker_user --password-stdin
 
 #多平台构建需要使用docker-container驱动的builder
-docker buildx inspect dfs-builder >/dev/null 2>&1 || docker buildx create --name dfs-builder --driver docker-container
+#builder容器不会继承docker的代理设置(比如Docker Desktop通过代理访问镜像仓库),创建时需要传入,否则拉取基础镜像会报network is unreachable
+if ! docker buildx inspect dfs-builder >/dev/null 2>&1; then
+  proxy=$(docker info --format '{{.HTTPSProxy}}')
+  proxy_opts=""
+  if [ -n "$proxy" ]; then
+    [[ "$proxy" == *://* ]] || proxy="http://$proxy"
+    proxy_opts="--driver-opt env.http_proxy=$proxy --driver-opt env.https_proxy=$proxy"
+  fi
+  docker buildx create --name dfs-builder --driver docker-container $proxy_opts
+fi
 docker buildx inspect dfs-builder --bootstrap
 docker buildx build --builder dfs-builder --platform linux/amd64,linux/arm64 \
   --build-arg RUNTIME_IMAGE=$docker_user/dairo-dfs-runtime:latest \
