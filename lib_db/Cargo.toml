@@ -8,4 +8,4 @@ rust-embed = "8" #嵌入文件
 sqlx = { version = "0.8", features = ["runtime-tokio", "sqlite", "macros"] }
 
 #数据库操作上下文:持有连接池,以及可选的当前事务。
-sqlx-context = "0.0.2"
+sqlx-context = "0.0.3"

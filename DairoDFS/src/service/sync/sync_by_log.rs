@@ -190,7 +190,7 @@ async fn apply(info: &SyncInfo, log: &SqlLog) -> Result<(), String> {
     };
     let err = |e: sqlx::Error| e.to_string();
     let mut ctx = lib_db::get_context();
-    ctx.begin().await.map_err(err)?;
+    ctx.begin_immediate().await.map_err(err)?;
     let mut skip = false;
     let mut history_id = None;
     if is_storage_file {

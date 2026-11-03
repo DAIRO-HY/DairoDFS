@@ -99,7 +99,7 @@ async fn insert_row(info: &SyncInfo, table: &str, mut row: Map<String, Value>) -
     };
     let err = |e: sqlx::Error| e.to_string();
     let mut ctx = lib_db::get_context();
-    ctx.begin().await.map_err(err)?;
+    ctx.begin_immediate().await.map_err(err)?;
     if table == "storage_file" {
         row.insert("path".to_string(), Value::from(sync_handle::storage_file(&mut ctx, &md5, id, prepared).await?));
     } else if table == "dfs_file" {

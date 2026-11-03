@@ -27,6 +27,11 @@ const PREVIEW_SMALL_MAX_SIZE: u32 = 1200;
 /// 小预览图的JPEG质量
 const PREVIEW_SMALL_QUALITY: u8 = 85;
 
+/// 补充镜头和焦距信息的进度文件(记录已经处理到的文件ID),老版本生成的属性里没有这两项,每个数据目录只需要补一遍
+fn lens_after_id_path() -> PathBuf {
+    PathBuf::from(&crate::application::ARGS.data_dir).join(".property_lens_after_id")
+}
+
 /// 补生成小预览图时,已经处理到的文件ID(每次启动后从头补一遍,处理失败的文件下次启动再重试)
 static PREVIEW_SMALL_AFTER_ID: std::sync::atomic::AtomicI64 = std::sync::atomic::AtomicI64::new(0);
 
@@ -69,6 +74,9 @@ async fn handle_all() {
         if list.is_empty() {
             //没有新文件时,给已有的大图补生成小预览图,每次只处理一批,新上传的文件优先处理
             if make_preview_small_todo().await {
+                continue;
+            }
+            if make_lens_todo().await {
                 continue;
             }
             return;
@@ -154,10 +162,14 @@ async fn get_preview<'a>(file: &DfsFile, path: &Path, preview: &'a mut Option<Op
 
 /// 生成文件属性
 async fn make_property(file: &DfsFile, path: &Path) -> Result<(), String> {
+    if file.property.is_some() {
+        //已经有属性(比如复制的文件带上了源文件的属性,包括修改过的拍摄时间),不重新生成
+        return Ok(());
+    }
     let mut ctx = lib_db::get_context();
     let property = match dfs_file_dao::select_property_by_storage_id(&mut ctx, file.storageId).await.map_err(|e| e.to_string())? {
-        //同一个文件已经生成过属性
-        Some(it) => Some(it),
+        //同一个文件已经生成过属性,其他文件修改过的拍摄时间不能带过来
+        Some(it) => Some(restore_capture_time(&it)),
         None => media::make_property(&file.ext, path).await?,
     };
     let Some(property) = property else {
@@ -166,6 +178,25 @@ async fn make_property(file: &DfsFile, path: &Path) -> Result<(), String> {
     let mut ctx = db::begin().await.map_err(|e| e.to_string())?;
     dfs_file_dao::set_property(&mut ctx, file.id, property).await.map_err(|e| e.to_string())?;
     db::commit(ctx).await.map_err(|e| e.to_string())
+}
+
+/// 修改拍摄时间时,原来的拍摄时间保存在这个属性里,恢复时使用
+pub const ORIGINAL_DATE: &str = "originalDate";
+
+/// 去掉修改过的拍摄时间,恢复成照片本身的拍摄时间
+pub fn restore_capture_time(property: &str) -> String {
+    let Ok(serde_json::Value::Object(mut map)) = serde_json::from_str::<serde_json::Value>(property) else {
+        return property.to_string();
+    };
+    let Some(original) = map.remove(ORIGINAL_DATE) else {
+        return property.to_string();
+    };
+    if original.as_i64().is_some_and(|it| it > 0) {
+        map.insert("date".to_string(), original);
+    } else {
+        map.remove("date");
+    }
+    serde_json::Value::Object(map).to_string()
 }
 
 /// 生成缩略图
@@ -197,6 +228,74 @@ async fn make_preview(file: &DfsFile, path: &Path, preview: &mut Option<Option<V
     //压缩图片
     let data = media::blocking(move || image_util::to_jpeg(&jpg, 80)).await?;
     add_extra_data(file, "preview", &data, "image/jpeg").await
+}
+
+/// 给已有的照片补充镜头和焦距信息(一批),只添加这几项,属性里的其他内容(包括修改过的拍摄时间)不变
+/// - return 是否还有需要处理的文件
+async fn make_lens_todo() -> bool {
+    let path = lens_after_id_path();
+    let after_id: i64 = std::fs::read_to_string(&path).ok().and_then(|it| it.trim().parse().ok()).unwrap_or(0);
+    if after_id == i64::MAX {
+        return false;
+    }
+    let exts = media::exif_exts().into_iter().map(String::from).collect();
+    let list = match dfs_file_dao::select_lens_todo(&mut lib_db::get_context(), after_id, exts).await {
+        Ok(it) => it,
+        Err(e) => {
+            eprintln!("-->获取需要补充镜头信息的文件失败: {}", e);
+            return false;
+        }
+    };
+    let Some(last) = list.last() else {
+        //全部处理完成,以后不再处理
+        let _ = std::fs::write(&path, i64::MAX.to_string());
+        return false;
+    };
+    let last_id = last.id;
+    for file in list {
+        if let Err(e) = add_lens(&file).await {
+            eprintln!("-->文件:{}补充镜头信息失败: {}", file.id, e);
+        }
+    }
+    if let Err(e) = std::fs::write(&path, last_id.to_string()) {
+        eprintln!("-->保存补充镜头信息的进度失败: {}", e);
+        return false;
+    }
+    true
+}
+
+/// 给一个文件的属性补充镜头和焦距信息
+async fn add_lens(file: &DfsFile) -> Result<(), String> {
+    let Some(property) = &file.property else {
+        return Ok(());
+    };
+    let Ok(serde_json::Value::Object(mut map)) = serde_json::from_str::<serde_json::Value>(property) else {
+        return Ok(());
+    };
+    let storage = storage_file_dao::select_one(&mut lib_db::get_context(), file.storageId)
+        .await
+        .map_err(|_| format!("本地存储文件:{}不存在", file.storageId))?;
+    let Some(new_property) = media::make_property(&file.ext, Path::new(&storage.path)).await? else {
+        return Ok(());
+    };
+    let Ok(serde_json::Value::Object(new_map)) = serde_json::from_str::<serde_json::Value>(&new_property) else {
+        return Ok(());
+    };
+    let mut changed = false;
+    for key in ["lens", "focalLength", "focalLength35"] {
+        if let Some(value) = new_map.get(key) {
+            if !map.contains_key(key) {
+                map.insert(key.to_string(), value.clone());
+                changed = true;
+            }
+        }
+    }
+    if !changed {
+        return Ok(());
+    }
+    let mut ctx = db::begin().await.map_err(|e| e.to_string())?;
+    dfs_file_dao::set_property(&mut ctx, file.id, serde_json::Value::Object(map).to_string()).await.map_err(|e| e.to_string())?;
+    db::commit(ctx).await.map_err(|e| e.to_string())
 }
 
 /// 生成小预览图,App浏览大图时先显示这个,不用下载原图

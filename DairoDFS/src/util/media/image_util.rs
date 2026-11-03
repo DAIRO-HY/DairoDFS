@@ -38,6 +38,18 @@ pub struct ImageInfo {
     #[serde(default, rename = "shutterSpeed", skip_serializing_if = "String::is_empty")]
     pub shutter_speed: String,
 
+    //镜头型号,如 iPhone X back dual camera 6mm f/2.4
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub lens: String,
+
+    //焦距(毫米),不带单位,如 6、4.25
+    #[serde(default, rename = "focalLength", skip_serializing_if = "String::is_empty")]
+    pub focal_length: String,
+
+    //等效35mm焦距(毫米)
+    #[serde(default, rename = "focalLength35", skip_serializing_if = "is_zero_i64")]
+    pub focal_length35: i64,
+
     //曝光
     #[serde(default, skip_serializing_if = "is_zero_i64")]
     pub iso: i64,
@@ -100,6 +112,14 @@ pub fn get_info(data: &[u8]) -> Result<ImageInfo, String> {
     info.f_number = text(Tag::FNumber);
     info.shutter_speed = text(Tag::ExposureTime);
     info.iso = text(Tag::PhotographicSensitivity).parse().unwrap_or(0);
+    info.lens = lens(&exif, data);
+    if let Some(it) = exif.get_field(Tag::FocalLength, In::PRIMARY).and_then(|it| to_f64(&it.value)).filter(|it| *it > 0.0) {
+        info.focal_length = format_number(it);
+    }
+    info.focal_length35 = exif
+        .get_field(Tag::FocalLengthIn35mmFilm, In::PRIMARY)
+        .and_then(|it| it.value.get_uint(0))
+        .unwrap_or(0) as i64;
     info.orientation = exif
         .get_field(Tag::Orientation, In::PRIMARY)
         .and_then(|it| it.value.get_uint(0))
@@ -109,6 +129,78 @@ pub fn get_info(data: &[u8]) -> Result<ImageInfo, String> {
         info.long = long;
     }
     Ok(info)
+}
+
+/// 获取镜头型号
+/// 优先使用EXIF的LensModel;没有时从XMP里获取(比如Lightroom导出的照片,尼康相机的镜头信息只在厂商私有数据里);最后使用镜头规格,如 16-35mm f/4
+fn lens(exif: &exif::Exif, data: &[u8]) -> String {
+    if let Some(field) = exif.get_field(Tag::LensModel, In::PRIMARY) {
+        let text = field.display_value().to_string().trim_matches('"').trim().to_string();
+        if !text.is_empty() {
+            return text;
+        }
+    }
+    if let Some(it) = xmp_value(data, &["aux:Lens", "exifEX:LensModel"]) {
+        return it;
+    }
+    let Some(Value::Rational(values)) = exif.get_field(Tag::LensSpecification, In::PRIMARY).map(|it| &it.value) else {
+        return String::new();
+    };
+    if values.len() < 4 || values[0].denom == 0 || values[0].num == 0 {
+        return String::new();
+    }
+    let range = |min: &exif::Rational, max: &exif::Rational| {
+        let min = format_number(min.to_f64());
+        if max.denom == 0 || max.num == 0 {
+            return min;
+        }
+        let max = format_number(max.to_f64());
+        if min == max { min } else { format!("{}-{}", min, max) }
+    };
+    let mut text = format!("{}mm", range(&values[0], &values[1]));
+    if values[2].denom != 0 && values[2].num != 0 {
+        text += &format!(" f/{}", range(&values[2], &values[3]));
+    }
+    text
+}
+
+/// 从图片的XMP数据里获取指定属性的值,支持 aux:Lens="xxx" 和 <aux:Lens>xxx</aux:Lens> 两种写法
+/// XMP在文件头部,只查找前面的一部分,避免大文件全部查找一遍
+fn xmp_value(data: &[u8], names: &[&str]) -> Option<String> {
+    let head = String::from_utf8_lossy(&data[..data.len().min(512 * 1024)]);
+    for name in names {
+        let attr = format!("{}=\"", name);
+        let value = if let Some(start) = head.find(&attr) {
+            let rest = &head[start + attr.len()..];
+            rest.find('"').map(|end| &rest[..end])
+        } else if let Some(start) = head.find(&format!("<{}>", name)) {
+            let rest = &head[start + name.len() + 2..];
+            rest.find('<').map(|end| &rest[..end])
+        } else {
+            None
+        };
+        if let Some(value) = value.map(|it| it.trim()).filter(|it| !it.is_empty()) {
+            return Some(value.replace("&amp;", "&").replace("&quot;", "\"").replace("&lt;", "<").replace("&gt;", ">"));
+        }
+    }
+    None
+}
+
+/// 获取EXIF里的数值,标准是RATIONAL,有的软件会写成其他数字类型(比如PIL写成DOUBLE)
+fn to_f64(value: &Value) -> Option<f64> {
+    match value {
+        Value::Rational(it) => it.first().filter(|it| it.denom != 0).map(|it| it.to_f64()),
+        Value::SRational(it) => it.first().filter(|it| it.denom != 0).map(|it| it.to_f64()),
+        Value::Double(it) => it.first().copied(),
+        Value::Float(it) => it.first().map(|it| *it as f64),
+        _ => value.get_uint(0).map(|it| it as f64),
+    }
+}
+
+/// 数字转换成字符串,最多保留2位小数,去掉末尾的0,如 6.0 -> 6、4.25 -> 4.25
+pub fn format_number(value: f64) -> String {
+    let text = format!("{:.2}", value);
+    text.trim_end_matches('0').trim_end_matches('.').to_string()
 }
 
 /// 读取GPS坐标(度分秒转换成度)

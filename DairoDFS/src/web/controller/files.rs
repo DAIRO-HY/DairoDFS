@@ -268,13 +268,56 @@ pub async fn content_type(login: Ext<LoginUser>, id: i64, content_type: String) 
         return Err(biz_error!("文件类型不能为空"));
     }
     let mut ctx = db::begin().await?;
-    let file = dfs_file_service::select_own(&mut ctx, login.owner_id, id).await?;
+    let file = dfs_file_service::select_operable(&mut ctx, login.owner_id, id).await?;
     Scope::load(&mut ctx, &login).await?.check(&mut ctx, &file, perm::MODIFY).await?;
     dfs_file_dao::set_content_type(&mut ctx, id, content_type).await?;
     let path = dfs_file_service::get_path_by_id(&mut ctx, file.id).await?;
     db::commit(ctx).await?;
     operate_log_service::add_file(&login, op::CONTENT_TYPE, &file, path, Some(serde_json::json!({"contentType": content_type})));
     Ok(())
+}
+
+/// 修改拍摄时间,只修改文件属性里的拍摄时间,不修改文件本身
+/// 第一次修改时,照片本身的拍摄时间保存在属性的originalDate里(没有拍摄时间时为0),可以恢复
+/// - id 文件ID
+/// - date 拍摄时间(时间戳毫秒),为0时恢复成照片本身的拍摄时间
+/// - return 修改后的文件属性(和获取文件属性的接口一样)
+#[PUT("/api/files/capture_time")]
+pub async fn capture_time(login: Ext<LoginUser>, id: i64, date: i64) -> Result<model::FileProperty, BizError> {
+    if date < 0 {
+        return Err(biz_error!("拍摄时间不正确"));
+    }
+    let mut ctx = db::begin().await?;
+    let file = dfs_file_service::select_operable(&mut ctx, login.owner_id, id).await?;
+    Scope::load(&mut ctx, &login).await?.check(&mut ctx, &file, perm::MODIFY).await?;
+    if file.storageId == 0 {
+        return Err(biz_error!("文件夹不能修改拍摄时间"));
+    }
+    if file.state == 0 {
+        //还没有生成属性,这时修改的话,生成属性时会被覆盖
+        return Err(biz_error!("文件还在处理中,请稍后再试"));
+    }
+    let old_property = file.property.clone().unwrap_or_default();
+    let new_property = if date == 0 {
+        file_handle_service::restore_capture_time(&old_property)
+    } else {
+        //没有属性或者属性不是JSON对象时(比如不需要生成属性的文件),新建一个
+        let mut map = match serde_json::from_str::<serde_json::Value>(&old_property) {
+            Ok(serde_json::Value::Object(it)) => it,
+            _ => serde_json::Map::new(),
+        };
+        if !map.contains_key(file_handle_service::ORIGINAL_DATE) {
+            let original = map.get("date").cloned().unwrap_or(serde_json::json!(0));
+            map.insert(file_handle_service::ORIGINAL_DATE.to_string(), original);
+        }
+        map.insert("date".to_string(), serde_json::json!(date));
+        serde_json::Value::Object(map).to_string()
+    };
+    dfs_file_dao::set_property(&mut ctx, id, new_property).await?;
+    let path = dfs_file_service::get_path_by_id(&mut ctx, file.id).await?;
+    db::commit(ctx).await?;
+    operate_log_service::add_file(&login, op::CAPTURE_TIME, &file, path, Some(serde_json::json!({"date": date})));
+    property(login, vec![id]).await
 }
 
 /// 下载文件(包括历史版本)

@@ -25,6 +25,7 @@ pub mod op {
     pub const RECOVER: i64 = 16;
     pub const PURGE: i64 = 17;
     pub const CONTENT_TYPE: i64 = 18;
+    pub const CAPTURE_TIME: i64 = 19;
     pub const OPEN: i64 = 20;
     pub const SHARE: i64 = 30;
     pub const SHARE_DELETE: i64 = 31;
@@ -34,7 +35,7 @@ pub mod op {
     pub const SUB_ACCOUNT_DELETE: i64 = 42;
 
     /// 所有操作类型和名称,用于显示和筛选
-    pub const ALL: [(i64, &str); 19] = [
+    pub const ALL: [(i64, &str); 20] = [
         (LOGIN, "登录"),
         (LOGOUT, "退出登录"),
         (MODIFY_PWD, "修改密码"),
@@ -47,6 +48,7 @@ pub mod op {
         (RECOVER, "从回收站恢复"),
         (PURGE, "彻底删除"),
         (CONTENT_TYPE, "修改文件类型"),
+        (CAPTURE_TIME, "修改拍摄时间"),
         (OPEN, "打开/下载"),
         (SHARE, "创建分享"),
         (SHARE_DELETE, "取消分享"),
@@ -179,7 +181,7 @@ async fn write_loop(mut receiver: mpsc::UnboundedReceiver<OperateLog>) {
 
 async fn write(list: &[OperateLog]) -> Result<(), sqlx::Error> {
     let mut ctx = lib_db::get_context();
-    ctx.begin().await?;
+    ctx.begin_immediate().await?;
     for it in list {
         operate_log_dao::insert(&mut ctx, it).await?;
     }

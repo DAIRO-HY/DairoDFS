@@ -137,15 +137,15 @@ pub async fn by_md5(login: Ext<LoginUser>, md5: String, path: String, content_ty
 #[GET("/api/file_upload/exists")]
 pub async fn exists(login: Ext<LoginUser>, md5: String) -> Result<bool, BizError> {
     let mut ctx = lib_db::get_context();
-    if !login.is_sub {
-        let count = dfs_file_dao::count_by_md5(&mut ctx, login.id, &md5).await?;
-        return Ok(count > 0);
-    }
 
     //子账户只检查自己能看到的文件
     let mut scope = Scope::load(&mut ctx, &login).await?;
     for it in dfs_file_dao::select_by_md5(&mut ctx, login.owner_id, &md5).await? {
-        if scope.perms(&mut ctx, &it).await? & perm::VIEW != 0 {
+        if dfs_file_service::in_deleted_folder(&mut ctx, &it).await? {
+            //在回收站里的文件夹下面,回收站到期后会被删除,不能当作已经存在
+            continue;
+        }
+        if !scope.is_sub() || scope.perms(&mut ctx, &it).await? & perm::VIEW != 0 {
             return Ok(true);
         }
     }

@@ -19,13 +19,36 @@ pub async fn select_own(ctx: &mut DbContext, user_id: i64, id: i64) -> Result<Df
 }
 
 /// 获取可以操作(重命名、移动、删除等)的文件
-/// 根目录、附属文件、历史版本、已删除的文件都不允许直接操作
+/// 根目录、附属文件、历史版本、已删除的文件、在回收站里的文件夹下的文件都不允许直接操作
 pub async fn select_operable(ctx: &mut DbContext, user_id: i64, id: i64) -> Result<DfsFile, BizError> {
     let file = select_own(ctx, user_id, id).await?;
     if file.parentId == 0 || file.isExtra == 1 || file.isHistory == 1 || file.deleteDate.is_some() {
         return Err(biz_error!("非法操作"));
     }
+    if in_deleted_folder(ctx, &file).await? {
+        return Err(biz_error!("文件夹或文件不存在"));
+    }
     Ok(file)
+}
+
+/// 是否在回收站里的文件夹下面(所在的文件夹或者任何一级上级文件夹被删除)
+/// 删除文件夹时只标记文件夹本身,里面的文件不标记,所以需要往上检查
+pub async fn in_deleted_folder(ctx: &mut DbContext, file: &DfsFile) -> Result<bool, BizError> {
+    let mut parent_id = file.parentId;
+    while parent_id != 0 {
+        let parent = match dfs_file_dao::select_one(&mut *ctx, parent_id).await {
+            Ok(it) => it,
+
+            //上级文件夹已经被彻底删除
+            Err(sqlx::Error::RowNotFound) => return Ok(true),
+            Err(e) => return Err(e.into()),
+        };
+        if parent.deleteDate.is_some() {
+            return Ok(true);
+        }
+        parent_id = parent.parentId;
+    }
+    Ok(false)
 }
 
 /// 通过路径获取文件或文件夹
@@ -235,6 +258,9 @@ pub async fn copy_one(
             size: source.size,
             contentType: source.contentType,
             storageId: source.storageId,
+
+            //带上源文件的属性,修改过的拍摄时间也一起复制
+            property: source.property,
             creatorId: creator_id,
             ..Default::default()
         };

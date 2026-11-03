@@ -4,7 +4,7 @@ version = 4
 
 [[package]]
 name = "DairoDFS"
-version = "2.0.1"
+version = "2.0.2"
 dependencies = [
  "aes",
  "arc-swap",
@@ -3158,9 +3158,9 @@ dependencies = [
 
 [[package]]
 name = "sqlx-context"
-version = "0.0.2"
+version = "0.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "26716ce647341e415d1b94d6d779e9521730a02a9c17a71517ed9cdf15f13794"
+checksum = "1efd090323b3aad402784b93beadc326c2eb6f1e6f30d7d0ebcec109500d0b76"
 dependencies = [
  "futures-core",
  "serde_json",

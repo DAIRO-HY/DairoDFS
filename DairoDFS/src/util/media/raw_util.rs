@@ -10,7 +10,8 @@ use std::path::Path;
 pub async fn get_info(path: &Path) -> Result<ImageInfo, String> {
     let data = shell_util::exec(&media::exiftool(), [
         "-Orientation".as_ref(), "-ImageWidth".as_ref(), "-ImageHeight".as_ref(), "-CreateDate".as_ref(),
-        "-ISO".as_ref(), "-FNumber".as_ref(), "-ExposureTime".as_ref(), "-Make".as_ref(), "-Model".as_ref(), path.as_os_str(),
+        "-ISO".as_ref(), "-FNumber".as_ref(), "-ExposureTime".as_ref(), "-Make".as_ref(), "-Model".as_ref(),
+        "-LensModel".as_ref(), "-Lens".as_ref(), "-FocalLength".as_ref(), "-FocalLengthIn35mmFormat".as_ref(), path.as_os_str(),
     ])
     .await?;
     let text = String::from_utf8_lossy(&data);
@@ -35,6 +36,12 @@ pub async fn get_info(path: &Path) -> Result<ImageInfo, String> {
     info.shutter_speed = get("Exposure Time");
     info.make = get("Make");
     info.model = get("Camera Model Name");
+    info.lens = Some(get("Lens Model")).filter(|it| !it.is_empty()).unwrap_or_else(|| get("Lens"));
+
+    //exiftool输出的焦距带单位,如 50.0 mm
+    let mm = |key: &str| get(key).trim_end_matches("mm").trim().parse::<f64>().ok().filter(|it| *it > 0.0);
+    info.focal_length = mm("Focal Length").map(image_util::format_number).unwrap_or_default();
+    info.focal_length35 = mm("Focal Length In 35mm Format").map(|it| it.round() as i64).unwrap_or(0);
     let orientation = get("Orientation");
     info.orientation = if orientation.contains("Rotate 90") {
         6

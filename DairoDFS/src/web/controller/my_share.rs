@@ -22,7 +22,7 @@ pub async fn share(login: Ext<LoginUser>, ids: Vec<i64>, end_date_time: i64, pwd
     let mut scope = Scope::load(&mut ctx, &login).await?;
     let mut files = Vec::new();
     for id in &ids {
-        let file = dfs_file_service::select_own(&mut ctx, login.owner_id, *id).await?;
+        let file = dfs_file_service::select_operable(&mut ctx, login.owner_id, *id).await?;
         scope.check(&mut ctx, &file, perm::SHARE).await?;
         let path = dfs_file_service::get_path_by_id(&mut ctx, file.id).await?;
         files.push((file, path));

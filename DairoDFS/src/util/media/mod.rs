@@ -89,6 +89,11 @@ pub fn preview_small_exts() -> Vec<&'static str> {
         .collect()
 }
 
+/// 可能带有EXIF信息(拍摄参数)的图片
+pub fn exif_exts() -> Vec<&'static str> {
+    IMAGE_EXTS.iter().chain(RAW_EXTS.iter()).chain(HEIF_EXTS.iter()).copied().chain([DLIVE_EXT]).collect()
+}
+
 /// 是否需要生成小预览图
 pub fn need_preview_small(ext: &str) -> bool {
     preview_small_exts().contains(&ext)

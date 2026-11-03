@@ -311,7 +311,7 @@ async fn move_to_recycle(id: i64) -> Result<bool, String> {
     };
     let path = PathBuf::from(&storage.path);
     let target = recycle_path(&path)?;
-    ctx.begin().await.map_err(err)?;
+    ctx.begin_immediate().await.map_err(err)?;
     if storage_file_dao::delete_if_not_use(&mut ctx, id).await.map_err(err)? == 0 {
         //判断之后被使用了
         ctx.rollback().await.map_err(err)?;
@@ -402,7 +402,7 @@ async fn restore(record: &StorageRecycle) -> Result<(), String> {
         return Err(format!("{}已经存在,无法恢复", record.path));
     }
     let mut ctx = lib_db::get_context();
-    ctx.begin().await.map_err(err)?;
+    ctx.begin_immediate().await.map_err(err)?;
     let storage = StorageFile {
         id: record.id,
         path: record.path.clone(),

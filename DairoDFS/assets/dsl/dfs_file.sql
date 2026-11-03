@@ -194,20 +194,6 @@ where userId = :user_id
 
 -- ------------------------------
 
--- 某个用户是否已经存在指定MD5的文件
--- @name count_by_md5
--- @param user_id:i64
--- @param md5:String
--- @return i64
-select count(*) from dfs_file
-where storageId = (select id from storage_file where md5 = :md5)
-  and userId = :user_id
-  and isHistory = 0
-  and isExtra = 0
-  and deleteDate is null;
-
--- ------------------------------
-
 -- 获取某个用户指定MD5的文件
 -- @name select_by_md5
 -- @param user_id:i64
@@ -260,6 +246,24 @@ order by id limit 10;
 
 -- ------------------------------
 
+-- 获取需要补充镜头信息的文件(按ID顺序分批获取,包括历史版本和回收站里的文件)
+-- @name select_lens_todo
+-- @param after_id:i64
+-- @param exts:List<String>
+-- @return List<DfsFile>
+select * from dfs_file
+where id > :after_id
+  and storageId > 0
+  and isExtra = 0
+  and state = 1
+  and json_valid(property)
+-- @each exts seq="," open="and ext in (" close=")" item="ext"
+:ext
+-- @end
+order by id limit 10;
+
+-- ------------------------------
+
 -- 通过本地存储ID获取已经生成的文件属性(同一个文件只需要生成一次)
 -- @name select_property_by_storage_id
 -- @param storage_id:i64
@@ -299,11 +303,21 @@ update dfs_file set state = :state, stateMsg = :state_msg where id = :id;
 -- ------------------------------
 
 -- 获取相册文件(图片和视频)
+-- 删除文件夹时只标记文件夹本身,里面的文件不标记,所以只获取没有被删除的文件夹(包括所有上级文件夹)里的文件
 -- @name select_album
 -- @param user_id:i64
 -- @return List<DfsFile>
 select * from dfs_file
-where userId = :user_id
+where parentId in (
+    with recursive alive(id) as (
+        select id from dfs_file where userId = :user_id and parentId = 0 and storageId = 0 and isExtra = 0
+        union
+        select child.id from dfs_file as child join alive on child.parentId = alive.id
+        where child.storageId = 0 and child.isExtra = 0 and child.isHistory = 0 and child.deleteDate is null
+    )
+    select id from alive
+)
+  and userId = :user_id
   and ext in ('jpg','jpeg','png','bmp','gif','ico','svg','tiff','webp','wmf','wmz','jp2','eps','tga','jfif','psd','psb','ai','mp4','mov','avi','mkv','flv','rm','rmvb','3gp','cr3','cr2','heic','hif','dlive')
   and storageId > 0
   and isExtra = 0

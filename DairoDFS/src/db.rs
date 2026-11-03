@@ -11,7 +11,7 @@ use sqlx_context::DbContext;
 pub async fn begin() -> Result<DbContext, sqlx::Error> {
     let mut ctx = lib_db::get_context();
     ctx.enable_write_log();
-    ctx.begin().await?;
+    ctx.begin_immediate().await?;
     Ok(ctx)
 }
 

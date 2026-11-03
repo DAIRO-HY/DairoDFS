@@ -29,7 +29,7 @@ rand = { version = "0.10", features = ["std"] }
 bytes = "1"
 
 #数据库操作上下文:持有连接池,以及可选的当前事务。
-sqlx-context = "0.0.2"
+sqlx-context = "0.0.3"
 
 #注解路由
 hyperoute-core = "0.0.7"
