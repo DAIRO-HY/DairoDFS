@@ -49,7 +49,9 @@
     function getDeviceId() {
         let deviceId = localStorage.getItem("deviceId")
         if (deviceId === null) {
-            deviceId = crypto.randomUUID().replaceAll("-", "")
+            //crypto.randomUUID只能在HTTPS或localhost下使用,通过局域网IP用HTTP访问时不存在,这里用getRandomValues生成32位十六进制字符串
+            const bytes = crypto.getRandomValues(new Uint8Array(16))
+            deviceId = Array.from(bytes, it => it.toString(16).padStart(2, "0")).join("")
             localStorage.setItem("deviceId", deviceId)
         }
         return deviceId
