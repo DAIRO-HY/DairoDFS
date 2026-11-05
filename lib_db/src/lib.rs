@@ -12,7 +12,7 @@ use std::time::Duration;
 struct Assets;
 
 // VERSION 数据库版本号
-const VERSION: i32 = 4;
+const VERSION: i32 = 5;
 
 /// 数据库文件名
 pub const DB_FILE_NAME: &str = "dairo-dfs2.sqlite";
@@ -21,7 +21,7 @@ pub const DB_FILE_NAME: &str = "dairo-dfs2.sqlite";
 const OLD_DB_FILE_NAME: &str = "dairo-dfs.sqlite";
 
 /// 建表顺序
-const SQL_FILES: [&str; 10] = [
+const SQL_FILES: [&str; 12] = [
     "dfs_file.sql",
     "dfs_file_delete.sql",
     "storage_file.sql",
@@ -32,6 +32,8 @@ const SQL_FILES: [&str; 10] = [
     "sub_account_grant.sql",
     "operate_log.sql",
     "storage_recycle.sql",
+    "sync_version.sql",
+    "sync_alias.sql",
 ];
 
 /// 版本1升级到版本2:子账户、操作日志
@@ -45,6 +47,14 @@ alter table share add creatorId INT8 NULL;
 
 /// 版本3升级到版本4:文件夹列表查询用的索引(和dfs_file.sql里的一致)
 const UPGRADE_V4: &str = "CREATE INDEX IF NOT EXISTS idx_parent_extra_name ON dfs_file (parentId, isExtra, name);";
+
+/// 版本4升级到版本5:双向同步(日志顺序号、数据修改时间、合并记录)
+/// 已有的日志按添加顺序(rowid)编号
+const UPGRADE_V5: &str = "
+alter table sql_log add seq INT8 NOT NULL default 0;
+update sql_log set seq = rowid;
+CREATE UNIQUE INDEX index_seq ON sql_log (seq);
+";
 
 /// 需要从老库迁移数据的表(sql_log是Go版的同步日志,新版不再使用,不迁移)
 const MIGRATE_TABLES: [&str; 6] = [
@@ -160,6 +170,14 @@ async fn upgrade() -> Result<(), Box<dyn Error>> {
         if version < 4 {
             //版本4:文件夹列表查询用的索引
             sqlx::raw_sql(UPGRADE_V4).execute(&mut *conn).await?;
+        }
+        if version < 5 {
+            //版本5:双向同步
+            let mut tx = (&mut *conn).begin().await?;
+            sqlx::raw_sql(UPGRADE_V5).execute(&mut *tx).await?;
+            execute_sql_file(&mut tx, "sync_version.sql").await?;
+            execute_sql_file(&mut tx, "sync_alias.sql").await?;
+            tx.commit().await?;
         }
     }
 

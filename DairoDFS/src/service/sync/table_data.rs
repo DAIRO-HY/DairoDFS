@@ -5,7 +5,20 @@ use sqlx::{Arguments, Column, Row, TypeInfo, ValueRef};
 use sqlx_context::DbContext;
 
 /// 全量同步的表(按同步顺序排列),只允许同步这些表
-pub const TABLES: [&str; 7] = ["user", "user_token", "dfs_file", "dfs_file_delete", "share", "storage_file", "sub_account_grant"];
+/// 合并记录最先同步:之后同步过来的数据引用了被合并掉的ID时要换成保留下来的ID
+pub const TABLES: [&str; 8] = [
+    "sync_alias",
+    "user",
+    "user_token",
+    "dfs_file",
+    "dfs_file_delete",
+    "share",
+    "storage_file",
+    "sub_account_grant",
+];
+
+/// 全量同步时,每行数据里附带的各个字段组的修改时间
+pub const VERSION_KEY: &str = "__ver";
 
 /// 检查表名是否允许同步
 pub fn check_table(name: &str) -> Result<&'static str, String> {

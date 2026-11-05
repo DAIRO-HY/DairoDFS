@@ -174,6 +174,9 @@ fn recycle_keep_days() -> i64 {
 async fn delete_sql_log() -> Result<(), String> {
     let time = time_util::current_millis() - SQL_LOG_KEEP_DAYS * DAY_MILLIS;
     sql_log_dao::delete_before(&mut lib_db::get_context(), time).await.map_err(|e| e.to_string())?;
+
+    //超过这个时间的修改不会再同步过来,修改时间也不需要了
+    sync::version::delete_before(&mut lib_db::get_context(), time).await.map_err(|e| e.to_string())?;
     Ok(())
 }
 
@@ -223,7 +226,7 @@ async fn check_safe() -> Result<(), String> {
     if sync::IS_TABLE_SYNCING.load(Ordering::Relaxed) {
         return Err("正在全量同步,暂不回收存储文件".to_string());
     }
-    if sync::is_full_sync_pending() {
+    if sync::is_full_sync_pending() || !sync::all_synced() {
         return Err("全量同步还没有完成,暂不回收存储文件".to_string());
     }
     if sync_info::has_error() {

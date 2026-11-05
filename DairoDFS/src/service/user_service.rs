@@ -1,6 +1,6 @@
 use crate::dao::dfs_file_dao::DfsFile;
 use crate::dao::user_dao::User;
-use crate::dao::{dfs_file_dao, user_dao};
+use crate::dao::{dfs_file_dao, user_dao, user_token_dao};
 use crate::util::{id_util, time_util};
 use sqlx_context::DbContext;
 
@@ -57,4 +57,22 @@ pub async fn add_sub(
     };
     user_dao::insert(&mut *ctx, &user).await?;
     Ok(user.id)
+}
+
+/// 让用户在所有设备上退出登录(修改密码、禁用、删除时)
+/// 按登录票据一条一条地删除,同步到其他服务器时删除的一定是同样的记录
+pub async fn logout_all(ctx: &mut DbContext, user_id: i64) -> Result<(), sqlx::Error> {
+    for it in user_token_dao::select_by_user_id(&mut *ctx, user_id).await? {
+        user_token_dao::delete_by_token(&mut *ctx, it.token).await?;
+    }
+    Ok(())
+}
+
+/// 删除用户在某台设备上的登录记录(同一台设备只保留一条登录记录)
+/// 只删除本机现有的记录:同一台设备在另一台服务器上刚刚登录的记录不受影响,两台服务器上的登录都有效
+pub async fn logout_device(ctx: &mut DbContext, user_id: i64, device_id: String) -> Result<(), sqlx::Error> {
+    for it in user_token_dao::select_by_user_id_and_device_id(&mut *ctx, user_id, device_id).await? {
+        user_token_dao::delete_by_token(&mut *ctx, it.token).await?;
+    }
+    Ok(())
 }

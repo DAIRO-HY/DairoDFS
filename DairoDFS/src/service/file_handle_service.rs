@@ -3,7 +3,7 @@ use crate::dao::{dfs_file_dao, storage_file_dao};
 use crate::service::{dfs_file_service, storage_service};
 use crate::util::media::video_util::TransferArgument;
 use crate::util::media::{image_util, video_util, DliveInfo};
-use crate::util::{file_util, id_util, media};
+use crate::util::{file_util, id_util, media, time_util};
 use crate::{db, system_config};
 use std::path::{Path, PathBuf};
 use std::time::Instant;
@@ -57,6 +57,9 @@ pub fn notify() {
     NOTIFY.notify_one();
 }
 
+/// 上传的服务器超过这个时间(毫秒)还没有处理时,其他服务器接手处理
+const HANDLE_TAKE_OVER_MILLIS: i64 = 10 * 60 * 1000;
+
 /// 处理所有还没有处理的文件
 async fn handle_all() {
     if system_config::get().is_read_only {
@@ -64,7 +67,10 @@ async fn handle_all() {
         return;
     }
     loop {
-        let list = match dfs_file_dao::select_no_handle(&mut lib_db::get_context()).await {
+        //双向同步时只处理自己上传的文件,上传的服务器10分钟还没有处理时,由编号最小的服务器接手
+        let (node, is_leader) = crate::service::sync::handle_scope();
+        let before = if is_leader { time_util::current_millis() - HANDLE_TAKE_OVER_MILLIS } else { 0 };
+        let list = match dfs_file_dao::select_no_handle(&mut lib_db::get_context(), node, before).await {
             Ok(it) => it,
             Err(e) => {
                 eprintln!("-->获取待处理文件失败: {}", e);
@@ -72,6 +78,11 @@ async fn handle_all() {
             }
         };
         if list.is_empty() {
+            if !is_leader {
+                //补生成的任务只由一台服务器执行,结果同步到其他服务器
+                return;
+            }
+
             //没有新文件时,给已有的大图补生成小预览图,每次只处理一批,新上传的文件优先处理
             if make_preview_small_todo().await {
                 continue;

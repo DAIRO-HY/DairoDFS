@@ -3,6 +3,7 @@ use crate::dao::user_token_dao::UserToken;
 use crate::dao::{user_dao, user_token_dao};
 use crate::extension::string::StringExtension;
 use crate::service::operate_log_service::{self, op};
+use crate::service::user_service;
 use crate::util::{id_util, request_util, time_util};
 use crate::web::biz_error::BizError;
 use crate::web::filter::auth;
@@ -36,7 +37,7 @@ pub async fn do_login(form: form::Login, headers: &HeaderMap, addr: RemoteAddr) 
     }
 
     //同一台设备只保留一条登录记录
-    user_token_dao::delete_by_user_id_and_device_id(&mut ctx, user.id, form.device_id.clone()).await?;
+    user_service::logout_device(&mut ctx, user.id, form.device_id.clone()).await?;
 
     // 生成一个随机的32位token，作为登录状态的标识
     let token = Alphanumeric.sample_string(&mut rand::rng(), 32);

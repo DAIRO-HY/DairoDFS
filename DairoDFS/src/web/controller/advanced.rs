@@ -157,7 +157,7 @@ pub async fn reset_data() -> Result<(), BizError> {
     sync::set_full_sync_pending()?;
 
     //直接操作数据库,不记录同步日志
-    let sql = "delete from dfs_file;delete from dfs_file_delete;delete from share;delete from sql_log;delete from user;delete from user_token;";
+    let sql = "delete from dfs_file;delete from dfs_file_delete;delete from share;delete from sql_log;delete from user;delete from user_token;delete from sub_account_grant;delete from sync_version;delete from sync_alias;";
     sqlx::raw_sql(sql).execute(&lib_db::get()).await?;
     tokio::spawn(sync::sync_by_table::sync_all());
     Ok(())

@@ -14,18 +14,12 @@ select * from user_token where userId = :user_id order by date;
 
 -- ------------------------------
 
--- 删除某个用户在某台设备上的登录记录
--- @name delete_by_user_id_and_device_id
+-- 获取某个用户在某台设备上的登录记录
+-- @name select_by_user_id_and_device_id
 -- @param user_id:i64
 -- @param device_id:String
-delete from user_token where userId = :user_id and deviceId = :device_id;
-
--- ------------------------------
-
--- 删除某个用户的所有登录记录
--- @name delete_by_user_id
--- @param user_id:i64
-delete from user_token where userId = :user_id;
+-- @return List<UserToken>
+select * from user_token where userId = :user_id and deviceId = :device_id;
 
 -- ------------------------------
 

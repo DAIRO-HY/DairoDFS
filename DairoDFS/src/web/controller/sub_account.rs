@@ -1,4 +1,4 @@
-use crate::dao::{sub_account_grant_dao, user_dao, user_token_dao};
+use crate::dao::{sub_account_grant_dao, user_dao};
 use crate::extension::number::NumberExtension;
 use crate::extension::string::StringExtension;
 use crate::service::operate_log_service::{self, op};
@@ -151,7 +151,7 @@ pub async fn edit(
         }
         if pwd.is_some() || state != 1 {
             //修改了密码或者禁用时,已经登录的设备需要重新登录
-            user_token_dao::delete_by_user_id(&mut ctx, id).await?;
+            user_service::logout_all(&mut ctx, id).await?;
         }
         id
     };

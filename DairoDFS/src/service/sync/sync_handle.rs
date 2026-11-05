@@ -3,7 +3,7 @@ use crate::dao::{dfs_file_dao, storage_file_dao, user_dao};
 use crate::extension::number::NumberExtension;
 use crate::service::sync::sync_http::DOWNLOAD_CLIENT;
 use crate::service::sync::sync_info::SyncInfo;
-use crate::service::sync::table_data;
+use crate::service::sync::{alias, table_data};
 use crate::service::{dfs_file_service, storage_service};
 use crate::util::file_util;
 use serde_json::Value;
@@ -47,24 +47,44 @@ pub async fn prepare_storage_file(info: &SyncInfo, md5: &str) -> Result<Option<S
     Ok(Some(path.to_string_lossy().to_string()))
 }
 
-/// 同步存储文件(在事务中执行)
-/// - prepared prepare_storage_file下载的文件路径
-/// - return 本机的存储路径
-pub async fn storage_file(ctx: &mut DbContext, md5: &str, master_id: i64, prepared: Option<String>) -> Result<String, String> {
-    let exists = storage_file_dao::select_by_md5(&mut *ctx, md5).await.map_err(|e| e.to_string())?;
-    match exists {
-        //文件已经存在,并且与主机端的ID一样(全量同步时用到)
-        Some(it) if it.id == master_id => Ok(it.path),
+/// 同步存储文件的处理结果
+#[derive(Debug, PartialEq)]
+pub enum StorageAction {
 
-        //本机存在同样的文件,直接使用,并把本机的存储ID换成主机的ID
-        Some(it) => {
-            let err = |e: sqlx::Error| e.to_string();
+    // 添加,存储路径为本机的路径
+    Insert(String),
+
+    // 不需要添加(已经存在,或者本机有同样内容的文件并且ID比较小)
+    Skip,
+}
+
+/// 同步存储文件(在事务中执行)
+/// 本机已经有同样内容(MD5)的文件时,不重复保存,保留ID小的记录,另一个ID记录为被合并
+/// 每台服务器都按同样的规则处理,合并的结果一样
+/// - prepared prepare_storage_file下载的文件路径
+pub async fn storage_file(ctx: &mut DbContext, md5: &str, master_id: i64, prepared: Option<String>) -> Result<StorageAction, String> {
+    let err = |e: sqlx::Error| e.to_string();
+    if storage_file_dao::select_one(&mut *ctx, master_id).await.is_ok() {
+        //该存储文件已经存在
+        return Ok(StorageAction::Skip);
+    }
+    let exists = storage_file_dao::select_by_md5(&mut *ctx, md5).await.map_err(err)?;
+    match exists {
+        //本机的ID比较大,换成主机的ID,本机的ID记录为被合并
+        Some(it) if master_id < it.id => {
             table_data::execute(ctx, "delete from storage_file where id = ?", &[it.id.into()]).await.map_err(err)?;
             table_data::execute(ctx, "update dfs_file set storageId = ? where storageId = ?", &[master_id.into(), it.id.into()]).await.map_err(err)?;
             table_data::execute(ctx, "update dfs_file_delete set storageId = ? where storageId = ?", &[master_id.into(), it.id.into()]).await.map_err(err)?;
-            Ok(it.path)
+            alias::add(ctx, it.id, master_id, "storage_file").await.map_err(err)?;
+            Ok(StorageAction::Insert(it.path))
         }
-        None => prepared.ok_or_else(|| format!("文件{}没有下载", md5)),
+
+        //本机的ID比较小,保留本机的,主机的ID记录为被合并
+        Some(it) => {
+            alias::add(ctx, master_id, it.id, "storage_file").await.map_err(err)?;
+            Ok(StorageAction::Skip)
+        }
+        None => prepared.map(StorageAction::Insert).ok_or_else(|| format!("文件{}没有下载", md5)),
     }
 }
 
@@ -102,7 +122,10 @@ async fn download_once(info: &SyncInfo, url: &str, temp_path: &PathBuf) -> Resul
         .map_err(|e| e.to_string())?;
     let status = resp.status().as_u16();
     if status == 416 {
-        //文件已经下载完成
+        //文件已经下载完成;空文件请求bytes=0-时也返回416,这时临时文件还没有创建
+        if start == 0 {
+            tokio::fs::write(temp_path, b"").await.map_err(|e| e.to_string())?;
+        }
         return Ok(());
     }
     if status != 200 && status != 206 {
@@ -137,10 +160,24 @@ async fn download_once(info: &SyncInfo, url: &str, temp_path: &PathBuf) -> Resul
     Ok(())
 }
 
+/// 同步过来的用户文件里引用了被合并掉的文件夹、存储文件时,换成保留下来的ID
+/// - return (父文件夹ID, 存储文件ID)
+pub async fn remap_dfs_file(ctx: &mut DbContext, parent_id: i64, storage_id: i64) -> Result<(i64, i64), String> {
+    let err = |e: sqlx::Error| e.to_string();
+    let parent_id = alias::resolve(ctx, parent_id).await.map_err(err)?;
+    let storage_id = if storage_id > 0 {
+        alias::resolve(ctx, storage_id).await.map_err(err)?
+    } else {
+        storage_id
+    };
+    Ok((parent_id, storage_id))
+}
+
 /// 添加用户文件之前,处理本机已经存在同名文件的情况
-/// - 都是文件夹: 保留主机端的文件夹,本机文件夹下的内容移到主机端的文件夹下
-/// - 都是附属文件: 删除本机生成的附属文件,以主机端为准
-/// - 都是文件: 保留比较新的文件,另一个设置为历史版本
+/// 每台服务器都按同样的规则处理,结果一样:
+/// - 都是文件夹: 保留ID小的(先创建的),另一个文件夹下的内容移过来,它的ID记录为被合并
+/// - 都是附属文件: 保留ID小的
+/// - 都是文件: ID大的(比较新的)作为当前版本,另一个设置为历史版本
 /// - 一个是文件一个是文件夹: 无法同步,需要人工处理
 pub async fn dfs_file(ctx: &mut DbContext, info: &SyncInfo, row: &DfsFileRow) -> Result<DfsFileAction, String> {
     if row.is_history || row.is_deleted {
@@ -158,14 +195,20 @@ pub async fn dfs_file(ctx: &mut DbContext, info: &SyncInfo, row: &DfsFileRow) ->
         return Ok(DfsFileAction::Skip);
     }
     if row.storage_id == 0 && exists.storageId == 0 {
-        table_data::execute(ctx, "update dfs_file set parentId = ? where parentId = ?", &[row.id.into(), exists.id.into()]).await.map_err(err)?;
-        table_data::execute(ctx, "delete from dfs_file where id = ?", &[exists.id.into()]).await.map_err(err)?;
-        return Ok(DfsFileAction::Insert);
+        if row.id < exists.id {
+            merge_folder(ctx, exists.id, row.id).await?;
+            return Ok(DfsFileAction::Insert);
+        }
+        alias::add(ctx, row.id, exists.id, "dfs_file").await.map_err(err)?;
+        return Ok(DfsFileAction::Skip);
     }
     if row.storage_id > 0 && exists.storageId > 0 {
         if row.is_extra || exists.isExtra == 1 {
-            table_data::execute(ctx, "delete from dfs_file where id = ?", &[exists.id.into()]).await.map_err(err)?;
-            return Ok(DfsFileAction::Insert);
+            if row.id < exists.id {
+                table_data::execute(ctx, "delete from dfs_file where id = ?", &[exists.id.into()]).await.map_err(err)?;
+                return Ok(DfsFileAction::Insert);
+            }
+            return Ok(DfsFileAction::Skip);
         }
         if row.id > exists.id {
             //主机端的文件比较新
@@ -174,19 +217,155 @@ pub async fn dfs_file(ctx: &mut DbContext, info: &SyncInfo, row: &DfsFileRow) ->
         }
         return Ok(DfsFileAction::InsertAsHistory);
     }
-    let user_name = user_dao::select_one(&mut *ctx, row.user_id)
+    Err(conflict_msg(ctx, info, row.user_id, exists.id).await)
+}
+
+/// 同名的文件和文件夹冲突时的提示
+pub async fn conflict_msg(ctx: &mut DbContext, info: &SyncInfo, user_id: i64, exists_id: i64) -> String {
+    let user_name = user_dao::select_one(&mut *ctx, user_id)
         .await
         .ok()
         .and_then(|it| it.name)
         .unwrap_or_default();
-    let path = dfs_file_service::get_path_by_id(ctx, exists.id).await.unwrap_or_default();
-    Err(format!(
-        "同步失败，服务器：{}  用户名：{}  路径：{} 文件冲突。原因：同一个文件夹下，不允许同名的文件或文件夹。解决方案：请重命名当前或者服务器端 {} 的文件名。",
+    let path = dfs_file_service::get_path_by_id(ctx, exists_id).await.unwrap_or_default();
+    format!(
+        "同步失败，服务器：{}  用户名：{}  路径：{} 文件冲突。原因：同一个文件夹下，不允许同名的文件或文件夹。解决方案：请在本机将 {} 重命名，然后点击重新同步。",
         info.url.split('/').take(3).collect::<Vec<_>>().join("/"),
         user_name,
         path,
         path
-    ))
+    )
+}
+
+/// 合并两个同名文件夹:被合并的文件夹下的内容移到保留的文件夹下,然后删除被合并的文件夹
+/// 保留的文件夹在本机可能还不存在(马上要添加)
+/// - drop_id 被合并的文件夹
+/// - keep_id 保留的文件夹(ID比较小的)
+pub async fn merge_folder(ctx: &mut DbContext, drop_id: i64, keep_id: i64) -> Result<(), String> {
+    let err = |e: sqlx::Error| e.to_string();
+
+    //被合并的文件夹本身可能已经不在了(全量同步时只同步到了它下面的文件)
+    let user_id = match dfs_file_dao::select_one(&mut *ctx, drop_id).await {
+        Ok(it) => Some(it.userId),
+        Err(_) => dfs_file_dao::select_all_child_list(&mut *ctx, drop_id).await.map_err(err)?.first().map(|it| it.userId),
+    };
+    let children = match user_id {
+        Some(user_id) => dfs_file_dao::select_sub_list(&mut *ctx, user_id, drop_id).await.map_err(err)?,
+        None => Vec::new(),
+    };
+
+    //两个文件夹下有同名的文件或文件夹时,按同样的规则处理
+    for child in children {
+        let Some(other) = dfs_file_dao::select_by_parent_id_and_name(&mut *ctx, child.userId, keep_id, &child.name).await.map_err(err)? else {
+            continue;
+        };
+        match (child.storageId == 0, other.storageId == 0) {
+            (true, true) => {
+                if child.id < other.id {
+                    Box::pin(merge_folder(ctx, other.id, child.id)).await?;
+                } else {
+                    Box::pin(merge_folder(ctx, child.id, other.id)).await?;
+                }
+            }
+            (false, false) => {
+                let older = child.id.min(other.id);
+                table_data::execute(ctx, "update dfs_file set isHistory = 1 where id = ?", &[older.into()]).await.map_err(err)?;
+            }
+            _ => {
+                let path = dfs_file_service::get_path_by_id(ctx, other.id).await.unwrap_or_default();
+                return Err(format!("合并同名文件夹失败，路径：{} 同一个文件夹下有同名的文件和文件夹，请重命名之后重新同步。", path));
+            }
+        }
+    }
+
+    //剩下的(包括历史版本和回收站里的)全部移过去
+    table_data::execute(ctx, "update dfs_file set parentId = ? where parentId = ?", &[keep_id.into(), drop_id.into()]).await.map_err(err)?;
+
+    //子账户的授权也换成保留的文件夹,同一个子账户都有授权时保留ID小的授权
+    let grants = table_data::select(ctx, "select id, subUserId from sub_account_grant where folderId = ?", &[drop_id.into()]).await.map_err(err)?;
+    for grant in grants {
+        let id = grant.get("id").and_then(|it| it.as_i64()).unwrap_or(0);
+        let sub_user_id = grant.get("subUserId").and_then(|it| it.as_i64()).unwrap_or(0);
+        let dup = table_data::select(
+            ctx,
+            "select id from sub_account_grant where subUserId = ? and folderId = ?",
+            &[sub_user_id.into(), keep_id.into()],
+        )
+        .await
+        .map_err(err)?;
+        match dup.first().and_then(|it| it.get("id")).and_then(|it| it.as_i64()) {
+            Some(dup_id) if dup_id < id => {
+                table_data::execute(ctx, "delete from sub_account_grant where id = ?", &[id.into()]).await.map_err(err)?;
+            }
+            dup_id => {
+                if let Some(dup_id) = dup_id {
+                    table_data::execute(ctx, "delete from sub_account_grant where id = ?", &[dup_id.into()]).await.map_err(err)?;
+                }
+                table_data::execute(ctx, "update sub_account_grant set folderId = ? where id = ?", &[keep_id.into(), id.into()]).await.map_err(err)?;
+            }
+        }
+    }
+    table_data::execute(ctx, "delete from dfs_file where id = ?", &[drop_id.into()]).await.map_err(err)?;
+    alias::add(ctx, drop_id, keep_id, "dfs_file").await.map_err(err)?;
+    Ok(())
+}
+
+/// 同步子账户的授权之前,处理同一个子账户对同一个文件夹已经有授权的情况(两台服务器同时添加了授权),保留ID小的
+/// - return 是否添加
+pub async fn grant(ctx: &mut DbContext, id: i64, sub_user_id: i64, folder_id: i64) -> Result<bool, String> {
+    let err = |e: sqlx::Error| e.to_string();
+    let exists = table_data::select(
+        ctx,
+        "select id from sub_account_grant where subUserId = ? and folderId = ?",
+        &[sub_user_id.into(), folder_id.into()],
+    )
+    .await
+    .map_err(err)?;
+    match exists.first().and_then(|it| it.get("id")).and_then(|it| it.as_i64()) {
+        None => Ok(true),
+        Some(exists_id) if exists_id == id => Ok(false),
+        Some(exists_id) if id < exists_id => {
+            table_data::execute(ctx, "delete from sub_account_grant where id = ?", &[exists_id.into()]).await.map_err(err)?;
+            Ok(true)
+        }
+        Some(_) => Ok(false),
+    }
+}
+
+/// 修改文件位置(移动、重命名)之前,处理目标位置已经有同名文件的情况(两台服务器同时把文件移动或重命名成同一个名字)
+/// 和添加文件时的规则一样
+/// - return 是否继续修改
+pub async fn move_conflict(ctx: &mut DbContext, info: &SyncInfo, id: i64, parent_id: i64, name: &str) -> Result<bool, String> {
+    let err = |e: sqlx::Error| e.to_string();
+    let Ok(file) = dfs_file_dao::select_one(&mut *ctx, id).await else {
+        return Ok(true);
+    };
+    if file.isHistory == 1 || file.deleteDate.is_some() || file.isExtra == 1 {
+        return Ok(true);
+    }
+    let Some(exists) = dfs_file_dao::select_by_parent_id_and_name(&mut *ctx, file.userId, parent_id, name).await.map_err(err)? else {
+        return Ok(true);
+    };
+    if exists.id == id {
+        return Ok(true);
+    }
+    match (file.storageId == 0, exists.storageId == 0) {
+        (true, true) => {
+            if id < exists.id {
+                merge_folder(ctx, exists.id, id).await?;
+                Ok(true)
+            } else {
+                merge_folder(ctx, id, exists.id).await?;
+                Ok(false)
+            }
+        }
+        (false, false) => {
+            let older = id.min(exists.id);
+            table_data::execute(ctx, "update dfs_file set isHistory = 1 where id = ?", &[older.into()]).await.map_err(err)?;
+            Ok(true)
+        }
+        _ => Err(conflict_msg(ctx, info, file.userId, exists.id).await),
+    }
 }
 
 /// 添加用户文件时需要用到的字段

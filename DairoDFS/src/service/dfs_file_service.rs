@@ -1,5 +1,5 @@
 use crate::dao::dfs_file_dao;
-use crate::dao::dfs_file_dao::{DfsFile, MoveFileWithHistoryParam};
+use crate::dao::dfs_file_dao::DfsFile;
 use crate::util::{file_util, id_util, time_util};
 use crate::web::biz_error::BizError;
 use crate::{biz_error, biz_errorf};
@@ -311,14 +311,7 @@ async fn move_one(ctx: &mut DbContext, source: DfsFile, target_parent_id: i64, i
             //将已经存在的文件标记为历史版本
             dfs_file_dao::set_history(&mut *ctx, exists.id).await?;
         }
-        let param = MoveFileWithHistoryParam {
-            user_id: source.userId,
-            parent_id: source.parentId,
-            name: source.name.clone(),
-            target_parent_id,
-            target_name: source.name,
-        };
-        dfs_file_dao::move_file_with_history(&mut *ctx, param).await?;
+        move_file_with_history(ctx, &source, target_parent_id, &source.name).await?;
         return Ok(());
     }
     let Some(exists) = exists else {
@@ -354,16 +347,18 @@ pub async fn rename(ctx: &mut DbContext, user_id: i64, id: i64, name: &str) -> R
         }
     }
     if file.storageId > 0 {
-        let param = MoveFileWithHistoryParam {
-            user_id,
-            parent_id: file.parentId,
-            name: file.name,
-            target_parent_id: file.parentId,
-            target_name: name.to_string(),
-        };
-        dfs_file_dao::move_file_with_history(&mut *ctx, param).await?;
+        move_file_with_history(ctx, &file, file.parentId, name).await?;
     } else {
         dfs_file_dao::set_parent_and_name(&mut *ctx, file.id, file.parentId, name).await?;
+    }
+    Ok(())
+}
+
+/// 移动或重命名文件,历史版本一起移动,否则历史版本会和文件脱离
+/// 一条一条地按ID修改,同步到其他服务器时修改的一定是同样的记录
+async fn move_file_with_history(ctx: &mut DbContext, file: &DfsFile, target_parent_id: i64, target_name: &str) -> Result<(), BizError> {
+    for id in dfs_file_dao::select_ids_by_name(&mut *ctx, file.userId, file.parentId, &file.name).await? {
+        dfs_file_dao::set_parent_and_name(&mut *ctx, id, target_parent_id, target_name).await?;
     }
     Ok(())
 }
@@ -371,7 +366,10 @@ pub async fn rename(ctx: &mut DbContext, user_id: i64, id: i64, name: &str) -> R
 /// 删除文件或文件夹到垃圾箱(文件的历史版本一起删除)
 pub async fn set_delete(ctx: &mut DbContext, user_id: i64, id: i64) -> Result<(), BizError> {
     let file = select_operable(ctx, user_id, id).await?;
-    dfs_file_dao::set_delete(&mut *ctx, user_id, file.parentId, &file.name, time_util::current_millis()).await?;
+    let time = time_util::current_millis();
+    for id in dfs_file_dao::select_ids_by_name(&mut *ctx, user_id, file.parentId, &file.name).await? {
+        dfs_file_dao::set_delete_date(&mut *ctx, id, Some(time)).await?;
+    }
     Ok(())
 }
 
@@ -386,7 +384,9 @@ pub async fn trash_recover(ctx: &mut DbContext, user_id: i64, ids: &[i64]) -> Re
             let path = get_path_by_id(ctx, file.id).await?;
             return Err(biz_errorf!("文件[{}]已存在", path));
         }
-        dfs_file_dao::set_not_delete(&mut *ctx, user_id, file.parentId, &file.name, delete_date).await?;
+        for it in dfs_file_dao::select_same_delete(&mut *ctx, user_id, file.parentId, &file.name, delete_date).await? {
+            dfs_file_dao::set_delete_date(&mut *ctx, it.id, None).await?;
+        }
     }
     Ok(())
 }

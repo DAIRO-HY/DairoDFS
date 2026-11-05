@@ -46,6 +46,9 @@ pub struct SystemConfig {
 
     /// 隔离区保留天数:没有被使用的存储文件先移到隔离区,超过这个天数才真正删除
     pub recycle_keep_days: i64,
+
+    /// 服务器编号(0~9):生成的ID末位是这个编号,双向同步的服务器编号不能相同
+    pub node_no: i64,
 }
 
 impl Default for SystemConfig {
@@ -64,6 +67,7 @@ impl Default for SystemConfig {
             cluster_id: String::new(),
             operate_log_days: 30,
             recycle_keep_days: 30,
+            node_no: 0,
         }
     }
 }

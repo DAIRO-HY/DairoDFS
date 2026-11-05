@@ -140,6 +140,10 @@ pub struct Profile {
     // 隔离区保留天数(老页面没有这一项时保持原来的设置)
     #[validate(range(min = 1, message = "隔离区保留天数不能小于1"))]
     pub recycle_keep_days: Option<i64>,
+
+    // 服务器编号(老页面没有这一项时保持原来的设置)
+    #[validate(range(min = 0, max = 9, message = "服务器编号必须在0到9之间"))]
+    pub node_no: Option<i64>,
 }
 
 /// 将空字符串转换为None(表单里没有填写的项目会提交空字符串)

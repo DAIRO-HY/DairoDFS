@@ -1,6 +1,7 @@
 use crate::dao::dfs_file_dao::DfsFile;
 use crate::dao::sub_account_grant_dao::SubAccountGrant;
-use crate::dao::{dfs_file_dao, sub_account_grant_dao, user_dao, user_token_dao};
+use crate::dao::{dfs_file_dao, sub_account_grant_dao, user_dao};
+use crate::service::user_service;
 use crate::util::{file_util, id_util, time_util};
 use crate::web::biz_error::BizError;
 use crate::web::filter::auth::LoginUser;
@@ -246,10 +247,25 @@ pub async fn select_own(ctx: &mut DbContext, parent_id: i64, id: i64) -> Result<
 }
 
 /// 重新设置子账户的授权
+/// 只修改有变化的授权,并且都按ID修改:两台服务器同时修改同一个子账户的不同授权时,两边的修改都能保留
 /// - grants 文件夹ID和权限
 pub async fn set_grants(ctx: &mut DbContext, sub_user_id: i64, grants: &[(i64, i64)]) -> Result<(), sqlx::Error> {
-    sub_account_grant_dao::delete_by_sub_user_id(&mut *ctx, sub_user_id).await?;
+    let exists = sub_account_grant_dao::select_by_sub_user_id(&mut *ctx, sub_user_id).await?;
+    for it in &exists {
+        match grants.iter().find(|(folder_id, _)| *folder_id == it.folderId) {
+            None => {
+                sub_account_grant_dao::delete(&mut *ctx, it.id).await?;
+            }
+            Some((_, perms)) if *perms != it.perms => {
+                sub_account_grant_dao::set_perms(&mut *ctx, it.id, *perms).await?;
+            }
+            Some(_) => {}
+        }
+    }
     for (folder_id, perms) in grants {
+        if exists.iter().any(|it| it.folderId == *folder_id) {
+            continue;
+        }
         let grant = SubAccountGrant {
             id: id_util::id(),
             subUserId: sub_user_id,
@@ -264,8 +280,16 @@ pub async fn set_grants(ctx: &mut DbContext, sub_user_id: i64, grants: &[(i64, i
 
 /// 删除子账户:清除登录记录和授权,已经上传的文件仍然属于主账户
 pub async fn delete(ctx: &mut DbContext, id: i64) -> Result<(), sqlx::Error> {
-    user_dao::set_sub_deleted(&mut *ctx, id).await?;
-    sub_account_grant_dao::delete_by_sub_user_id(&mut *ctx, id).await?;
-    user_token_dao::delete_by_user_id(&mut *ctx, id).await?;
+    let param = user_dao::SetSubDeletedParam {
+        id,
+        state: 2,
+        name: None,
+        pwd: None,
+        api_token: None,
+        url_path: None,
+    };
+    user_dao::set_sub_deleted(&mut *ctx, param).await?;
+    set_grants(ctx, id, &[]).await?;
+    user_service::logout_all(ctx, id).await?;
     Ok(())
 }

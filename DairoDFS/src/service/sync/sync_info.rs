@@ -30,6 +30,12 @@ pub struct SyncInfo {
 
     // 同步状态
     pub status: Mutex<SyncStatus>,
+
+    // 主机的信息(检查之后才有)
+    pub peer: Mutex<Option<crate::service::sync::NodeInfo>>,
+
+    // 上次检查主机信息的时间
+    pub last_check: Mutex<i64>,
 }
 
 /// 同步状态
@@ -53,6 +59,9 @@ pub struct SyncStatus {
 
     // 最后一次心跳时间
     pub last_heart_time: i64,
+
+    // 提示信息(比如时钟相差太多),显示在同步消息前面
+    pub warn: String,
 }
 
 impl SyncInfo {
@@ -115,6 +124,8 @@ pub fn reload() -> Vec<Arc<SyncInfo>> {
                     msg: "等待同步中".to_string(),
                     ..Default::default()
                 }),
+                peer: Mutex::new(None),
+                last_check: Mutex::new(0),
             })
         })
         .collect();
@@ -167,7 +178,7 @@ pub fn views() -> Vec<SyncInfoView> {
                 no: it.no,
                 url: host,
                 state: status.state,
-                msg: status.msg,
+                msg: if status.warn.is_empty() { status.msg } else { format!("{} {}", status.warn, status.msg) },
                 progress: format!("{}/{}", status.sync_count, status.count),
                 last_time: time(status.last_time),
                 last_heart_time: time(status.last_heart_time),

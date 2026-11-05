@@ -1,8 +1,8 @@
-use crate::dao::{user_dao, user_token_dao};
+use crate::dao::user_dao;
 use crate::db;
 use crate::extension::string::StringExtension;
 use crate::service::operate_log_service::{self, op};
-use crate::service::sub_account_service;
+use crate::service::{sub_account_service, user_service};
 use crate::util::request_util;
 use crate::web::biz_error::BizError;
 use crate::web::filter::auth::LoginUser;
@@ -28,7 +28,7 @@ pub async fn modify(login: Ext<LoginUser>, form: form::ModifyPwd) -> Result<Raw,
         return Err(BizError::field("oldPwd", "旧密码不正确"));
     }
     user_dao::set_pwd(&mut ctx, login.id, form.pwd.md5()).await?;
-    user_token_dao::delete_by_user_id(&mut ctx, login.id).await?;
+    user_service::logout_all(&mut ctx, login.id).await?;
     db::commit(ctx).await?;
     operate_log_service::add(&login, op::MODIFY_PWD, None, None, None);
     Ok(Raw::new("").header("set-cookie", request_util::clear_token_cookie()))

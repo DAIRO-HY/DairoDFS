@@ -55,9 +55,15 @@ update user set name = :name, nickname = :nickname, state = :state where id = :i
 -- ------------------------------
 
 -- 删除子账户:保留记录,文件和日志里还能显示昵称;清空用户名,之后可以重新使用这个用户名
+-- 写成参数的形式:同步时同一条记录在其他服务器上有更新的修改,需要保留其中一部分字段的值
 -- @name set_sub_deleted
 -- @param id:i64
-update user set state = 2, name = null, pwd = null, apiToken = null, urlPath = null where id = :id;
+-- @param state:i64 固定为2
+-- @param name:String? 固定为空
+-- @param pwd:String? 固定为空
+-- @param api_token:String? 固定为空
+-- @param url_path:String? 固定为空
+update user set state = :state, name = :name, pwd = :pwd, apiToken = :api_token, urlPath = :url_path where id = :id;
 
 -- ------------------------------
 

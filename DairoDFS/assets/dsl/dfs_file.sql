@@ -133,31 +133,27 @@ update dfs_file set isHistory = 1 where id = :id;
 
 -- ------------------------------
 
--- 将文件及其历史版本标记为删除
--- @name set_delete
--- @param user_id:i64
--- @param parent_id:i64
--- @param name:String
--- @param time:i64
-update dfs_file set deleteDate = :time
-where userId = :user_id
-  and parentId = :parent_id
-  and name = :name
-  and deleteDate is null;
+-- 设置删除时间(放入回收站),为空时表示从回收站还原
+-- 同步日志里只按ID修改,其他服务器执行时修改的一定是同一条记录
+-- @name set_delete_date
+-- @param id:i64
+-- @param delete_date:i64?
+update dfs_file set deleteDate = :delete_date where id = :id;
 
 -- ------------------------------
 
--- 将同一批被删除的文件及其历史版本还原
--- @name set_not_delete
+-- 获取文件夹或文件(包括文件的历史版本)的ID,删除到回收站、移动、重命名时一起修改
+-- @name select_ids_by_name
 -- @param user_id:i64
 -- @param parent_id:i64
 -- @param name:String
--- @param delete_date:i64
-update dfs_file set deleteDate = null
+-- @return List<i64>
+select id from dfs_file
 where userId = :user_id
   and parentId = :parent_id
   and name = :name
-  and deleteDate = :delete_date;
+  and isExtra = 0
+  and deleteDate is null;
 
 -- ------------------------------
 
@@ -169,28 +165,12 @@ update dfs_file set contentType = :content_type where id = :id and storageId > 0
 
 -- ------------------------------
 
--- 移动或重命名文件夹(文件夹没有历史版本,只修改它自己,子文件跟着一起移动)
+-- 移动或重命名(文件夹只修改它自己,子文件跟着一起移动;文件的历史版本要一条一条地修改)
 -- @name set_parent_and_name
 -- @param id:i64
 -- @param parent_id:i64
 -- @param name:String
 update dfs_file set parentId = :parent_id, name = :name where id = :id;
-
--- ------------------------------
-
--- 移动或重命名文件,历史版本一起移动,否则历史版本会和文件脱离
--- @name move_file_with_history
--- @param user_id:i64
--- @param parent_id:i64
--- @param name:String
--- @param target_parent_id:i64
--- @param target_name:String
-update dfs_file set parentId = :target_parent_id, name = :target_name
-where userId = :user_id
-  and parentId = :parent_id
-  and name = :name
-  and storageId > 0
-  and deleteDate is null;
 
 -- ------------------------------
 
@@ -217,9 +197,18 @@ select count(*) from dfs_file where storageId = :storage_id;
 -- ------------------------------
 
 -- 获取尚未处理的文件(生成属性、缩略图等)
+-- 双向同步时每台服务器只处理自己上传的文件(ID末位是服务器编号),避免多台服务器重复生成缩略图
 -- @name select_no_handle
+-- @param node:i64 只处理这台服务器上传的文件,小于0时处理所有文件
+-- @param before:i64 这个时间(ID)之前的文件不管是哪台服务器上传的都处理(上传的服务器长时间没有处理时接手)
 -- @return List<DfsFile>
-select * from dfs_file where storageId > 0 and isExtra = 0 and state = 0 order by id limit 100;
+select * from dfs_file
+where storageId > 0
+  and isExtra = 0
+  and state = 0
+  and (:node < 0 or id % 10 = :node or id < :before)
+order by id
+limit 100;
 
 -- ------------------------------
 

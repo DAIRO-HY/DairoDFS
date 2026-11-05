@@ -24,6 +24,7 @@ pub async fn info() -> model::ProfileInfo {
         db_backup_expire_day: config.db_backup_expire_day,
         operate_log_days: config.operate_log_days,
         recycle_keep_days: config.recycle_keep_days,
+        node_no: config.node_no,
     }
 }
 
@@ -51,6 +52,9 @@ pub async fn update(form: form::Profile) -> Result<(), BizError> {
     }
     if let Some(days) = form.recycle_keep_days {
         config.recycle_keep_days = days;
+    }
+    if let Some(no) = form.node_no {
+        config.node_no = no;
     }
     system_config::save(config)?;
 
@@ -113,5 +117,8 @@ pub mod model {
 
         // 隔离区保留天数
         pub recycle_keep_days: i64,
+
+        // 服务器编号
+        pub node_no: i64,
     }
 }

@@ -3,6 +3,7 @@ use crate::extension::string::StringExtension;
 use crate::service::{sync, user_service};
 use crate::web::biz_error::BizError;
 use crate::web::form;
+use crate::util::id_util;
 use crate::{biz_error, db, system_config};
 use hyperoute_macro::{GET, POST};
 use validator::Validate;
@@ -38,6 +39,18 @@ pub async fn distributed(form: form::InstallDistributed) -> Result<bool, BizErro
     let mut config = (*system_config::get()).clone();
     config.sync_domains = form::split_lines(&form.sync_domains);
     let has_domain = !config.sync_domains.is_empty();
+
+    //服务器编号自动选一个主机没有使用的,之后设置为双向同步时编号不会重复
+    let mut used = Vec::new();
+    for domain in &config.sync_domains {
+        let url = format!("{}/{}", domain.trim_end_matches('/'), config.distributed_token);
+        if let Ok(node) = sync::request_node_info(&url).await {
+            used.push(node.node_no);
+        }
+    }
+    if let Some(no) = (0..id_util::NODE_COUNT).find(|it| !used.contains(it)) {
+        config.node_no = no;
+    }
     system_config::save(config)?;
     if !has_domain {
         return Ok(false);
