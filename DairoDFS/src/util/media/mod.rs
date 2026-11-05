@@ -76,27 +76,19 @@ pub fn need_preview(ext: &str) -> bool {
     PSD_EXTS.contains(&ext) || RAW_EXTS.contains(&ext) || HEIF_EXTS.contains(&ext) || ext == DLIVE_EXT
 }
 
-/// 需要生成小预览图的图片(App快速浏览用),GIF可能是动图,缩小成JPEG后就不会动了,不生成
-pub fn preview_small_exts() -> Vec<&'static str> {
-    IMAGE_EXTS
-        .iter()
-        .filter(|it| **it != "gif")
-        .chain(PSD_EXTS.iter())
-        .chain(RAW_EXTS.iter())
-        .chain(HEIF_EXTS.iter())
-        .copied()
-        .chain([DLIVE_EXT])
-        .collect()
+/// 是否可以直接解码的图片(在线生成缩略图时直接使用原文件)
+pub fn is_image(ext: &str) -> bool {
+    IMAGE_EXTS.contains(&ext)
+}
+
+/// 视频的扩展名
+pub fn video_exts() -> Vec<&'static str> {
+    VIDEO_EXTS.to_vec()
 }
 
 /// 可能带有EXIF信息(拍摄参数)的图片
 pub fn exif_exts() -> Vec<&'static str> {
     IMAGE_EXTS.iter().chain(RAW_EXTS.iter()).chain(HEIF_EXTS.iter()).copied().chain([DLIVE_EXT]).collect()
-}
-
-/// 是否需要生成小预览图
-pub fn need_preview_small(ext: &str) -> bool {
-    preview_small_exts().contains(&ext)
 }
 
 /// 生成文件属性(JSON),不需要生成属性的文件返回None

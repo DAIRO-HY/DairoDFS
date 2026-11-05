@@ -12,7 +12,6 @@ use hyper::HeaderMap;
 use crate::util::media;
 use crate::util::media::image_util;
 use hyperoute_core::{Ext, Raw, Stream};
-use std::path::Path;
 use hyperoute_macro::{DELETE, GET, POST, PUT};
 use std::collections::HashSet;
 
@@ -371,9 +370,49 @@ pub async fn thumb(login: Ext<LoginUser>, id: i64, headers: &HeaderMap) -> Resul
 }
 
 /// 在线生成缩略图同时只允许一个,避免大量请求时占满CPU和内存
+/// 排队中的请求被客户端取消(断开连接)时,请求直接被丢弃,不再排队
 static THUMB_ONLINE_LOCK: tokio::sync::Semaphore = tokio::sync::Semaphore::const_new(1);
 
+/// 在线生成缩略图的目标尺寸
+#[derive(Clone, Copy)]
+enum ThumbTarget {
+
+    // 按比例缩放,最大边
+    MaxSize(u32),
+
+    // 按宽高从中间裁剪
+    Crop(u32, u32),
+}
+
+impl ThumbTarget {
+
+    /// 用这个尺寸的图片生成时,是否能达到目标尺寸
+    fn fits(&self, width: u32, height: u32) -> bool {
+        match *self {
+            ThumbTarget::MaxSize(max_size) => width.max(height) >= max_size,
+            ThumbTarget::Crop(target_width, target_height) => {
+                //目标比图片更宽时,按图片的宽度裁剪,否则按图片的高度裁剪
+                if target_width as u64 * height as u64 > target_height as u64 * width as u64 {
+                    width >= target_width
+                } else {
+                    height >= target_height
+                }
+            }
+        }
+    }
+
+    /// 生成图片,图片比目标尺寸小时不放大
+    fn make(&self, data: &[u8]) -> Result<Vec<u8>, String> {
+        match *self {
+            ThumbTarget::MaxSize(max_size) => image_util::resize(data, max_size, 85),
+            ThumbTarget::Crop(width, height) => image_util::crop(data, width, height, 85),
+        }
+    }
+}
+
 /// 在线生成缩略图,优先使用max_size
+/// 缩略图够大时用缩略图生成,否则用全尺寸的图片生成:
+/// 普通图片用原文件,RAW、PSD、HEIC等用生成好的预览图,视频用生成好的首帧图,不会从原文件现场转换
 /// - max_size 最大边
 /// - width,height 按宽高裁剪
 /// - name 文件名,指定时以附件的方式下载
@@ -386,6 +425,11 @@ pub async fn thumb_online(
     height: Option<u32>,
     name: Option<String>,
 ) -> Result<Raw, BizError> {
+    let target = match (max_size, width, height) {
+        (Some(max_size), _, _) if max_size > 0 => ThumbTarget::MaxSize(max_size),
+        (_, Some(width), Some(height)) if width > 0 && height > 0 => ThumbTarget::Crop(width, height),
+        _ => return Err(biz_error!("width,height和maxSize至少要传其中一种参数")),
+    };
     let mut ctx = lib_db::get_context();
     let Ok(file) = dfs_file_service::select_own(&mut ctx, login.owner_id, id).await else {
         return Err(BizError::not_found());
@@ -394,29 +438,40 @@ pub async fn thumb_online(
         return Err(BizError::not_found());
     }
     check_file(&mut ctx, &login, &file, perm::VIEW).await?;
-
-    //有缩略图时用缩略图生成,否则用原文件的预览图
-    let source = match dfs_file_dao::select_extra(&mut ctx, id, "thumb").await? {
-        Some(thumb) => {
-            let storage = storage_file_dao::select_one(&mut ctx, thumb.storageId).await?;
-            tokio::fs::read(&storage.path).await.map_err(|_| BizError::not_found())?
-        }
-        None => {
-            let storage = storage_file_dao::select_one(&mut ctx, file.storageId).await?;
-            media::preview_jpg(&file.ext, Path::new(&storage.path))
-                .await
-                .map_err(BizError::msg)?
-                .ok_or_else(BizError::not_found)?
-        }
+    let thumb_path = match dfs_file_dao::select_extra(&mut ctx, id, "thumb").await? {
+        Some(thumb) => Some(storage_file_dao::select_one(&mut ctx, thumb.storageId).await?.path),
+        None => None,
     };
-    let _permit = THUMB_ONLINE_LOCK.acquire().await.unwrap();
-    let data = match (max_size, width, height) {
-        (Some(max_size), _, _) if max_size > 0 => media::blocking(move || image_util::resize(&source, max_size, 85)).await,
-        (_, Some(width), Some(height)) if width > 0 && height > 0 => {
-            media::blocking(move || image_util::crop(&source, width, height, 85)).await
-        }
-        _ => return Err(biz_error!("width,height和maxSize至少要传其中一种参数")),
+    let full_storage_id = if media::is_image(&file.ext) {
+        Some(file.storageId)
+    } else {
+        let extra_name = if media::is_video(&file.ext) { file_handle_service::PREVIEW_FRAME_NAME } else { "preview" };
+        dfs_file_dao::select_extra(&mut ctx, id, extra_name).await?.map(|it| it.storageId)
+    };
+    let full_path = match full_storage_id {
+        Some(storage_id) => Some(storage_file_dao::select_one(&mut ctx, storage_id).await?.path),
+        None => None,
+    };
+    if thumb_path.is_none() && full_path.is_none() {
+        return Err(BizError::not_found());
     }
+
+    //排队时还没有读取图片,排队的请求不占内存
+    let permit = THUMB_ONLINE_LOCK.acquire().await.unwrap();
+    let data = media::blocking(move || {
+        //生成完成之后才释放,请求在生成过程中被取消时,也要等这次生成完成,下一个请求才开始
+        let _permit = permit;
+        if let Some(thumb_path) = &thumb_path {
+            let thumb = std::fs::read(thumb_path).map_err(|e| e.to_string())?;
+            let fits = image_util::dimensions(&thumb).is_ok_and(|(width, height)| target.fits(width, height));
+            if fits || full_path.is_none() {
+                return target.make(&thumb);
+            }
+        }
+        let full = std::fs::read(full_path.as_ref().unwrap()).map_err(|e| e.to_string())?;
+        target.make(&full)
+    })
+    .await
     .map_err(BizError::msg)?;
     let mut raw = Raw::new(data)
         .header("content-type", "image/jpeg")

@@ -18,22 +18,19 @@ const VIDEO_TARGET_SIZE: i64 = 1280;
 /// 视频转码的目标帧数
 const VIDEO_TARGET_FPS: f64 = 30.0;
 
-/// 小预览图(App快速浏览大图用)的附属文件名
-const PREVIEW_SMALL_NAME: &str = "preview-small";
+/// 视频首帧图(和视频一样的尺寸)的附属文件名,在线生成各种尺寸的缩略图时使用
+pub const PREVIEW_FRAME_NAME: &str = "preview-frame";
 
-/// 小预览图的最大边,原图最大边超过这个尺寸时才生成
-const PREVIEW_SMALL_MAX_SIZE: u32 = 1200;
-
-/// 小预览图的JPEG质量
-const PREVIEW_SMALL_QUALITY: u8 = 85;
+/// 视频首帧图的JPEG质量
+const PREVIEW_FRAME_QUALITY: u8 = 85;
 
 /// 补充镜头和焦距信息的进度文件(记录已经处理到的文件ID),老版本生成的属性里没有这两项,每个数据目录只需要补一遍
 fn lens_after_id_path() -> PathBuf {
     PathBuf::from(&crate::application::ARGS.data_dir).join(".property_lens_after_id")
 }
 
-/// 补生成小预览图时,已经处理到的文件ID(每次启动后从头补一遍,处理失败的文件下次启动再重试)
-static PREVIEW_SMALL_AFTER_ID: std::sync::atomic::AtomicI64 = std::sync::atomic::AtomicI64::new(0);
+/// 补生成视频首帧图时,已经处理到的文件ID(每次启动后从头补一遍,处理失败的文件下次启动再重试)
+static PREVIEW_FRAME_AFTER_ID: std::sync::atomic::AtomicI64 = std::sync::atomic::AtomicI64::new(0);
 
 /// 标记是否正在处理文件(高级页面显示用)
 pub static IS_HANDLING: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
@@ -83,8 +80,8 @@ async fn handle_all() {
                 return;
             }
 
-            //没有新文件时,给已有的大图补生成小预览图,每次只处理一批,新上传的文件优先处理
-            if make_preview_small_todo().await {
+            //没有新文件时,给已有的视频补生成首帧图,每次只处理一批,新上传的文件优先处理
+            if make_preview_frame_todo().await {
                 continue;
             }
             if make_lens_todo().await {
@@ -128,36 +125,36 @@ async fn handle(file: &DfsFile) -> Result<(), String> {
     make_property(file, &path).await?;
     make_thumb(file, &path, &mut preview).await?;
     make_preview(file, &path, &mut preview).await?;
-    make_preview_small(file, &path, &mut preview).await?;
+    make_preview_frame(file, &path, &mut preview).await?;
     make_video(file, &path).await?;
     Ok(())
 }
 
-/// 给已有的大图补生成小预览图(一批)
+/// 给已有的视频补生成首帧图(一批)
 /// - return 是否还有需要处理的文件
-async fn make_preview_small_todo() -> bool {
+async fn make_preview_frame_todo() -> bool {
     use std::sync::atomic::Ordering;
-    let after_id = PREVIEW_SMALL_AFTER_ID.load(Ordering::Relaxed);
-    let exts = media::preview_small_exts().into_iter().map(String::from).collect();
-    let list = match dfs_file_dao::select_preview_small_todo(&mut lib_db::get_context(), after_id, PREVIEW_SMALL_MAX_SIZE as i64, exts).await {
+    let after_id = PREVIEW_FRAME_AFTER_ID.load(Ordering::Relaxed);
+    let exts = media::video_exts().into_iter().map(String::from).collect();
+    let list = match dfs_file_dao::select_preview_frame_todo(&mut lib_db::get_context(), after_id, exts).await {
         Ok(it) => it,
         Err(e) => {
-            eprintln!("-->获取需要补生成小预览图的文件失败: {}", e);
+            eprintln!("-->获取需要补生成首帧图的视频失败: {}", e);
             return false;
         }
     };
     let Some(last) = list.last() else {
         return false;
     };
-    PREVIEW_SMALL_AFTER_ID.store(last.id, Ordering::Relaxed);
+    PREVIEW_FRAME_AFTER_ID.store(last.id, Ordering::Relaxed);
     for file in list {
         let result = match storage_file_dao::select_one(&mut lib_db::get_context(), file.storageId).await {
-            Ok(storage) => make_preview_small(&file, Path::new(&storage.path), &mut None).await,
+            Ok(storage) => make_preview_frame(&file, Path::new(&storage.path), &mut None).await,
             Err(_) => Err(format!("本地存储文件:{}不存在", file.storageId)),
         };
         if let Err(e) = result {
             //补生成失败不影响文件状态,下次启动时再重试
-            eprintln!("-->文件:{}补生成小预览图失败: {}", file.id, e);
+            eprintln!("-->文件:{}补生成首帧图失败: {}", file.id, e);
         }
     }
     true
@@ -309,32 +306,21 @@ async fn add_lens(file: &DfsFile) -> Result<(), String> {
     db::commit(ctx).await.map_err(|e| e.to_string())
 }
 
-/// 生成小预览图,App浏览大图时先显示这个,不用下载原图
-/// 原图最大边不超过PREVIEW_SMALL_MAX_SIZE时不生成,直接显示原图
-async fn make_preview_small(file: &DfsFile, path: &Path, preview: &mut Option<Option<Vec<u8>>>) -> Result<(), String> {
-    if !media::need_preview_small(&file.ext) {
+/// 生成视频首帧图(和视频一样的尺寸),在线生成各种尺寸的缩略图时使用,不用每次都从视频里截取
+async fn make_preview_frame(file: &DfsFile, path: &Path, preview: &mut Option<Option<Vec<u8>>>) -> Result<(), String> {
+    if !media::is_video(&file.ext) {
         return Ok(());
     }
-    if reuse_extra(file, PREVIEW_SMALL_NAME).await? {
+    if reuse_extra(file, PREVIEW_FRAME_NAME).await? {
         return Ok(());
     }
     let Some(jpg) = get_preview(file, path, preview).await?.clone() else {
         return Ok(());
     };
-    let data = media::blocking(move || {
-        let info = image_util::get_info(&jpg)?;
-        if info.width.max(info.height) <= PREVIEW_SMALL_MAX_SIZE as i64 {
-            return Ok(None);
-        }
 
-        //缩放时会按照EXIF的方向信息将图片转正
-        image_util::resize(&jpg, PREVIEW_SMALL_MAX_SIZE, PREVIEW_SMALL_QUALITY).map(Some)
-    })
-    .await?;
-    let Some(data) = data else {
-        return Ok(());
-    };
-    add_extra_data(file, PREVIEW_SMALL_NAME, &data, "image/jpeg").await
+    //截取的图片质量很高(文件很大),重新压缩
+    let data = media::blocking(move || image_util::to_jpeg(&jpg, PREVIEW_FRAME_QUALITY)).await?;
+    add_extra_data(file, PREVIEW_FRAME_NAME, &data, "image/jpeg").await
 }
 
 /// 生成预览视频(转码成兼容性更好、文件更小的视频)

@@ -282,6 +282,15 @@ pub fn to_jpeg(data: &[u8], quality: u8) -> Result<Vec<u8>, String> {
     encode_jpeg(&decode(data)?, quality)
 }
 
+/// 获取图片的宽高(只读取文件头,不解码图片)
+pub fn dimensions(data: &[u8]) -> Result<(u32, u32), String> {
+    ImageReader::new(Cursor::new(data))
+        .with_guessed_format()
+        .map_err(|e| e.to_string())?
+        .into_dimensions()
+        .map_err(|e| e.to_string())
+}
+
 /// 按比例缩放图片,图片最大边不超过target_max_size
 pub fn resize(data: &[u8], target_max_size: u32, quality: u8) -> Result<Vec<u8>, String> {
     let img = decode(data)?;

@@ -212,11 +212,9 @@ limit 100;
 
 -- ------------------------------
 
--- 获取需要补生成小预览图的文件(按ID顺序分批获取)
--- 根据文件属性里的宽高判断是否大图,属性不是有效的JSON时跳过
--- @name select_preview_small_todo
+-- 获取需要补生成首帧图的视频(按ID顺序分批获取)
+-- @name select_preview_frame_todo
 -- @param after_id:i64
--- @param max_size:i64
 -- @param exts:List<String>
 -- @return List<DfsFile>
 select * from dfs_file
@@ -226,11 +224,10 @@ where id > :after_id
   and isHistory = 0
   and deleteDate is null
   and state = 1
-  and case when json_valid(property) then max(coalesce(json_extract(property, '$.width'), 0), coalesce(json_extract(property, '$.height'), 0)) else 0 end > :max_size
 -- @each exts seq="," open="and ext in (" close=")" item="ext"
 :ext
 -- @end
-  and not exists(select 1 from dfs_file as extraDf where extraDf.parentId = dfs_file.id and extraDf.isExtra = 1 and extraDf.name = 'preview-small')
+  and not exists(select 1 from dfs_file as extraDf where extraDf.parentId = dfs_file.id and extraDf.isExtra = 1 and extraDf.name = 'preview-frame')
 order by id limit 10;
 
 -- ------------------------------
