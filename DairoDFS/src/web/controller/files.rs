@@ -8,9 +8,10 @@ use crate::service::{dfs_file_service, file_handle_service};
 use crate::web::biz_error::BizError;
 use crate::web::filter::auth::LoginUser;
 use crate::{biz_error, biz_errorf, db};
-use hyper::HeaderMap;
+use hyper::{HeaderMap, StatusCode};
 use crate::util::media;
 use crate::util::media::image_util;
+use crate::util::request_util::{self, ByteRange};
 use hyperoute_core::{Ext, Raw, Stream};
 use hyperoute_macro::{DELETE, GET, POST, PUT};
 use std::collections::HashSet;
@@ -416,6 +417,7 @@ impl ThumbTarget {
 /// - max_size 最大边
 /// - width,height 按宽高裁剪
 /// - name 文件名,指定时以附件的方式下载
+/// 支持断点续传:不缓存生成的图片,每次都重新生成,只返回请求的那一段(同样的参数生成的图片完全一样)
 #[GET("/api/files/thumb_online/{id}")]
 pub async fn thumb_online(
     login: Ext<LoginUser>,
@@ -424,6 +426,7 @@ pub async fn thumb_online(
     width: Option<u32>,
     height: Option<u32>,
     name: Option<String>,
+    headers: &HeaderMap,
 ) -> Result<Raw, BizError> {
     let target = match (max_size, width, height) {
         (Some(max_size), _, _) if max_size > 0 => ThumbTarget::MaxSize(max_size),
@@ -473,8 +476,29 @@ pub async fn thumb_online(
     })
     .await
     .map_err(BizError::msg)?;
-    let mut raw = Raw::new(data)
+
+    //ETag按生成的图片计算,生成的结果变了(比如参数或编码器变了)ETag也会变
+    let etag = format!("\"{:x}\"", md5::compute(&data));
+    let size = data.len() as u64;
+    let mut raw = if request_util::not_modified(headers, &etag) {
+        Raw::new(Vec::new()).status(StatusCode::NOT_MODIFIED)
+    } else {
+        match request_util::byte_range(headers, size, &etag) {
+            ByteRange::Full => Raw::new(data),
+            ByteRange::Partial(start, end) => Raw::new(data[start as usize..=end as usize].to_vec())
+                .status(StatusCode::PARTIAL_CONTENT)
+                .header("content-range", format!("bytes {}-{}/{}", start, end, size)),
+            ByteRange::Unsatisfiable => {
+                return Ok(Raw::new(Vec::new())
+                    .status(StatusCode::RANGE_NOT_SATISFIABLE)
+                    .header("content-range", format!("bytes */{}", size)));
+            }
+        }
+    };
+    raw = raw
         .header("content-type", "image/jpeg")
+        .header("accept-ranges", "bytes")
+        .header("etag", etag)
         .header("cache-control", "private, max-age=31536000, immutable");
     if let Some(name) = name.filter(|it| !it.is_empty()) {
         raw = raw.header("content-disposition", hyperoute_core::content_disposition("attachment", &name));

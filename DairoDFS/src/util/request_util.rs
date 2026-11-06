@@ -56,3 +56,120 @@ pub fn token_cookie(token: &str) -> String {
 pub fn clear_token_cookie() -> String {
     format!("{}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0", TOKEN_COOKIE)
 }
+
+/// 请求的数据范围(Range请求头)
+#[derive(Debug, PartialEq)]
+pub enum ByteRange {
+
+    // 返回全部数据
+    Full,
+
+    // 返回其中一段,开始和结束位置都包含在内
+    Partial(u64, u64),
+
+    // 范围不合法(超过数据大小),返回416
+    Unsatisfiable,
+}
+
+/// 是否和客户端缓存的数据一致(If-None-Match),一致时返回304
+pub fn not_modified(headers: &HeaderMap, etag: &str) -> bool {
+    let Some(value) = headers.get("if-none-match").and_then(|it| it.to_str().ok()) else {
+        return false;
+    };
+    value.split(',').map(str::trim).any(|tag| tag == "*" || tag.strip_prefix("W/").unwrap_or(tag) == etag)
+}
+
+/// 获取请求的数据范围,支持断点续传
+/// If-Range和ETag不一致时(数据已经变了),返回全部数据;只支持单段,写法不认识或多段时忽略Range
+/// - size 数据大小
+/// - etag 数据的ETag(带引号)
+pub fn byte_range(headers: &HeaderMap, size: u64, etag: &str) -> ByteRange {
+    let Some(range) = headers.get("range").and_then(|it| it.to_str().ok()) else {
+        return ByteRange::Full;
+    };
+    if let Some(if_range) = headers.get("if-range").and_then(|it| it.to_str().ok()) {
+        //强比较,弱ETag和日期都不算一致
+        if if_range.trim() != etag {
+            return ByteRange::Full;
+        }
+    }
+    parse_range(range, size)
+}
+
+/// 解析Range: bytes=a-b / bytes=a- / bytes=-n
+fn parse_range(value: &str, size: u64) -> ByteRange {
+    let value = value.trim();
+    let Some(spec) = value.get(..6).filter(|it| it.eq_ignore_ascii_case("bytes=")).map(|_| &value[6..]) else {
+        return ByteRange::Full;
+    };
+    if spec.contains(',') {
+        return ByteRange::Full;
+    }
+    let Some((first, last)) = spec.trim().split_once('-') else {
+        return ByteRange::Full;
+    };
+    let (first, last) = (first.trim(), last.trim());
+    let is_digits = |it: &str| !it.is_empty() && it.bytes().all(|b| b.is_ascii_digit());
+    if first.is_empty() {
+        //最后n个字节
+        if !is_digits(last) {
+            return ByteRange::Full;
+        }
+        let n: u64 = last.parse().unwrap_or(u64::MAX);
+        if n == 0 || size == 0 {
+            return ByteRange::Unsatisfiable;
+        }
+        return ByteRange::Partial(size.saturating_sub(n), size - 1);
+    }
+    if !is_digits(first) || !(last.is_empty() || is_digits(last)) {
+        return ByteRange::Full;
+    }
+    let Ok(start) = first.parse::<u64>() else {
+        return ByteRange::Unsatisfiable;
+    };
+    let end = if last.is_empty() { u64::MAX } else { last.parse::<u64>().unwrap_or(u64::MAX) };
+    if end < start {
+        return ByteRange::Full;
+    }
+    if start >= size {
+        return ByteRange::Unsatisfiable;
+    }
+    ByteRange::Partial(start, end.min(size - 1))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn headers(list: &[(&'static str, &str)]) -> HeaderMap {
+        let mut map = HeaderMap::new();
+        for (name, value) in list {
+            map.insert(*name, value.parse().unwrap());
+        }
+        map
+    }
+
+    #[test]
+    fn range() {
+        let etag = "\"abc\"";
+        assert_eq!(byte_range(&headers(&[]), 1000, etag), ByteRange::Full);
+        assert_eq!(byte_range(&headers(&[("range", "bytes=0-99")]), 1000, etag), ByteRange::Partial(0, 99));
+        assert_eq!(byte_range(&headers(&[("range", "bytes=900-")]), 1000, etag), ByteRange::Partial(900, 999));
+        assert_eq!(byte_range(&headers(&[("range", "bytes=900-5000")]), 1000, etag), ByteRange::Partial(900, 999));
+        assert_eq!(byte_range(&headers(&[("range", "bytes=-100")]), 1000, etag), ByteRange::Partial(900, 999));
+        assert_eq!(byte_range(&headers(&[("range", "bytes=1000-")]), 1000, etag), ByteRange::Unsatisfiable);
+        assert_eq!(byte_range(&headers(&[("range", "bytes=0-1,5-9")]), 1000, etag), ByteRange::Full);
+        assert_eq!(byte_range(&headers(&[("range", "items=0-9")]), 1000, etag), ByteRange::Full);
+        assert_eq!(byte_range(&headers(&[("range", "bytes=9-0")]), 1000, etag), ByteRange::Full);
+
+        //If-Range一致时返回一段,不一致时返回全部
+        assert_eq!(byte_range(&headers(&[("range", "bytes=10-"), ("if-range", "\"abc\"")]), 1000, etag), ByteRange::Partial(10, 999));
+        assert_eq!(byte_range(&headers(&[("range", "bytes=10-"), ("if-range", "\"old\"")]), 1000, etag), ByteRange::Full);
+        assert_eq!(byte_range(&headers(&[("range", "bytes=10-"), ("if-range", "W/\"abc\"")]), 1000, etag), ByteRange::Full);
+        assert_eq!(byte_range(&headers(&[("range", "bytes=10-"), ("if-range", "Wed, 21 Oct 2026 07:28:00 GMT")]), 1000, etag), ByteRange::Full);
+
+        assert!(not_modified(&headers(&[("if-none-match", "\"abc\"")]), etag));
+        assert!(not_modified(&headers(&[("if-none-match", "W/\"abc\", \"x\"")]), etag));
+        assert!(!not_modified(&headers(&[("if-none-match", "\"old\"")]), etag));
+    }
+}
