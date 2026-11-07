@@ -1,6 +1,6 @@
 [package]
 name = "DairoDFS"
-version = "2.0.4"
+version = "2.0.5"
 edition = "2024"
 
 # build.rs 专用的依赖
@@ -66,3 +66,8 @@ cfb-mode = "0.8"
 
 #解压媒体处理工具安装包
 zip = { version = "9", default-features = false, features = ["deflate-flate2-zlib-rs"] }
+
+#内存分配器:用完的内存会还给系统,长期运行时常驻内存不会一直上涨(Linux默认的glibc分配器会一直占着不还)
+#固定版本:main.rs里按编号设置了mimalloc的选项,升级时要核对编号
+mimalloc = "=0.1.52"
+libmimalloc-sys = { version = "=0.1.49", features = ["extended"] }

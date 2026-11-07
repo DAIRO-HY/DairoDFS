@@ -1,6 +1,6 @@
 services:
   dairo-dfs:
-    image: dairopapa/dairo-dfs:2.0.0
+    image: dairopapa/dairo-dfs:2.0.4
     restart: always
     container_name: dairo-dfs
     network_mode: host
@@ -16,7 +16,7 @@ services:
       TZ: Asia/Shanghai
 
       #WEB端口,默认8031
-      #DAIRO_DFS_WEB_PORT: 8031
+      DAIRO_DFS_WEB_PORT: 8031
 
       #上传文件大小上限,默认10GB
       #HYPEROUTE_MAX_BODY_SIZE: 10GB

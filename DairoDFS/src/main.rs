@@ -8,6 +8,32 @@ mod system_config;
 mod util;
 mod web;
 
+/// 使用mimalloc分配内存,用完的内存会还给系统,所有平台都一样
+#[global_allocator]
+static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
+
+/// mimalloc默认1秒(大块内存10秒)之后才把用完的内存还给系统,生成大图时内存会一直很高,改为用完立即还
+/// 选项编号是mimalloc v3.3.2的(Cargo.toml里固定了版本),升级mimalloc时要核对 c_src/mimalloc/v3/include/mimalloc.h
+/// 第一次申请内存时mimalloc就会按当时的选项预留内存(在main之前),所以要在程序加载时设置,见INIT_MIMALLOC
+extern "C" fn init_mimalloc() {
+    const ARENA_EAGER_COMMIT: i32 = 4;
+    const PURGE_DELAY: i32 = 15;
+    const ARENA_PURGE_MULT: i32 = 24;
+    unsafe {
+        //预留的内存不预先提交,用到时才占用,否则还内存时不会真正还给系统
+        libmimalloc_sys::mi_option_set(ARENA_EAGER_COMMIT, 0);
+        libmimalloc_sys::mi_option_set(PURGE_DELAY, 0);
+        libmimalloc_sys::mi_option_set(ARENA_PURGE_MULT, 1);
+    }
+}
+
+/// 程序加载时(main之前、第一次申请内存之前)执行init_mimalloc
+#[used]
+#[cfg_attr(any(target_os = "linux", target_os = "android", target_os = "freebsd"), unsafe(link_section = ".init_array"))]
+#[cfg_attr(target_vendor = "apple", unsafe(link_section = "__DATA,__mod_init_func"))]
+#[cfg_attr(windows, unsafe(link_section = ".CRT$XCU"))]
+static INIT_MIMALLOC: extern "C" fn() = init_mimalloc;
+
 #[tokio::main]
 async fn main() -> tokio::io::Result<()> {
     println!("{:?}", *application::ARGS);
