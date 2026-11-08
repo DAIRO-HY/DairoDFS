@@ -178,6 +178,10 @@ pub async fn delete(login: Ext<LoginUser>, ids: Vec<i64>) -> Result<(), BizError
 /// - ids 选中的文件ID,选中多个时只统计数量和大小
 #[GET("/api/files/property")]
 pub async fn property(login: Ext<LoginUser>, ids: Vec<i64>) -> Result<model::FileProperty, BizError> {
+    //没有传ids时(比如参数名写成了id)提示错误,否则会被当成0个文件的合计返回空数据
+    if ids.is_empty() {
+        return Err(BizError::param("ids", "请选择文件"));
+    }
     let mut ctx = lib_db::get_context();
     let mut scope = Scope::load(&mut ctx, &login).await?;
     let mut out = model::FileProperty::default();
