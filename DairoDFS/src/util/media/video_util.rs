@@ -141,7 +141,21 @@ pub async fn to_jpg(path: &Path) -> Result<Vec<u8>, String> {
     }
 
     //先将HDR转SDR再截图，避免取出来的图片泛白
-    let temp_path = media::temp_file_path();
+    let mut temp = media::TempFile::new(HDR_FRAME_TEMP_SIZE);
+    let mut result = hdr_first_frame(path, temp.path()).await;
+    if result.is_err() && temp.is_ram_disk_full() {
+        //RAM硬盘空间不够,放在临时目录重新处理
+        temp = media::TempFile::disk();
+        result = hdr_first_frame(path, temp.path()).await;
+    }
+    result
+}
+
+/// HDR视频截图时转出来的1秒SDR视频最大可能的大小
+const HDR_FRAME_TEMP_SIZE: u64 = 64 * 1024 * 1024;
+
+/// HDR视频先截取1秒转成SDR保存到temp_path,再获取第一帧图片
+async fn hdr_first_frame(path: &Path, temp_path: &Path) -> Result<Vec<u8>, String> {
     let arg = TransferArgument {
         input: path,
         time: 1,
@@ -150,14 +164,10 @@ pub async fn to_jpg(path: &Path) -> Result<Vec<u8>, String> {
         fps: 1.0,
         crf: 18,
         delete_sound: true,
-        output: &temp_path,
+        output: temp_path,
     };
-    let result = match hdr_to_sdr(&arg).await {
-        Ok(_) => first_frame(&temp_path).await,
-        Err(e) => Err(e),
-    };
-    let _ = tokio::fs::remove_file(&temp_path).await;
-    result
+    hdr_to_sdr(&arg).await?;
+    first_frame(temp_path).await
 }
 
 /// 截取视频第一帧

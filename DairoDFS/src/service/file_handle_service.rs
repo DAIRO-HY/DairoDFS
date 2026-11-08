@@ -333,23 +333,29 @@ async fn make_video(file: &DfsFile, path: &Path) -> Result<(), String> {
     if reuse_extra(file, extra_name).await? {
         return Ok(());
     }
-    let mut dlive_video_path = None;
+    let mut _dlive_video = None;
     let input = if is_dlive {
         //实况照片先将视频保存到临时文件
         let data = tokio::fs::read(path).await.map_err(|e| e.to_string())?;
-        let temp_path = media::temp_file_path();
-        tokio::fs::write(&temp_path, DliveInfo::parse(&data)?.video_data).await.map_err(|e| e.to_string())?;
-        dlive_video_path = Some(temp_path.clone());
+        let video_data = DliveInfo::parse(&data)?.video_data;
+        let temp = media::TempFile::new(video_data.len() as u64);
+        tokio::fs::write(temp.path(), video_data).await.map_err(|e| e.to_string())?;
+        let temp_path = temp.path().to_path_buf();
+        _dlive_video = Some(temp);
         temp_path
     } else {
         path.to_path_buf()
     };
-    let output = media::temp_file_path();
-    let result = transfer_video(file, &input, &output, extra_name).await;
-    if let Some(it) = dlive_video_path {
-        let _ = tokio::fs::remove_file(it).await;
+
+    //只有视频比目标尺寸大时才转码,转码后的视频比原视频小,按原视频的大小分配临时文件
+    let input_size = tokio::fs::metadata(&input).await.map_err(|e| e.to_string())?.len();
+    let mut output = media::TempFile::new(input_size);
+    let mut result = transfer_video(file, &input, output.path(), extra_name).await;
+    if result.is_err() && output.is_ram_disk_full() {
+        //转码后的视频比预计的大,RAM硬盘空间不够,放在临时目录重新转码
+        output = media::TempFile::disk();
+        result = transfer_video(file, &input, output.path(), extra_name).await;
     }
-    let _ = tokio::fs::remove_file(&output).await;
     result
 }
 

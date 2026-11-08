@@ -6,12 +6,14 @@ use sqlx_context::DbContext;
 
 /// 添加一个用户,同时为用户创建一个根目录
 /// - pwd 已经做过MD5的密码
+/// - handle_file 是否处理上传的文件 0:不处理 1:处理
 pub async fn add(
     ctx: &mut DbContext,
     name: String,
     pwd: String,
     email: Option<String>,
     state: i64,
+    handle_file: i64,
 ) -> Result<i64, sqlx::Error> {
     let user = User {
         id: id_util::id(),
@@ -20,6 +22,7 @@ pub async fn add(
         email,
         state,
         date: time_util::current_millis(),
+        handleFile: handle_file,
         ..Default::default()
     };
     user_dao::insert(&mut *ctx, &user).await?;
@@ -53,6 +56,9 @@ pub async fn add_sub(
         date: time_util::current_millis(),
         parentId: parent_id,
         nickname,
+
+        //子账户上传的文件属于主账户,按主账户的设置处理,这里只是保持和默认值一致
+        handleFile: 1,
         ..Default::default()
     };
     user_dao::insert(&mut *ctx, &user).await?;

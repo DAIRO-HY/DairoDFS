@@ -23,3 +23,10 @@ services:
     volumes:
       - ./data:/app/data
       - /mnt/data-dfs-640G/dfs-home:/mnt/dfs-data
+
+    #创建一个虚拟的RAM硬盘，降低磁盘读写开销，根据实际情况调整大小。
+    #用作处理图片、视频时的临时文件交换，用完立即删除，不会长时间占用。
+    #文件的大小能确定比剩余空间小时才放在RAM硬盘（例如原视频比剩余空间小时，转码后的视频先放在RAM硬盘，转完再移到存储目录），否则放在硬盘上。
+    #目录可以通过环境变量DAIRO_DFS_RAM_DISK修改，默认/mnt/dfs-ramdisk，不配置时临时文件都放在硬盘上。
+    tmpfs:
+      - /mnt/dfs-ramdisk:size=512M

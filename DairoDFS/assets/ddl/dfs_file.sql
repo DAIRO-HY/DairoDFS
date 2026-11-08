@@ -14,7 +14,7 @@ CREATE TABLE dfs_file
     isExtra     INTEGER                        NOT NULL DEFAULT 0, -- 是否附属文件，比如视频的标清文件，高清文件，PSD图片的预览图片，cr3的预览图片等
     isHistory   INTEGER                        NOT NULL DEFAULT 0, -- 是否历史版本(文件专用),1:历史版本 0:当前版本
     deleteDate  INT8                        NULL,               -- 删除日期
-    state       INTEGER                        NOT NULL DEFAULT 0, -- 文件处理状态，0：待处理 1：处理完成 2：处理出错，比如视频文件，需要转码；图片需要获取尺寸等信息
+    state       INTEGER                        NOT NULL DEFAULT 0, -- 文件处理状态，0：待处理 1：处理完成 2：处理出错 3：不处理(用户设置了不处理上传的文件)，比如视频文件，需要转码；图片需要获取尺寸等信息
     stateMsg    TEXT                        NULL,               -- 文件处理出错信息
     creatorId   INT8                        NULL                -- 上传者的用户ID(子账户上传时),为空表示所属用户本人
 );

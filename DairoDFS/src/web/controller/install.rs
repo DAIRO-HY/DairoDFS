@@ -84,7 +84,7 @@ pub async fn create_admin(form: form::CreateAdmin) -> Result<(), BizError> {
     if user_dao::count(&mut ctx).await? > 0 {
         return Err(biz_error!("管理员已经存在,不允许重复创建"));
     }
-    user_service::add(&mut ctx, form.name, form.pwd.md5(), None, 1).await?;
+    user_service::add(&mut ctx, form.name, form.pwd.md5(), None, 1, 1).await?;
     db::commit(ctx).await?;
     Ok(())
 }

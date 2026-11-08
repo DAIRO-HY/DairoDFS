@@ -81,6 +81,9 @@ pub struct UserEdit {
 
     // 用户状态 0:禁用 1:正常
     pub state: i64,
+
+    // 是否处理上传的文件 0:不处理 1:处理
+    pub handle_file: Option<i64>,
 }
 
 /// 修改密码

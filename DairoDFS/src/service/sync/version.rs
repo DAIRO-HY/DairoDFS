@@ -52,13 +52,14 @@ pub const GROUPS: [(&str, &[(&str, &[&str])]); 3] = [
             ("state", &["state"]),
             ("nickname", &["nickname"]),
             ("avatar", &["avatar"]),
+            ("handleFile", &["handleFile"]),
         ],
     ),
     ("sub_account_grant", &[("perms", &["perms"])]),
 ];
 
 /// 登记的修改语句
-pub const STMTS: [Stmt; 16] = [
+pub const STMTS: [Stmt; 17] = [
     Stmt { sql: "update dfs_file set isHistory = 1 where id = ?;", table: "dfs_file", id: 0, columns: &[("isHistory", None)] },
     Stmt { sql: "update dfs_file set deleteDate = ? where id = ?;", table: "dfs_file", id: 1, columns: &[("deleteDate", Some(0))] },
     Stmt {
@@ -104,6 +105,7 @@ pub const STMTS: [Stmt; 16] = [
     Stmt { sql: "update user set pwd = ? where id = ?;", table: "user", id: 1, columns: &[("pwd", Some(0))] },
     Stmt { sql: "update user set nickname = ? where id = ?;", table: "user", id: 1, columns: &[("nickname", Some(0))] },
     Stmt { sql: "update user set avatar = ? where id = ?;", table: "user", id: 1, columns: &[("avatar", Some(0))] },
+    Stmt { sql: "update user set handleFile = ? where id = ?;", table: "user", id: 1, columns: &[("handleFile", Some(0))] },
     Stmt { sql: "update sub_account_grant set perms = ? where id = ?;", table: "sub_account_grant", id: 1, columns: &[("perms", Some(0))] },
 ];
 

@@ -1,9 +1,15 @@
-use crate::dao::dfs_file_dao;
+use crate::dao::{dfs_file_dao, user_dao};
 use crate::dao::dfs_file_dao::DfsFile;
 use crate::util::{file_util, id_util, time_util};
 use crate::web::biz_error::BizError;
 use crate::{biz_error, biz_errorf};
 use sqlx_context::DbContext;
+
+/// 文件处理状态:不处理(用户设置了不处理上传的文件)
+const STATE_NOT_HANDLE: i64 = 3;
+
+/// 用户设置了不处理上传的文件时,文件的处理状态说明
+const NOT_HANDLE_MSG: &str = "未处理:用户设置了不处理上传的文件";
 
 /// 获取自己的文件,文件不存在或者不属于该用户时返回错误
 pub async fn select_own(ctx: &mut DbContext, user_id: i64, id: i64) -> Result<DfsFile, BizError> {
@@ -145,6 +151,11 @@ pub async fn add_file(ctx: &mut DbContext, mut file: DfsFile, is_over_write: boo
         dfs_file_dao::set_history(&mut *ctx, exists.id).await?;
     }
     check_storage(ctx, file.storageId).await?;
+    if user_dao::select_one(&mut *ctx, file.userId).await.is_ok_and(|it| it.handleFile == 0) {
+        //用户设置了不处理上传的文件:不生成属性、缩略图、预览图,不转码;之后改为处理,也不会补处理这些文件
+        file.state = STATE_NOT_HANDLE;
+        file.stateMsg = Some(NOT_HANDLE_MSG.to_string());
+    }
     file.id = id_util::id();
     file.date = time_util::current_millis();
     file.ext = file_util::file_ext(&file.name);

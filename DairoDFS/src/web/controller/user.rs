@@ -32,6 +32,7 @@ pub async fn detail(id: i64) -> Result<model::UserDetail, BizError> {
         //新增用户
         return Ok(model::UserDetail {
             state: 1,
+            handle_file: 1,
             ..Default::default()
         });
     }
@@ -48,6 +49,7 @@ pub async fn detail(id: i64) -> Result<model::UserDetail, BizError> {
         email: user.email.unwrap_or_default(),
         state: user.state,
         date: user.date.date_format(),
+        handle_file: user.handleFile,
     })
 }
 
@@ -62,6 +64,11 @@ pub async fn edit(mut form: form::UserEdit) -> Result<(), BizError> {
     }
     if form.state != 0 && form.state != 1 {
         return Err(BizError::field("state", "用户状态不正确"));
+    }
+
+    //老版本的页面没有这一项,没有传时新增的用户默认处理,已有的用户不修改
+    if form.handle_file.is_some_and(|it| it != 0 && it != 1) {
+        return Err(BizError::field("handleFile", "是否处理上传的文件设置不正确"));
     }
     let mut ctx = db::begin().await?;
     if let Some(it) = user_dao::select_by_name(&mut ctx, form.name.clone()).await? {
@@ -80,7 +87,7 @@ pub async fn edit(mut form: form::UserEdit) -> Result<(), BizError> {
         let Some(pwd) = form.pwd else {
             return Err(BizError::field("pwd", "密码必填"));
         };
-        user_service::add(&mut ctx, form.name, pwd.md5(), form.email, form.state).await?;
+        user_service::add(&mut ctx, form.name, pwd.md5(), form.email, form.state, form.handle_file.unwrap_or(1)).await?;
     } else {
         if !user_dao::select_one(&mut ctx, form.id).await.is_ok_and(|it| it.parentId == 0) {
             return Err(biz_error!("用户不存在"));
@@ -92,6 +99,9 @@ pub async fn edit(mut form: form::UserEdit) -> Result<(), BizError> {
         if let Some(pwd) = form.pwd {
             //填写了密码时才修改密码
             user_dao::set_pwd(&mut ctx, form.id, pwd.md5()).await?;
+        }
+        if let Some(handle_file) = form.handle_file {
+            user_dao::set_handle_file(&mut ctx, form.id, handle_file).await?;
         }
     }
     db::commit(ctx).await?;
@@ -139,5 +149,8 @@ pub mod model {
 
         // 创建日期
         pub date: String,
+
+        // 是否处理上传的文件 0:不处理 1:处理
+        pub handle_file: i64,
     }
 }

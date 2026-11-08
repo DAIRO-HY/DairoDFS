@@ -50,6 +50,7 @@ async fn main() -> tokio::io::Result<()> {
         std::process::exit(1);
     }
     hyperoute_core::set_upload_temp_dir(application::TEMP_PATH.as_path());
+    util::media::print_ram_disk();
 
     //没有通过环境变量设置请求体大小上限时,默认最大允许上传10GB的文件
     if std::env::var_os("HYPEROUTE_MAX_BODY_SIZE").is_none() {

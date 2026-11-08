@@ -145,3 +145,11 @@ update user set nickname = :nickname where id = :id;
 -- @param id:i64
 -- @param avatar:String?
 update user set avatar = :avatar where id = :id;
+
+-- ------------------------------
+
+-- 设置是否处理上传的文件
+-- @name set_handle_file
+-- @param id:i64
+-- @param handle_file:i64
+update user set handleFile = :handle_file where id = :id;

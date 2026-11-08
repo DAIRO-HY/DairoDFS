@@ -155,7 +155,7 @@
      */
     function onClearPropertyClick() {
         if (confirm("重置文件属性")) {
-            $("#sql").val("update dfs_file set property = null,state = 0 where storageId > 0 and isExtra = 0")
+            $("#sql").val("update dfs_file set property = null,state = 0 where storageId > 0 and isExtra = 0 and state != 3")
             onExecClick()
         }
     }
@@ -175,7 +175,7 @@
      */
     function onDeleteThumbClick() {
         if (confirm("确定要重新生成缩略图片")) {
-            $("#sql").val("delete from dfs_file where isExtra = 1 and name = 'thumb';update dfs_file set state = 0 where storageId > 0 and isExtra = 0")
+            $("#sql").val("delete from dfs_file where isExtra = 1 and name = 'thumb';update dfs_file set state = 0 where storageId > 0 and isExtra = 0 and state != 3")
             onExecClick()
         }
     }
@@ -185,7 +185,7 @@
      */
     function onDeletePreviewClick() {
         if (confirm("确定要重新生成预览图片")) {
-            $("#sql").val("delete from dfs_file where isExtra = 1 and name = 'preview';update dfs_file set state = 0 where storageId > 0 and isExtra = 0")
+            $("#sql").val("delete from dfs_file where isExtra = 1 and name = 'preview';update dfs_file set state = 0 where storageId > 0 and isExtra = 0 and state != 3")
             onExecClick()
         }
     }
@@ -195,7 +195,7 @@
      */
     function onDeletePreVideoClick() {
         if (confirm("重新生成预览视频")) {
-            $("#sql").val("delete from dfs_file where isExtra = 1 and name = 'preview' and contentType = 'video/mp4';update dfs_file set state = 0 where storageId > 0 and isExtra = 0")
+            $("#sql").val("delete from dfs_file where isExtra = 1 and name = 'preview' and contentType = 'video/mp4';update dfs_file set state = 0 where storageId > 0 and isExtra = 0 and state != 3")
             onExecClick()
         }
     }
@@ -205,7 +205,7 @@
      */
     function onDeleteExtraClick() {
         if (confirm("重置附属文件?")) {
-            $("#sql").val("delete from dfs_file where isExtra = 1;update dfs_file set state = 0 where storageId > 0 and isExtra = 0")
+            $("#sql").val("delete from dfs_file where isExtra = 1;update dfs_file set state = 0 where storageId > 0 and isExtra = 0 and state != 3")
             onExecClick()
         }
     }

@@ -12,5 +12,6 @@ CREATE TABLE user
     date          INT8             NOT NULL, -- 创建日期
     parentId      INT8             NOT NULL default 0, -- 所属主账户ID,0表示主账户
     nickname      VARCHAR(32), -- 昵称
-    avatar        CHAR(32) -- 头像图片的MD5
+    avatar        CHAR(32), -- 头像图片的MD5
+    handleFile    INTEGER          NOT NULL default 1 -- 是否处理上传的文件(生成缩略图、预览图、转码等) 0:不处理 1:处理
 );

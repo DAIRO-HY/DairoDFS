@@ -105,7 +105,7 @@ fn select_driver_folder(size: u64) -> Result<PathBuf, BizError> {
 /// 将数据存放到存储目录
 pub async fn save_data(data: &[u8]) -> Result<StorageFile, BizError> {
     let md5 = format!("{:x}", md5::compute(data));
-    let temp_path = crate::util::media::temp_file_path();
-    tokio::fs::write(&temp_path, data).await?;
-    save(&temp_path, &md5).await
+    let temp = crate::util::media::TempFile::new(data.len() as u64);
+    tokio::fs::write(temp.path(), data).await?;
+    save(temp.path(), &md5).await
 }

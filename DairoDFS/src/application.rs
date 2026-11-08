@@ -51,6 +51,10 @@ pub struct Argument {
     #[arg(long, env = "DAIRO_DFS_DATA_DIR", default_value = DEFAULT_DATA_DIR)]
     pub data_dir: String,
 
+    /// RAM硬盘目录(Docker里用tmpfs挂载),目录存在时处理图片、视频的中间文件优先放在这里,降低磁盘读写开销
+    #[arg(long, env = "DAIRO_DFS_RAM_DISK", default_value = "/mnt/dfs-ramdisk")]
+    pub ram_disk: String,
+
     /// 老版本的日志参数,已经不再使用,保留是为了老版本的启动脚本还能正常启动
     #[arg(long, hide = true)]
     pub log_out_type: Option<String>,

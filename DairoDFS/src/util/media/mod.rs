@@ -5,6 +5,7 @@ pub mod video_util;
 use crate::application;
 use crate::util::shell_util;
 use std::path::{Path, PathBuf};
+use std::sync::Mutex;
 use std::sync::atomic::{AtomicU64, Ordering};
 
 /// 可以直接解码的图片
@@ -189,11 +190,80 @@ impl<'a> DliveInfo<'a> {
     }
 }
 
-/// 生成一个临时文件路径
-pub fn temp_file_path() -> PathBuf {
-    static NO: AtomicU64 = AtomicU64::new(0);
-    let no = NO.fetch_add(1, Ordering::Relaxed);
-    application::TEMP_PATH.join(format!("media-{}-{}", crate::util::time_util::current_micros(), no))
+/// RAM硬盘至少要保留的剩余空间,剩余空间比这个小时认为RAM硬盘已经写满
+const RAM_DISK_KEEP: u64 = 4 * 1024 * 1024;
+
+/// RAM硬盘上已经分配出去的空间(正在使用的临时文件按可能的最大大小计算)
+static RAM_DISK_RESERVED: Mutex<u64> = Mutex::new(0);
+
+/// 处理图片、视频时使用的临时文件,离开作用域时自动删除
+/// 能确定文件最大可能的大小时,RAM硬盘剩余空间足够就放在RAM硬盘,降低磁盘读写开销;否则放在临时目录
+pub struct TempFile {
+    path: PathBuf,
+
+    // 在RAM硬盘上分配的空间,不在RAM硬盘上时为0
+    ram_size: u64,
+}
+
+impl TempFile {
+    /// - max_size 文件最大可能的大小
+    pub fn new(max_size: u64) -> Self {
+        let ram_disk = Path::new(&application::ARGS.ram_disk);
+        if ram_disk.is_dir() {
+            let mut reserved = RAM_DISK_RESERVED.lock().unwrap();
+
+            //可用空间里已经扣掉了正在使用的临时文件已经写入的部分,再减去分配出去的空间,只会偏少不会偏多
+            let fits = fs4::available_space(ram_disk)
+                .is_ok_and(|it| it >= *reserved + max_size.max(1) + RAM_DISK_KEEP);
+            if fits {
+                *reserved += max_size.max(1);
+                return Self { path: Self::make_path(ram_disk), ram_size: max_size.max(1) };
+            }
+        }
+        Self::disk()
+    }
+
+    /// 放在临时目录(不确定文件大小时使用)
+    pub fn disk() -> Self {
+        Self { path: Self::make_path(&application::TEMP_PATH), ram_size: 0 }
+    }
+
+    fn make_path(folder: &Path) -> PathBuf {
+        static NO: AtomicU64 = AtomicU64::new(0);
+        let no = NO.fetch_add(1, Ordering::Relaxed);
+        folder.join(format!("media-{}-{}", crate::util::time_util::current_micros(), no))
+    }
+
+    pub fn path(&self) -> &Path {
+        &self.path
+    }
+
+    /// 文件在RAM硬盘上,并且RAM硬盘已经写满
+    /// 预估的大小不准时可能会写满,处理失败时用这个判断是否需要放在临时目录重新处理
+    pub fn is_ram_disk_full(&self) -> bool {
+        self.ram_size > 0
+            && fs4::available_space(&application::ARGS.ram_disk).is_ok_and(|it| it < RAM_DISK_KEEP)
+    }
+}
+
+impl Drop for TempFile {
+    fn drop(&mut self) {
+        let _ = std::fs::remove_file(&self.path);
+        if self.ram_size > 0 {
+            *RAM_DISK_RESERVED.lock().unwrap() -= self.ram_size;
+        }
+    }
+}
+
+/// 启动时显示RAM硬盘的信息
+pub fn print_ram_disk() {
+    let ram_disk = &application::ARGS.ram_disk;
+    if !Path::new(ram_disk).is_dir() {
+        println!("RAM硬盘:{}不存在,临时文件放在{}", ram_disk, application::TEMP_PATH.display());
+        return;
+    }
+    let total = fs4::total_space(ram_disk).unwrap_or(0);
+    println!("RAM硬盘:{} 大小:{}MB", ram_disk, total / 1024 / 1024);
 }
 
 /// 在阻塞线程里执行耗CPU的图片处理

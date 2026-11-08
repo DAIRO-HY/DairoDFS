@@ -37,6 +37,16 @@
             </div>
         </div>
         <div class="row mt-2">
+            <label class="col-2 col-form-label text-end">上传的文件</label>
+            <div class="col-10">
+                <select class="form-select w-auto" name="handleFile">
+                    <option value="1">处理</option>
+                    <option value="0">不处理</option>
+                </select>
+                <div class="form-text">处理:生成缩略图、预览图,视频转码等。不处理:只存储文件,适合其他程序使用的账号。修改后只对之后上传的文件生效。</div>
+            </div>
+        </div>
+        <div class="row mt-2">
             <label class="col-2 col-form-label text-end">创建日期</label>
             <div class="col-10">
                 <input class="form-control" name="date" style="max-width: 170px" autocomplete="off" disabled>

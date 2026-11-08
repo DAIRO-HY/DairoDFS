@@ -12,7 +12,7 @@ use std::time::Duration;
 struct Assets;
 
 // VERSION 数据库版本号
-const VERSION: i32 = 5;
+const VERSION: i32 = 6;
 
 /// 数据库文件名
 pub const DB_FILE_NAME: &str = "dairo-dfs2.sqlite";
@@ -55,6 +55,9 @@ alter table sql_log add seq INT8 NOT NULL default 0;
 update sql_log set seq = rowid;
 CREATE UNIQUE INDEX index_seq ON sql_log (seq);
 ";
+
+/// 版本5升级到版本6:用户可以设置不处理上传的文件
+const UPGRADE_V6: &str = "alter table user add handleFile INTEGER NOT NULL default 1;";
 
 /// 需要从老库迁移数据的表(sql_log是Go版的同步日志,新版不再使用,不迁移)
 const MIGRATE_TABLES: [&str; 6] = [
@@ -178,6 +181,15 @@ async fn upgrade() -> Result<(), Box<dyn Error>> {
             execute_sql_file(&mut tx, "sync_version.sql").await?;
             execute_sql_file(&mut tx, "sync_alias.sql").await?;
             tx.commit().await?;
+        }
+        if version < 6 {
+            //版本6:用户可以设置不处理上传的文件(字段已经存在时不再添加,避免升级中断后重复执行时失败)
+            let exists: i64 = sqlx::query_scalar("select count(*) from pragma_table_info('user') where name = 'handleFile'")
+                .fetch_one(&mut *conn)
+                .await?;
+            if exists == 0 {
+                sqlx::raw_sql(UPGRADE_V6).execute(&mut *conn).await?;
+            }
         }
     }
 

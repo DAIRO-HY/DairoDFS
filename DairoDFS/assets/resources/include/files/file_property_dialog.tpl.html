@@ -74,7 +74,7 @@
         $.ajaxByData("/api/files/property").add("ids", ids).success(data => {
             filePropertyData = data
             if (data.isFile) {//文件的处理状态(生成缩略图等)
-                data.stateText = ["待处理", "处理完成", "处理出错"][data.state] + (data.stateMsg ? `(${data.stateMsg})` : "")
+                data.stateText = ["待处理", "处理完成", "处理出错", "不处理"][data.state] + (data.stateMsg ? `(${data.stateMsg})` : "")
             }
             $("#modalFileProperty [field]").each((_, obj) => {
                 const $obj = $(obj)
