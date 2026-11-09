@@ -153,6 +153,11 @@ pub(crate) struct Uploads {
 }
 
 impl Uploads {
+    /// 正在上传的任务数
+    pub fn running_count(&self) -> usize {
+        self.running.lock().unwrap().len()
+    }
+
     pub fn account(&self) -> Option<Account> {
         self.account.lock().unwrap().clone()
     }

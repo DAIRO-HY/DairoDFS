@@ -7,6 +7,7 @@
 mod access;
 mod cleaner;
 mod config;
+mod debug;
 mod download;
 mod error;
 mod event;
@@ -20,6 +21,7 @@ mod server;
 mod upload;
 
 pub use config::Config;
+pub use debug::{DebugEvent, DebugInfo, SelfCheckResult};
 pub use error::{SdkError, SdkResult};
 pub use event::{DownloadState, Event, EventListener, UploadState};
 pub use manage::{CacheInfo, CacheQuery, GroupStats};
@@ -65,6 +67,16 @@ impl FetchTask {
     }
 }
 
+/// 本地文件或者本机HTTP地址
+#[derive(Debug, Clone, PartialEq)]
+pub enum LocalSource {
+    /// 已经下载完成的缓存文件路径,直接读取文件
+    File(String),
+
+    /// 本机HTTP访问地址
+    Http(String),
+}
+
 /// 存入缓存的数据
 pub enum PutSource {
     /// 复制一个本地文件
@@ -86,6 +98,12 @@ pub(crate) struct Inner {
     pub cleaner: cleaner::Cleaner,
     pub uploads: upload::Uploads,
     pub rt: Handle,
+
+    /// 调试用的运行状态统计
+    pub stats: debug::Stats,
+
+    /// SDK启动时间(毫秒)
+    pub start_time: i64,
 }
 
 impl Inner {
@@ -128,6 +146,8 @@ impl FileSdk {
             cleaner: cleaner::Cleaner::default(),
             uploads: upload::Uploads::default(),
             rt: runtime.handle().clone(),
+            stats: debug::Stats::default(),
+            start_time: now_millis(),
         });
         init(&inner)?;
         Ok(Self { inner, runtime: Some(runtime) })
@@ -244,6 +264,15 @@ impl FileSdk {
         self.inner.server.local_url(&self.inner, url, options)
     }
 
+    /// 已经下载完成时返回缓存文件路径(同时记录访问时间),否则返回无状态的本机HTTP访问地址
+    /// 正在下载、没有下载完成的文件返回本机HTTP访问地址,不会返回不完整的文件
+    pub fn local_source(&self, url: &str, options: &Options) -> SdkResult<LocalSource> {
+        if let Some(path) = self.cached_path(url, options)? {
+            return Ok(LocalSource::File(path));
+        }
+        Ok(LocalSource::Http(self.local_url(url, options)?))
+    }
+
     /// 本机HTTP访问地址的前缀,平台可以用它自己拼接无状态地址
     pub fn local_base(&self) -> SdkResult<String> {
         self.inner.server.base(&self.inner)
@@ -257,7 +286,61 @@ impl FileSdk {
 
     /// 停止本机HTTP服务,下次访问时会自动启动
     pub fn stop_server(&self) {
-        self.inner.server.stop();
+        self.inner.server.stop(&self.inner, "调用stopServer停止");
+    }
+
+    /// 强制重启本机HTTP服务(调试用),不管服务是否正常都先停止再重新监听,返回监听的端口
+    /// 优先使用原来的端口,原来的端口无法使用时随机选一个(之前的地址会失效),已经建立的连接不受影响
+    pub fn restart_server(&self) -> SdkResult<u16> {
+        self.inner.server.restart(&self.inner)
+    }
+
+    /// 自检(调试用):SDK自己向本机HTTP服务发送一个ping请求,检查服务是否真的能响应
+    /// 只检查不修复,服务没有运行时不会自动启动;最多阻塞3秒多,不要在主线程调用
+    pub fn self_check(&self) -> SelfCheckResult {
+        self.inner.server.self_check(&self.inner)
+    }
+
+    /// 自检,在单独的线程里执行,不占用SDK的运行时
+    pub async fn self_check_async(&self) -> SelfCheckResult {
+        let inner = self.inner.clone();
+        let (tx, rx) = tokio::sync::oneshot::channel();
+        std::thread::spawn(move || {
+            let _ = tx.send(inner.server.self_check(&inner));
+        });
+        rx.await.unwrap_or_default()
+    }
+
+    /// 运行状态(调试用),统计从本次SDK启动开始
+    pub fn debug_info(&self) -> DebugInfo {
+        let inner = &self.inner;
+        let stats = &inner.stats;
+        let get = debug::Stats::get;
+        let (port, server_start_time) = inner.server.running_info();
+        DebugInfo {
+            sdk_start_time: inner.start_time,
+            server_running: port.is_some(),
+            server_port: port,
+            server_start_time,
+            server_start_count: get(&stats.server_start_count),
+            server_restart_count: get(&stats.server_restart_count),
+            server_request_count: get(&stats.server_request_count),
+            server_connection_count: get(&stats.server_connection_count),
+            server_bytes_sent: get(&stats.server_bytes_sent),
+            server_status_2xx: get(&stats.server_status_2xx),
+            server_status_4xx: get(&stats.server_status_4xx),
+            server_status_5xx: get(&stats.server_status_5xx),
+            server_status_other: get(&stats.server_status_other),
+            accept_error_count: get(&stats.accept_error_count),
+            last_accept_error: stats.last_accept_error.lock().unwrap().clone(),
+            net_request_count: get(&stats.net_request_count),
+            net_error_count: get(&stats.net_error_count),
+            net_bytes_received: get(&stats.net_bytes_received),
+            net_bytes_sent: get(&stats.net_bytes_sent),
+            downloading_count: inner.downloads.task_count() as u64,
+            uploading_count: inner.uploads.running_count() as u64,
+            events: stats.events(),
+        }
     }
 
     /// 把内存中记录的访问时间写入数据库,App进入后台时调用
@@ -269,7 +352,7 @@ impl FileSdk {
 impl Drop for FileSdk {
     fn drop(&mut self) {
         self.flush();
-        self.inner.server.stop();
+        self.inner.server.stop(&self.inner, "SDK关闭");
         self.inner.events.close();
         if let Some(runtime) = self.runtime.take() {
             runtime.shutdown_background();

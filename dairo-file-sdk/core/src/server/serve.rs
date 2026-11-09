@@ -288,6 +288,14 @@ pub fn text(status: StatusCode, msg: &str) -> Response<Body> {
         .unwrap()
 }
 
+pub fn json(body: String) -> Response<Body> {
+    Response::builder()
+        .header("content-type", "application/json; charset=utf-8")
+        .header("cache-control", "no-store")
+        .body(Full::new(Bytes::from(body)).map_err(|e| match e {}).boxed())
+        .unwrap()
+}
+
 fn empty() -> Body {
     Empty::new().map_err(|e| match e {}).boxed()
 }

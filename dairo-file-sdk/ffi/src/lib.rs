@@ -84,12 +84,20 @@ impl FileSdk {
         Ok(self.0.local_url(&url, &options.into())?)
     }
 
+    /// 已经下载完成时返回缓存文件路径(同时记录访问时间),否则返回无状态的本机HTTP访问地址
+    /// 正在下载、没有下载完成的文件返回本机HTTP访问地址,不会返回不完整的文件
+    /// 适合列表里大量的缩略图:已经缓存的直接读取文件,不经过本机HTTP
+    pub fn local_source(&self, url: String, options: Options) -> Result<LocalSource> {
+        Ok(self.0.local_source(&url, &options.into())?.into())
+    }
+
     /// 本机HTTP访问地址的前缀
     pub fn local_base(&self) -> Result<String> {
         Ok(self.0.local_base()?)
     }
 
     /// 检查本机HTTP服务,不能访问时重新启动,返回监听的端口(iOS从后台回到前台时调用)
+    /// 生成本机地址(open、localUrl、localSource)时每2秒也会自动检查一次
     pub fn check_server(&self) -> Result<u16> {
         Ok(self.0.check_server()?)
     }
@@ -97,6 +105,26 @@ impl FileSdk {
     /// 停止本机HTTP服务,下次访问时会自动启动
     pub fn stop_server(&self) {
         self.0.stop_server();
+    }
+
+    /*----------------------------------------调试----------------------------------------*/
+
+    /// 强制重启本机HTTP服务(调试用),不管服务是否正常都先停止再重新监听,返回监听的端口
+    /// 优先使用原来的端口,原来的端口无法使用时随机选一个(之前的地址会失效),最多等待1秒
+    pub fn restart_server(&self) -> Result<u16> {
+        Ok(self.0.restart_server()?)
+    }
+
+    /// 自检(调试用):SDK自己向本机HTTP服务发送ping请求,检查服务是否真的能响应,最多3秒多
+    /// 只检查不修复,服务没有运行时不会自动启动
+    pub async fn self_check(&self) -> SelfCheckResult {
+        self.0.self_check_async().await.into()
+    }
+
+    /// 运行状态(调试用),统计从本次SDK启动开始
+    /// App自己检查服务时可以请求 localBase() + "/ping",正常时返回200和JSON
+    pub fn debug_info(&self) -> DebugInfo {
+        self.0.debug_info().into()
     }
 
     /*----------------------------------------管理----------------------------------------*/

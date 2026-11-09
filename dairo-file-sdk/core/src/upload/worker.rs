@@ -1,5 +1,6 @@
 use super::store::{UploadEntry, SOURCE_CUSTOM};
 use super::{Account, Running, UploadSourceProvider};
+use crate::debug::Stats;
 use crate::error::{SdkError, SdkResult};
 use crate::event::Event;
 use crate::index::{STATE_FINISH, STATE_SKIPPED};
@@ -226,6 +227,7 @@ impl Uploader<'_> {
             let sent = sent.clone();
             let progress = Mutex::new(progress);
             let task = self.task.clone();
+            let inner = self.inner.clone();
             futures_util::stream::poll_fn(move |cx| {
                 //请求体由连接的后台任务发送,不再等待响应时也会继续发送,所以停止时要让请求体返回错误,连接才会断开
                 if task.is_stopped() {
@@ -234,6 +236,7 @@ impl Uploader<'_> {
                 let item = rx.poll_recv(cx);
                 if let std::task::Poll::Ready(Some(Ok(data))) = &item {
                     let done = sent.fetch_add(data.len() as u64, Ordering::Relaxed) + data.len() as u64;
+                    Stats::add(&inner.stats.net_bytes_sent, data.len() as u64);
                     progress.lock().unwrap().update(done, false);
                 }
                 item
@@ -269,6 +272,7 @@ impl Uploader<'_> {
                 .header(reqwest::header::CONTENT_LENGTH, len)
                 .body(body);
         }
+        Stats::add(&self.inner.stats.net_request_count, 1);
         let send = req.send();
         tokio::pin!(send);
         let resp = tokio::select! {
@@ -279,12 +283,23 @@ impl Uploader<'_> {
                 return Err(Fail::Fatal(SdkError::Cancelled));
             }
         };
-        let resp = resp.map_err(|e| Fail::Retry(SdkError::Network(e.to_string())))?;
+        let stats = &self.inner.stats;
+        let resp = resp.map_err(|e| {
+            Stats::add(&stats.net_error_count, 1);
+            Fail::Retry(SdkError::Network(e.to_string()))
+        })?;
         let status = resp.status();
         let text = tokio::select! {
-            it = resp.text() => it.map_err(|e| Fail::Retry(SdkError::Network(e.to_string())))?,
+            it = resp.text() => it.map_err(|e| {
+                Stats::add(&stats.net_error_count, 1);
+                Fail::Retry(SdkError::Network(e.to_string()))
+            })?,
             _ = self.task.stopped() => return Err(Fail::Fatal(SdkError::Cancelled)),
         };
+        //by_md5返回404表示还没有上传过,不算失败
+        if status != StatusCode::OK && status != StatusCode::NOT_FOUND {
+            Stats::add(&stats.net_error_count, 1);
+        }
         match status {
             StatusCode::OK => Ok(text),
             StatusCode::UNAUTHORIZED | StatusCode::FORBIDDEN => Err(Fail::Fatal(SdkError::UrlExpired(status.as_u16()))),

@@ -247,6 +247,11 @@ pub(crate) struct Downloads {
 }
 
 impl Downloads {
+    /// 正在下载或排队的任务数
+    pub fn task_count(&self) -> usize {
+        self.tasks.lock().unwrap().len()
+    }
+
     /// 请求一个文件,已经缓存时直接返回路径,否则加入下载
     pub fn acquire(&self, inner: &Arc<Inner>, url: &str, options: &Options) -> SdkResult<Acquired> {
         let (parsed, key) = key::resolve(url, options)?;

@@ -1,4 +1,5 @@
 use super::Task;
+use crate::debug::Stats;
 use crate::error::{SdkError, SdkResult};
 use crate::index::{Entry, STATE_FINISH};
 use crate::event::Event;
@@ -167,15 +168,22 @@ impl Writer<'_> {
                 req = req.header(header::IF_RANGE, validator.as_str());
             }
         }
+        Stats::add(&self.inner.stats.net_request_count, 1);
         let resp = tokio::select! {
             it = req.send() => it,
             _ = self.task.stopped() => return Err(SdkError::Cancelled),
         };
         let resp = match resp {
             Ok(it) => it,
-            Err(e) => return Ok(retry(SdkError::Network(e.to_string()), false)),
+            Err(e) => {
+                Stats::add(&self.inner.stats.net_error_count, 1);
+                return Ok(retry(SdkError::Network(e.to_string()), false));
+            }
         };
         let status = resp.status();
+        if !status.is_success() && status != StatusCode::RANGE_NOT_SATISFIABLE {
+            Stats::add(&self.inner.stats.net_error_count, 1);
+        }
         match status {
             StatusCode::PARTIAL_CONTENT => {
                 let Some((range_start, total)) = content_range(resp.headers()) else {
@@ -243,9 +251,13 @@ impl Writer<'_> {
             };
             let bytes = match chunk {
                 Some(Ok(it)) => it,
-                Some(Err(e)) => return Ok(retry(SdkError::Network(e.to_string()), pos > start)),
+                Some(Err(e)) => {
+                    Stats::add(&self.inner.stats.net_error_count, 1);
+                    return Ok(retry(SdkError::Network(e.to_string()), pos > start));
+                }
                 None => break,
             };
+            Stats::add(&self.inner.stats.net_bytes_received, bytes.len() as u64);
             let mut data = &bytes[..];
             if let Some(end) = end {
                 data = &data[..data.len().min((end - pos) as usize)];

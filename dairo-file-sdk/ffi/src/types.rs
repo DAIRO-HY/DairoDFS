@@ -576,3 +576,138 @@ impl From<UploadQuery> for core::UploadQuery {
         Self { account: it.account, state: it.state.map(Into::into), offset: it.offset, limit: it.limit }
     }
 }
+
+/// 本地文件或者本机HTTP地址
+#[derive(Debug, Clone, PartialEq, uniffi::Enum)]
+pub enum LocalSource {
+    /// 已经下载完成的缓存文件路径,直接读取文件
+    File { path: String },
+
+    /// 本机HTTP访问地址
+    Http { url: String },
+}
+
+impl From<core::LocalSource> for LocalSource {
+    fn from(it: core::LocalSource) -> Self {
+        match it {
+            core::LocalSource::File(path) => Self::File { path },
+            core::LocalSource::Http(url) => Self::Http { url },
+        }
+    }
+}
+
+/*----------------------------------------调试----------------------------------------*/
+
+/// 一条本机HTTP服务的事件
+#[derive(Debug, Clone, uniffi::Record)]
+pub struct DebugEvent {
+    /// 时间(毫秒)
+    pub time: i64,
+    pub msg: String,
+}
+
+/// 运行状态(调试用),统计从本次SDK启动开始
+#[derive(Debug, Clone, uniffi::Record)]
+pub struct DebugInfo {
+    /// SDK启动时间(毫秒)
+    pub sdk_start_time: i64,
+    /// 本机HTTP服务是否标记为运行中
+    pub server_running: bool,
+    /// 本机HTTP服务监听的端口,没有运行时为null
+    pub server_port: Option<u16>,
+    /// 本机HTTP服务这次启动的时间(毫秒),没有运行时为null
+    pub server_start_time: Option<i64>,
+    /// 本机HTTP服务启动的次数(包括第一次启动、自动重启、手动重启)
+    pub server_start_count: u64,
+    /// 手动重启的次数
+    pub server_restart_count: u64,
+    /// 本机HTTP服务收到的请求数
+    pub server_request_count: u64,
+    /// 当前连接数
+    pub server_connection_count: u64,
+    /// 本机HTTP服务返回的数据量(字节)
+    pub server_bytes_sent: u64,
+    pub server_status_2xx: u64,
+    pub server_status_4xx: u64,
+    pub server_status_5xx: u64,
+    pub server_status_other: u64,
+    /// 接收连接失败的次数和最后一次的错误
+    pub accept_error_count: u64,
+    pub last_accept_error: Option<String>,
+    /// 发起的网络请求数(下载和上传)
+    pub net_request_count: u64,
+    /// 网络请求失败的次数
+    pub net_error_count: u64,
+    /// 下载的数据量(字节)
+    pub net_bytes_received: u64,
+    /// 上传的数据量(字节)
+    pub net_bytes_sent: u64,
+    /// 正在下载或排队的下载任务数
+    pub downloading_count: u64,
+    /// 正在上传的任务数
+    pub uploading_count: u64,
+    /// 最近的服务事件,按时间倒序
+    pub events: Vec<DebugEvent>,
+}
+
+impl From<core::DebugInfo> for DebugInfo {
+    fn from(it: core::DebugInfo) -> Self {
+        Self {
+            sdk_start_time: it.sdk_start_time,
+            server_running: it.server_running,
+            server_port: it.server_port,
+            server_start_time: it.server_start_time,
+            server_start_count: it.server_start_count,
+            server_restart_count: it.server_restart_count,
+            server_request_count: it.server_request_count,
+            server_connection_count: it.server_connection_count,
+            server_bytes_sent: it.server_bytes_sent,
+            server_status_2xx: it.server_status_2xx,
+            server_status_4xx: it.server_status_4xx,
+            server_status_5xx: it.server_status_5xx,
+            server_status_other: it.server_status_other,
+            accept_error_count: it.accept_error_count,
+            last_accept_error: it.last_accept_error,
+            net_request_count: it.net_request_count,
+            net_error_count: it.net_error_count,
+            net_bytes_received: it.net_bytes_received,
+            net_bytes_sent: it.net_bytes_sent,
+            downloading_count: it.downloading_count,
+            uploading_count: it.uploading_count,
+            events: it.events.into_iter().map(|it| DebugEvent { time: it.time, msg: it.msg }).collect(),
+        }
+    }
+}
+
+/// 自检结果
+#[derive(Debug, Clone, uniffi::Record)]
+pub struct SelfCheckResult {
+    /// 是否正常:连接成功并且收到了ping的200响应
+    pub ok: bool,
+    /// 服务是否标记为运行中(没有运行时不会自动启动)
+    pub running: bool,
+    /// 检查的端口
+    pub port: Option<u16>,
+    /// TCP是否连接成功
+    pub connected: bool,
+    /// HTTP状态码,没有收到响应时为null
+    pub status: Option<u16>,
+    /// 耗时(毫秒)
+    pub elapsed_ms: u64,
+    /// 失败的原因
+    pub error: Option<String>,
+}
+
+impl From<core::SelfCheckResult> for SelfCheckResult {
+    fn from(it: core::SelfCheckResult) -> Self {
+        Self {
+            ok: it.ok,
+            running: it.running,
+            port: it.port,
+            connected: it.connected,
+            status: it.status,
+            elapsed_ms: it.elapsed_ms,
+            error: it.error,
+        }
+    }
+}
