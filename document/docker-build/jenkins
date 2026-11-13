@@ -10,6 +10,9 @@ pipeline {
         //Jenkins容器里的/root在宿主机上的路径
         //编译时通过宿主机的docker启动rust容器,挂载的代码目录和cargo目录必须是宿主机上的绝对路径
         HOST_ROOT_DIR = "/home/docker/jenkins+jdk17+docker/data"
+
+        //macOS SDK:交叉编译macOS版本时使用,在Mac上执行document/build/pack_macos_sdk.sh打包
+        //解压到宿主机的 $HOST_ROOT_DIR/develop_tool/MacOSX.sdk (Jenkins容器里是/root/develop_tool/MacOSX.sdk),不存在时跳过macOS版本
     }
 
     stages {
@@ -42,11 +45,12 @@ pipeline {
             steps {
                 dir("${env.PROJECT_DIR}/${env.PROJECT_NAME}"){
 
-                    //build_dfs.sh通过这两个环境变量获取挂载到rust容器的宿主机路径
-                    //每个架构使用单独的编译目录(target/linux-amd64、target/linux-arm64),下次只编译有变化的部分
+                    //build_dfs.sh、build_dfs_cross.sh通过这些环境变量获取挂载到编译容器的宿主机路径
+                    //每个架构使用单独的编译目录(target/linux-amd64、target/linux-arm64、target/cross),下次只编译有变化的部分
                     sh '''
                         export HOST_PROJECT_DIR="$HOST_ROOT_DIR/develop_tool/project/$PROJECT_NAME"
                         export HOST_CARGO_DIR="$HOST_ROOT_DIR/develop_tool/.cargo"
+                        export HOST_MACOS_SDK="$HOST_ROOT_DIR/develop_tool/MacOSX.sdk"
                         ./document/build/build_all.sh
                     '''
                 }
