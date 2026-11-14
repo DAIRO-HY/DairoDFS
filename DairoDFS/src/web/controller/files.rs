@@ -174,6 +174,47 @@ pub async fn delete(login: Ext<LoginUser>, ids: Vec<i64>) -> Result<(), BizError
     Ok(())
 }
 
+/// 按路径删除文件到垃圾箱(其他程序只保存了路径、没有保存文件ID时使用,比如DairoMUSIC换头像后删除旧图片)
+/// 和按ID删除一样,同名的历史版本一起移到垃圾箱;路径不存在时跳过,重复调用是安全的
+/// 只能删除文件,路径是文件夹时整个请求返回400,一个文件都不删除,避免路径传错把整个文件夹删掉
+/// - paths 文件的完整路径
+#[DELETE("/api/files/delete_by_path")]
+pub async fn delete_by_path(login: Ext<LoginUser>, paths: Vec<String>) -> Result<model::DeleteByPath, BizError> {
+    if paths.is_empty() {
+        return Err(BizError::param("paths", "请指定要删除的文件路径"));
+    }
+    let mut ctx = db::begin().await?;
+    let mut scope = Scope::load(&mut ctx, &login).await?;
+
+    //先检查所有路径,有一个不能删除时一个都不删除
+    let mut files = Vec::new();
+    let mut not_found = Vec::new();
+    for path in paths.into_iter().collect::<std::collections::BTreeSet<_>>() {
+        if let Err(e) = crate::util::file_util::to_sub_names(&path) {
+            return Err(BizError::param("paths", &format!("{}:{}", path, e)));
+        }
+        let Some(file) = dfs_file_service::select_by_path(&mut ctx, login.owner_id, &path).await? else {
+            not_found.push(path);
+            continue;
+        };
+        if file.storageId == 0 {
+            return Err(BizError::param("paths", &format!("{}是文件夹,只能删除文件", path)));
+        }
+        let file = dfs_file_service::select_operable(&mut ctx, login.owner_id, file.id).await?;
+        scope.check_in_parent(&mut ctx, &file, perm::DELETE).await?;
+        files.push((file, path));
+    }
+    for (file, _) in &files {
+        dfs_file_service::set_delete(&mut ctx, login.owner_id, file.id).await?;
+    }
+    db::commit(ctx).await?;
+    let deleted = files.len();
+    for (file, path) in files {
+        operate_log_service::add_file(&login, op::DELETE, &file, path, None);
+    }
+    Ok(model::DeleteByPath { deleted, not_found })
+}
+
 /// 文件或文件夹属性
 /// - ids 选中的文件ID,选中多个时只统计数量和大小
 #[GET("/api/files/property")]
@@ -619,6 +660,18 @@ pub mod model {
 
         // 是否有缩略图
         pub has_thumb: bool,
+    }
+
+    /// 按路径删除的结果
+    #[derive(Debug, Serialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct DeleteByPath {
+
+        // 移到垃圾箱的文件数量
+        pub deleted: usize,
+
+        // 不存在的路径(已经删除或者从来没有过)
+        pub not_found: Vec<String>,
     }
 
     #[derive(Debug, Default, Serialize)]
