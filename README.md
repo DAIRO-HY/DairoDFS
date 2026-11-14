@@ -141,14 +141,15 @@ cargo build --release
 | `install_cargo.sh` | 在Linux上安装Rust编译环境 |
 | `build_dfs.sh` | 通过Docker编译Linux amd64、arm64版本 |
 | `build_dfs.mac.sh` | 编译macOS Intel、M芯片版本 |
-| `build_dfs_win.sh` | 启动Windows虚拟机，通过`build_dfs_win.bat`编译Windows版本 |
+| `build_dfs_cross.sh` | 在Linux上通过Docker和cargo-zigbuild交叉编译Windows amd64、arm64和macOS Intel、M芯片版本（macOS版需要macOS SDK，没有时跳过） |
+| `pack_macos_sdk.sh` | 在Mac上把macOS SDK打包成`MacOSX.sdk.tar.gz`，解压到Linux的`~/develop_tool/MacOSX.sdk`供交叉编译使用 |
 | `build_github.sh` | 创建标签，上传编译好的程序到GitHub的Release（需要环境变量`GITHUB_TOKEN`） |
 | `build_dfs_runtime_docker.sh` | 构建并推送Docker运行时镜像（安装了LibRaw、ImageMagick、ExifTool，只在需要更新这些工具时执行） |
 | `build_dfs_docker.sh` | 构建并推送Docker镜像（需要环境变量`DOCKER_USER`、`DOCKER_PASSWORD`） |
-| `build_all.sh` | 依次执行Linux编译、上传GitHub、推送Docker镜像 |
+| `build_all.sh` | 依次执行Linux编译、Windows和macOS交叉编译、上传GitHub、推送Docker镜像 |
 | `build_all.mac.sh` | 编译macOS版本 |
 
-在Jenkins容器里执行`build_dfs.sh`时，需要通过环境变量`HOST_PROJECT_DIR`、`HOST_CARGO_DIR`指定项目目录和cargo目录在宿主机上的路径。
+在Jenkins容器里执行`build_dfs.sh`、`build_dfs_cross.sh`时，需要通过环境变量`HOST_PROJECT_DIR`、`HOST_CARGO_DIR`指定项目目录和cargo目录在宿主机上的路径，通过`HOST_MACOS_SDK`指定macOS SDK在宿主机上的路径。
 
 # 联系我们
 若您在使用过程中遇到任何问题,请扫描下方的微信二维码联系我们。
