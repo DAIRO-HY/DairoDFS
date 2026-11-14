@@ -37,17 +37,33 @@ async fn save_inner(temp_path: &Path, md5: &str) -> Result<StorageFile, BizError
         }
     }
 
-    //确保文件已经写入到了磁盘，避免突然断电导致文件数据丢失
-    tokio::fs::File::open(&local_path).await?.sync_all().await?;
     let storage_file = StorageFile {
         id: id_util::id(),
         path: local_path.to_string_lossy().to_string(),
         md5: md5.to_string(),
     };
-    let mut ctx = db::begin().await?;
-    storage_file_dao::insert(&mut ctx, &storage_file).await?;
-    db::commit(ctx).await?;
+    if let Err(e) = add_storage_record(&local_path, &storage_file).await {
+        //刚生成的文件,还没有任何记录引用,删除后不会留下没有记录的文件
+        let _ = tokio::fs::remove_file(&local_path).await;
+        return Err(e);
+    }
     Ok(storage_file)
+}
+
+/// 文件写入磁盘之后添加存储记录
+async fn add_storage_record(local_path: &Path, storage_file: &StorageFile) -> Result<(), BizError> {
+    sync_file(local_path).await?;
+    let mut ctx = db::begin().await?;
+    storage_file_dao::insert(&mut ctx, storage_file).await?;
+    db::commit(ctx).await?;
+    Ok(())
+}
+
+/// 确保文件已经写入到了磁盘，避免突然断电导致文件数据丢失
+/// 用可写方式打开(不清空内容):Windows上只读打开的文件同步时会返回拒绝访问(os error 5)
+async fn sync_file(path: &Path) -> Result<(), BizError> {
+    tokio::fs::OpenOptions::new().write(true).open(path).await?.sync_all().await?;
+    Ok(())
 }
 
 /// 将文件移动到存储目录(不添加存储记录),返回存储路径
@@ -62,7 +78,11 @@ pub async fn move_to_storage(temp_path: &Path) -> Result<PathBuf, BizError> {
         }
         let _ = tokio::fs::remove_file(temp_path).await;
     }
-    tokio::fs::File::open(&local_path).await?.sync_all().await?;
+    if let Err(e) = sync_file(&local_path).await {
+        //刚生成的文件,还没有任何记录引用,删除后不会留下没有记录的文件
+        let _ = tokio::fs::remove_file(&local_path).await;
+        return Err(e);
+    }
     Ok(local_path)
 }
 
