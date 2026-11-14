@@ -143,7 +143,7 @@ cargo build --release
 | `build_dfs.mac.sh` | 编译macOS Intel、M芯片版本 |
 | `build_dfs_cross.sh` | 在Linux上通过Docker和cargo-zigbuild交叉编译Windows amd64、arm64和macOS Intel、M芯片版本（macOS版需要macOS SDK，没有时跳过） |
 | `pack_macos_sdk.sh` | 在Mac上把macOS SDK打包成`MacOSX.sdk.tar.gz`，解压到Linux的`~/develop_tool/MacOSX.sdk`供交叉编译使用 |
-| `build_github.sh` | 创建标签，上传编译好的程序到GitHub的Release（需要环境变量`GITHUB_TOKEN`） |
+| `build_github.sh` | 创建标签，上传编译好的程序到GitHub的Release（需要环境变量`GITHUB_TOKEN`；加`ONLY_UPLOAD=true`时不重新创建标签，只上传文件） |
 | `build_dfs_runtime_docker.sh` | 构建并推送Docker运行时镜像（安装了LibRaw、ImageMagick、ExifTool，只在需要更新这些工具时执行） |
 | `build_dfs_docker.sh` | 构建并推送Docker镜像（需要环境变量`DOCKER_USER`、`DOCKER_PASSWORD`） |
 | `build_all.sh` | 依次执行Linux编译、Windows和macOS交叉编译、上传GitHub、推送Docker镜像 |
