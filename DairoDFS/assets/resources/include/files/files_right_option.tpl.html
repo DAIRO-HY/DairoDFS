@@ -20,6 +20,8 @@
     <div id="fileOptionPop" class="rounded content-menu shadow bg-content">
         <div class="content-menu-item px-2" onclick="onFileUploadClick()"><i class="bi bi-cloud-upload"></i>&nbsp;&nbsp;上传文件
         </div>
+        <div class="content-menu-item px-2" onclick="onFolderUploadClick()"><i class="bi bi-folder-symlink"></i>&nbsp;&nbsp;上传文件夹
+        </div>
         <div class="content-menu-item px-2" onclick="onCreateFolderClick()"><i class="bi bi-folder-plus"></i>&nbsp;&nbsp;新建文件夹
         </div>
         <hr class="m-0">
@@ -99,6 +101,13 @@
      */
     function onFileUploadClick() {
         openUpload(getCurrentFolderByUrl())
+    }
+
+    /**
+     * 文件夹上传按钮点击事件
+     */
+    function onFolderUploadClick() {
+        openUploadFolder(getCurrentFolderByUrl())
     }
 
     /**

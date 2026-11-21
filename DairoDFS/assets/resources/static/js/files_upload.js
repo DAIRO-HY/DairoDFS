@@ -63,21 +63,147 @@ function onShowUploadFileListClick() {
 }
 
 /**
+ * 打开文件夹上传窗口
+ * 浏览器的选择窗口一次只能选一个文件夹,要一次上传多个文件夹可以拖到文件列表里
+ */
+function openUploadFolder(folder) {
+    $("#uploadFolder").attr("data-folder", folder)
+    $("#uploadFolder").click()
+}
+
+/**
+ * 系统自动生成的文件,上传文件夹时跳过
+ */
+const IGNORE_FILE_NAMES = [".DS_Store", "Thumbs.db", "desktop.ini"]
+
+/**
  * 文件发生变化时执行文件上传
  */
 function onFileChange() {
-    const folder = $("#uploadFile").attr("data-folder")
-    $.each($("#uploadFile")[0].files, (_, file) => {
+    const files = Array.from($("#uploadFile")[0].files)
+    addUpload($("#uploadFile").attr("data-folder"), files.map(file => ({file: file, path: file.name})))
+
+    //清除已经选择
+    $("#uploadFile").val("")
+}
+
+/**
+ * 选择文件夹之后执行上传
+ * webkitRelativePath包含选择的文件夹名,例如"照片/2024/a.jpg"
+ */
+function onFolderChange() {
+    const files = Array.from($("#uploadFolder")[0].files)
+    addUpload($("#uploadFolder").attr("data-folder"), files.map(file => ({file: file, path: file.webkitRelativePath || file.name})))
+
+    //清除已经选择
+    $("#uploadFolder").val("")
+}
+
+/**
+ * 拖拽文件或文件夹到文件列表时上传,可以同时拖入多个文件夹
+ */
+async function onDropUpload(folder, dataTransfer) {
+    const entries = Array.from(dataTransfer.items || [])
+        .filter(item => item.kind === "file")
+        .map(item => item.webkitGetAsEntry ? item.webkitGetAsEntry() : null)
+    if (entries.length === 0 || entries.some(it => it == null)) {//浏览器不支持读取文件夹,只上传文件
+        addUpload(folder, Array.from(dataTransfer.files).map(file => ({file: file, path: file.name})))
+        return
+    }
+    const fileList = []
+    const emptyFolders = []
+    try {
+        for (const entry of entries) {
+            await readEntry(entry, "", fileList, emptyFolders)
+        }
+    } catch (e) {
+        alert("读取文件夹失败:" + e)
+        return
+    }
+
+    //空文件夹没有文件可以上传,需要单独创建
+    for (const path of emptyFolders) {
+        await createFolderIfAbsent(folder + "/" + path)
+    }
+    if (fileList.length === 0) {
+        reload()
+        return
+    }
+    addUpload(folder, fileList)
+}
+
+/**
+ * 递归读取拖入的文件夹
+ * - parent 相对于拖入位置的父路径
+ * - fileList 读取到的文件
+ * - emptyFolders 读取到的空文件夹
+ */
+async function readEntry(entry, parent, fileList, emptyFolders) {
+    const path = parent === "" ? entry.name : parent + "/" + entry.name
+    if (entry.isFile) {
+        const file = await new Promise((resolve, reject) => entry.file(resolve, reject))
+        fileList.push({file: file, path: path})
+        return
+    }
+    if (!entry.isDirectory) {
+        return
+    }
+    const reader = entry.createReader()
+    let count = 0
+
+    //readEntries每次只返回一部分(Chrome每次最多100个),要一直读到返回空为止
+    while (true) {
+        const children = await new Promise((resolve, reject) => reader.readEntries(resolve, reject))
+        if (children.length === 0) {
+            break
+        }
+        count += children.length
+        for (const child of children) {
+            await readEntry(child, path, fileList, emptyFolders)
+        }
+    }
+    if (count === 0) {
+        emptyFolders.push(path)
+    }
+}
+
+/**
+ * 创建文件夹,已经存在时不报错
+ */
+function createFolderIfAbsent(folder) {
+    return new Promise(resolve => {
+        $.ajax({
+            method: "POST",
+            url: "/api/files/create_folder",
+            data: {folder: folder},
+            complete: () => resolve()
+        })
+    })
+}
+
+/**
+ * 添加到上传列表并开始上传
+ * - folder 上传到的文件夹
+ * - items 要上传的文件,path是相对于folder的路径,包含文件名
+ */
+function addUpload(folder, items) {
+    items.forEach(({file, path}) => {
+        const names = path.split("/").filter(it => it !== "")
+        if (IGNORE_FILE_NAMES.includes(names[names.length - 1]) && names.length > 1) {//只在上传文件夹时跳过
+            return
+        }
+        names.pop()
         file.progress = "等待上传"
         file.isFinish = false
         file.isFail = false
-        file.folder = folder
+        file.folder = names.length === 0 ? folder : folder + "/" + names.join("/")
+        file.path = path
         file.dataSize = file.size.toDataSize()
         uploadList.push(file)
     })
-
-    //清楚已经选择
-    $("#uploadFile").val("")
+    if (uploadList.length === 0) {
+        return
+    }
 
     //显示上传进度信息
     $("#uploadInfoDiv").show()
@@ -112,7 +238,7 @@ function computeUploadTotal() {
 function drawUploadList() {
     $("#uploadingTable").createTable({
         columns: [{
-            data: "name", title: "文件名", render: $.fn.dataTable.render.text()
+            data: "path", title: "文件名", render: $.fn.dataTable.render.text()
         }, {
             data: "dataSize", title: "大小", className: "text-end", width: 50
         }, {
@@ -152,6 +278,7 @@ function loopUpload() {
         } else {
             $("#uploadProgressText").text("上传完成")
         }
+        reload()
         return
     }
     if (isUploading) {
@@ -189,7 +316,7 @@ function loopUpload() {
         success: function () {
             file.isFinish = true
             isUploading = false
-            reload()
+            reloadLater()
             loopUpload()
         },
         error: function (res) {
@@ -212,6 +339,24 @@ function loopUpload() {
             loopUpload()
         }
     })
+}
+
+/**
+ * 刷新文件列表的定时器
+ */
+let reloadTimer = null
+
+/**
+ * 上传过程中最多2秒刷新一次文件列表,上传文件夹时文件很多,每个文件都刷新太频繁
+ */
+function reloadLater() {
+    if (reloadTimer != null) {
+        return
+    }
+    reloadTimer = setTimeout(() => {
+        reloadTimer = null
+        reload()
+    }, 2000)
 }
 
 /**

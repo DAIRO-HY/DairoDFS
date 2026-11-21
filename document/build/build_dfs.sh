@@ -41,5 +41,5 @@ cp $project_root/target/linux-amd64/release/DairoDFS $project_root/build/DairoDF
 
 
 #打包arm64位linux二进制文件
-docker_rust_build arm64
-cp $project_root/target/linux-arm64/release/DairoDFS $project_root/build/DairoDFS-linux-arm64-$version
+#docker_rust_build arm64
+#cp $project_root/target/linux-arm64/release/DairoDFS $project_root/build/DairoDFS-linux-arm64-$version

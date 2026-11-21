@@ -215,4 +215,46 @@
     function getCheckedList() {
         return fileList.filter(item => item.checked)
     }
+
+    /**
+     * 拖拽文件、文件夹到文件列表上传
+     */
+    $(function () {
+        const $fileListDiv = $("#fileListDiv")
+
+        //拖动经过子元素时会触发多次dragenter/dragleave,用计数判断是否真的离开
+        let dragCount = 0
+        const isDragFile = e => Array.from(e.originalEvent.dataTransfer?.types || []).includes("Files")
+        $fileListDiv.on("dragenter", e => {
+            if (!isDragFile(e)) {
+                return
+            }
+            e.preventDefault()
+            dragCount++
+            $fileListDiv.addClass("border border-2 border-primary")
+        }).on("dragover", e => {
+            if (!isDragFile(e)) {
+                return
+            }
+            e.preventDefault()
+            e.originalEvent.dataTransfer.dropEffect = "copy"
+        }).on("dragleave", e => {
+            if (!isDragFile(e)) {
+                return
+            }
+            dragCount--
+            if (dragCount <= 0) {
+                dragCount = 0
+                $fileListDiv.removeClass("border border-2 border-primary")
+            }
+        }).on("drop", e => {
+            if (!isDragFile(e)) {
+                return
+            }
+            e.preventDefault()
+            dragCount = 0
+            $fileListDiv.removeClass("border border-2 border-primary")
+            onDropUpload(getCurrentFolderByUrl(), e.originalEvent.dataTransfer)
+        })
+    })
 </script>
