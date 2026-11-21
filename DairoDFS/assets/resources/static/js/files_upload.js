@@ -192,7 +192,7 @@ function addUpload(folder, items) {
         if (IGNORE_FILE_NAMES.includes(names[names.length - 1]) && names.length > 1) {//只在上传文件夹时跳过
             return
         }
-        names.pop()
+        file.uploadName = names.pop()
         file.progress = "等待上传"
         file.isFinish = false
         file.isFail = false
@@ -291,7 +291,8 @@ function loopUpload() {
     const file = uploadList[fileIndex]
     const formData = new FormData()
     formData.append("folder", file.folder)
-    formData.append("file", file)
+    //必须指定文件名:选择文件夹上传时,Chrome默认把相对路径(例如"ee/ff/gg.txt")当作文件名发送,会和folder里的路径重复
+    formData.append("file", file, file.uploadName)
     $.ajax({
         method: "POST",
         url: "/api/file_upload",
