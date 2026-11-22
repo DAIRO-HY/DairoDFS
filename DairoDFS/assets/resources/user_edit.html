@@ -38,12 +38,31 @@
         </div>
         <div class="row mt-2">
             <label class="col-2 col-form-label text-end">上传的文件</label>
+            <div class="col-10 pt-2">
+                <!-- 复选框没有勾选时浏览器不提交,所以不设置name,提交时单独传0或1 -->
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="handleThumb">
+                    <label class="form-check-label" for="handleThumb">生成缩略图、预览图</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="handleSmoothVideo">
+                    <label class="form-check-label" for="handleSmoothVideo">生成流畅版视频(比1280大的视频缩小到1280)</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="handleCompatVideo">
+                    <label class="form-check-label" for="handleCompatVideo">转换手机原生播放不了的视频(如avi、wmv、rm,分辨率不变)</label>
+                </div>
+                <div class="form-text">文件属性(尺寸、拍摄时间、时长等)总是生成。都不勾选时只存储文件,适合其他程序使用的账号。修改后只对之后上传的文件生效,已有的文件可以在高级页面重置附属文件。</div>
+            </div>
+        </div>
+        <div class="row mt-2" id="videoCodecRow">
+            <label class="col-2 col-form-label text-end">视频编码</label>
             <div class="col-10">
-                <select class="form-select w-auto" name="handleFile">
-                    <option value="1">处理</option>
-                    <option value="0">不处理</option>
+                <select class="form-select w-auto" name="videoCodec">
+                    <option value="h265">H.265</option>
+                    <option value="h264">H.264</option>
                 </select>
-                <div class="form-text">处理:生成缩略图、预览图,视频转码等。不处理:只存储文件,适合其他程序使用的账号。修改后只对之后上传的文件生效。</div>
+                <div class="form-text">H.265:同样的画质文件更小。H.264:兼容性最好,所有浏览器都能播放,转码更快。</div>
             </div>
         </div>
         <div class="row mt-2">
@@ -58,17 +77,32 @@
     </form>
 </div>
 <script>
+
+    //上传文件处理的开关
+    const HANDLE_SWITCHES = ["handleThumb", "handleSmoothVideo", "handleCompatVideo"]
+
     $(function () {
+        $("#handleSmoothVideo, #handleCompatVideo").on("change", showVideoCodec)
         $.ajaxByData("/api/user/detail").add("id", getParam("id", "0")).success(data => {
             $("form").bindValue(data)
+            HANDLE_SWITCHES.forEach(it => $("#" + it).prop("checked", data[it] === 1))
+            showVideoCodec()
             if (data.id !== 0) {//编辑已有用户时,密码为空表示不修改
                 $("input[name='pwd']").attr("placeholder", "不修改请留空")
             }
         }).get()
     })
 
+    //视频编码只在需要转码时才有用
+    function showVideoCodec() {
+        const needCodec = $("#handleSmoothVideo").prop("checked") || $("#handleCompatVideo").prop("checked")
+        $("#videoCodecRow").toggle(needCodec)
+    }
+
     function onSubmitClick() {
-        $("form").ajaxByForm().success(() => {
+        const http = $("form").ajaxByForm()
+        HANDLE_SWITCHES.forEach(it => http.add(it, $("#" + it).prop("checked") ? 1 : 0))
+        http.success(() => {
             location.href = "/user_list.html"
         }).post()
     }

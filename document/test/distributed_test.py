@@ -369,6 +369,8 @@ def scenario_realtime(a, b):
         ("修改昵称", lambda: a.ok("PUT", "/api/mine/nickname", {"nickname": "爸爸"})),
         ("上传头像", lambda: avatar(a)),
         ("修改用户", lambda: a.ok("POST", "/api/user/edit", {"id": user_id(a, "user2"), "name": "user2", "email": "u2@test.local", "state": 1})),
+        ("修改上传文件处理设置", lambda: a.ok("POST", "/api/user/edit", {"id": user_id(a, "user2"), "name": "user2", "state": 1,
+                                                                  "handleThumb": 0, "handleSmoothVideo": 1, "handleCompatVideo": 0, "videoCodec": "h264"})),
     ]
     for name, fn in steps:
         fn()
@@ -584,6 +586,14 @@ def scenario_bidirectional():
         n = it.log_count()
         check(f"{it.name}同步日志没有失败的 {n}", (n[2] or 0) == 0)
         check(f"{it.name}同步状态正常 {it.sync_list()}", all(s["state"] != 2 for s in it.sync_list()))
+    d.ok("POST", "/api/user/edit", {"id": 0, "name": "both", "pwd": "123456", "state": 1})
+    wait_same(d, e, 30)
+    e.ok("POST", "/api/user/edit", {"id": user_id(e, "both"), "name": "both", "state": 1, "handleThumb": 0, "videoCodec": "h264"})
+    res, t = wait_same(d, e, 30)
+    con = d.db()
+    row = con.execute("select handleThumb, handleSmoothVideo, handleCompatVideo, videoCodec from user where name = 'both'").fetchone()
+    con.close()
+    check(f"E修改的上传文件处理设置同步到D {res} {row}", res == "" and row == (0, 1, 1, "h264"))
     con = d.db()
     dup = con.execute("select count(*) from (select id from sql_log group by id having count(*)>1)").fetchone()[0]
     con.close()

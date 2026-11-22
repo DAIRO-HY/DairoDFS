@@ -64,6 +64,16 @@
             </div>
         </div>
         <div class="row mt-2">
+            <label class="col-2 col-form-label text-end">补转已有视频</label>
+            <div class="col-10">
+                <select class="form-select w-auto" name="compatBackfill">
+                    <option value="false">关闭</option>
+                    <option value="true">开启</option>
+                </select>
+                <div class="form-text">给已有的手机原生播放不了的视频(如avi、wmv、rm)补转兼容版,只补设置了转换这类视频的账号。没有新上传的文件时在后台慢慢转,视频多时会长时间占用CPU。每次开启都从头检查一遍</div>
+            </div>
+        </div>
+        <div class="row mt-2">
             <label class="col-2 col-form-label text-end">存储目录</label>
             <div class="col-10">
                 <textarea class="form-control" name="folders" style="max-width: 550px"></textarea>

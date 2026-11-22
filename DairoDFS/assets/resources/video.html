@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    {{template include/head}}
+    <title>视频播放</title>
+    <style>
+        body {
+            background: #000;
+        }
+
+        .video-bar {
+            background: rgba(33, 37, 41, .95);
+            color: #fff;
+        }
+
+        .video-name {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        #player {
+            display: block;
+            width: 100%;
+            height: calc(100vh - 52px);
+            background: #000;
+        }
+    </style>
+</head>
+<body>
+<div class="video-bar d-flex align-items-center gap-2 px-3 py-2">
+    <div class="video-name flex-grow-1" id="name"></div>
+
+    <!-- 有流畅版和原画两个版本时才显示 -->
+    <select class="form-select form-select-sm w-auto" id="quality" style="display: none" onchange="onQualityChange()"></select>
+    <a class="btn btn-sm btn-outline-light text-nowrap" id="download"><i class="bi bi-download"></i>&nbsp;下载原文件</a>
+</div>
+<div class="alert alert-warning m-3" id="error" style="display: none"></div>
+<video id="player" controls autoplay playsinline></video>
+<script>
+
+    //上次选择的清晰度(只保存在当前浏览器)
+    const QUALITY_KEY = "videoQuality"
+
+    //可以选择的清晰度:[{key, label, url}]
+    let sources = []
+
+    /**
+     * 视频的接口
+     * - 自己的文件:video.html?id=文件ID
+     * - 分享的文件:video.html?eid=分享ID&path=文件在分享里的路径
+     * info返回的数据格式一样:{name, extraList:[{name, size, contentType}]}
+     */
+    const api = getParam("eid") ? shareApi(getParam("eid"), getParam("path")) : fileApi(getParam("id"))
+
+    function fileApi(id) {
+        return {
+            info: `/api/files/property?ids=${id}`,
+            extra: name => `/api/files/extra/${id}/${name}`,
+            original: fileName => `/api/files/download/${id}/${encodeURIComponent(fileName)}`,
+        }
+    }
+
+    function shareApi(eid, path) {
+
+        //分享ID只包含URL安全的字符,不能再编码,否则提取码的Cookie路径匹配不上;路径每一级分别编码
+        const base = "/api/share/" + eid.replace(/[^A-Za-z0-9_=-]/g, "")
+        const pathUrl = path.split("/").filter(it => it !== "").map(encodeURIComponent).join("/")
+        return {
+            info: `${base}/video_info/${pathUrl}`,
+            extra: name => `${base}/extra/${name}/${pathUrl}`,
+            original: () => `${base}/download/${pathUrl}`,
+        }
+    }
+
+    $(function () {
+        $.ajaxByData(api.info).success(data => {
+            document.title = data.name
+            $("#name").text(data.name)
+            $("#download").attr("href", api.original(data.name) + "?download=true")
+            sources = makeSources(data)
+            if (sources.length > 1) {
+                $("#quality").html(sources.map(it => `<option value="${it.key}">${it.label}</option>`).join("")).show()
+            }
+            const saved = readQuality()
+            const source = sources.find(it => it.key === saved) || sources[0]
+            $("#quality").val(source.key)
+            play(source, 0, true)
+        }).get()
+        $("#player").on("error", showError)
+    })
+
+    /**
+     * 可以选择的清晰度
+     * - 流畅:比1280大的视频转成的1280版本(preview)
+     * - 原画:手机和浏览器播放不了的视频转成的兼容版(compat),没有兼容版时就是原文件
+     * 原视频不大于1280时,流畅版就是兼容版(大小一样),只显示原画
+     */
+    function makeSources(data) {
+        const extra = name => data.extraList.find(it => it.name === name && it.contentType === "video/mp4")
+        const preview = extra("preview")
+        const compat = extra("compat")
+        const original = {
+            key: "original",
+            label: "原画",
+            url: compat ? api.extra("compat") : api.original(data.name),
+        }
+        const isSame = preview && compat && preview.size === compat.size
+        if (!preview || isSame) {
+            return [original]
+        }
+        return [{key: "smooth", label: "流畅", url: api.extra("preview")}, original]
+    }
+
+    /**
+     * 播放
+     * @param source 清晰度
+     * @param time 从第几秒开始播放
+     * @param isPlay 是否自动播放
+     */
+    function play(source, time, isPlay) {
+        $("#error").hide()
+        const player = $("#player")[0]
+        player.src = source.url
+        player.currentTime = time
+        if (isPlay) {
+            player.play().catch(() => {
+                //浏览器不允许自动播放时,等用户点击播放
+            })
+        }
+    }
+
+    /**
+     * 切换清晰度,从当前位置继续播放
+     */
+    function onQualityChange() {
+        const player = $("#player")[0]
+        const source = sources.find(it => it.key === $("#quality").val())
+        saveQuality(source.key)
+        play(source, player.currentTime, !player.paused)
+    }
+
+    /**
+     * 播放失败(一般是浏览器不支持视频的编码,比如Firefox不支持H.265)
+     */
+    function showError() {
+        const tips = ["这个视频在当前浏览器里播放不了，可能是浏览器不支持视频的编码（比如 Firefox 不支持 H.265）。"]
+        if (sources.length > 1) {
+            tips.push("可以换一个清晰度试试，")
+        }
+        tips.push("可以换用 Chrome、Edge、Safari 播放，或者下载原文件。")
+        $("#error").text(tips.join("")).show()
+    }
+
+    function readQuality() {
+        try {
+            return localStorage.getItem(QUALITY_KEY) || "smooth"
+        } catch (e) {
+            return "smooth"
+        }
+    }
+
+    function saveQuality(key) {
+        try {
+            localStorage.setItem(QUALITY_KEY, key)
+        } catch (e) {
+            //浏览器禁止了本地存储时不记录
+        }
+    }
+</script>
+</body>
+</html>

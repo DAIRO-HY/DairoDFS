@@ -82,7 +82,19 @@ pub struct UserEdit {
     // 用户状态 0:禁用 1:正常
     pub state: i64,
 
-    // 是否处理上传的文件 0:不处理 1:处理
+    // 生成缩略图、预览图 0:否 1:是(以下几项老版本的页面没有,没有传时新增的用户默认开启,已有的用户不修改)
+    pub handle_thumb: Option<i64>,
+
+    // 生成流畅版视频 0:否 1:是
+    pub handle_smooth_video: Option<i64>,
+
+    // 转换手机原生播放不了的视频 0:否 1:是
+    pub handle_compat_video: Option<i64>,
+
+    // 转码使用的视频编码 h264 h265
+    pub video_codec: Option<String>,
+
+    // 已废弃:老版本的"是否处理上传的文件" 0:全部不处理 1:全部处理,没有传上面几项时才使用
     pub handle_file: Option<i64>,
 }
 
@@ -147,6 +159,9 @@ pub struct Profile {
     // 服务器编号(老页面没有这一项时保持原来的设置)
     #[validate(range(min = 0, max = 9, message = "服务器编号必须在0到9之间"))]
     pub node_no: Option<i64>,
+
+    // 补转已有的不兼容视频(老页面没有这一项时保持原来的设置)
+    pub compat_backfill: Option<bool>,
 }
 
 /// 将空字符串转换为None(表单里没有填写的项目会提交空字符串)

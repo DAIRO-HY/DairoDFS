@@ -1,6 +1,6 @@
 [package]
 name = "DairoDFS"
-version = "2.1.1"
+version = "2.1.2"
 edition = "2024"
 
 # build.rs 专用的依赖

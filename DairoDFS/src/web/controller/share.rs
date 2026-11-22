@@ -6,6 +6,7 @@ use crate::service::{file_handle_service, share_service};
 use crate::web::biz_error::BizError;
 use crate::web::controller::files;
 use crate::web::filter::auth;
+use crate::extension::number::NumberExtension;
 use crate::{biz_error, db};
 use hyper::{HeaderMap, StatusCode};
 use hyperoute_core::{Raw, RemoteAddr, Stream};
@@ -130,6 +131,55 @@ pub async fn thumb(eid: String, path: String, headers: &HeaderMap) -> Result<Str
     Ok(stream)
 }
 
+/// 分享里可以访问的附属文件:流畅版(preview)和兼容版(compat)视频,视频播放页选择清晰度时使用
+const VIDEO_EXTRAS: [&str; 2] = ["preview", "compat"];
+
+/// 获取分享的视频的信息:文件名和可以播放的附属文件(视频播放页使用)
+#[GET("/api/share/{eid}/video_info/{*path}")]
+pub async fn video_info(eid: String, path: String, headers: &HeaderMap) -> Result<model::ShareVideoInfo, BizError> {
+    let share = get_share(&eid, headers).await?;
+    let Ok(file) = share_service::select_file(&share, &format!("/{}", path)).await else {
+        return Err(BizError::not_found());
+    };
+    if file.storageId == 0 {
+        return Err(BizError::not_found());
+    }
+    let extra_list = dfs_file_dao::select_extra_list(&mut lib_db::get_context(), file.id)
+        .await?
+        .into_iter()
+        .filter(|it| VIDEO_EXTRAS.contains(&it.name.as_str()))
+        .map(|it| model::ShareVideoExtra {
+            name: it.name,
+            size: it.size.data_size(),
+            content_type: it.contentType.unwrap_or_default(),
+        })
+        .collect();
+    Ok(model::ShareVideoInfo {
+        name: file.name,
+        extra_list,
+    })
+}
+
+/// 获取分享的视频的流畅版或兼容版
+/// - name 附属文件名,只能是VIDEO_EXTRAS里的
+#[GET("/api/share/{eid}/extra/{name}/{*path}")]
+pub async fn extra(eid: String, name: String, path: String, headers: &HeaderMap) -> Result<Stream, BizError> {
+    if !VIDEO_EXTRAS.contains(&name.as_str()) {
+        return Err(BizError::not_found());
+    }
+    let share = get_share(&eid, headers).await?;
+    let Ok(file) = share_service::select_file(&share, &format!("/{}", path)).await else {
+        return Err(BizError::not_found());
+    };
+    let Some(extra) = dfs_file_dao::select_extra(&mut lib_db::get_context(), file.id, &name).await? else {
+        return Err(BizError::not_found());
+    };
+    let stream = files::file_stream(&extra, headers)
+        .await?
+        .set_header("cache-control", "private, no-cache");
+    Ok(stream)
+}
+
 /// 转存到自己的文件夹(需要登录)
 /// - folder 分享里的文件夹(相对路径)
 /// - names 选中的文件名
@@ -210,5 +260,31 @@ pub mod model {
 
         // 是否有缩略图
         pub has_thumb: bool,
+    }
+
+    /// 分享的视频的信息(字段和文件属性接口一致,视频播放页共用)
+    #[derive(Debug, Serialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct ShareVideoInfo {
+
+        // 文件名
+        pub name: String,
+
+        // 可以播放的附属文件
+        pub extra_list: Vec<ShareVideoExtra>,
+    }
+
+    #[derive(Debug, Serialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct ShareVideoExtra {
+
+        // 附属文件名 preview:流畅版 compat:兼容版
+        pub name: String,
+
+        // 大小
+        pub size: String,
+
+        // 文件类型
+        pub content_type: String,
     }
 }

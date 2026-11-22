@@ -1,5 +1,5 @@
 use crate::system_config;
-use crate::service::sync;
+use crate::service::{file_handle_service, sync};
 use crate::web::biz_error::BizError;
 use crate::web::controller::install;
 use crate::web::form;
@@ -25,6 +25,7 @@ pub async fn info() -> model::ProfileInfo {
         operate_log_days: config.operate_log_days,
         recycle_keep_days: config.recycle_keep_days,
         node_no: config.node_no,
+        compat_backfill: config.compat_backfill,
     }
 }
 
@@ -56,7 +57,17 @@ pub async fn update(form: form::Profile) -> Result<(), BizError> {
     if let Some(no) = form.node_no {
         config.node_no = no;
     }
+
+    //补转兼容版视频重新开启时,从头补一遍(关闭期间新开启了兼容版的账号,已有的视频也能补上)
+    let start_compat_backfill = form.compat_backfill == Some(true) && !config.compat_backfill;
+    if let Some(it) = form.compat_backfill {
+        config.compat_backfill = it;
+    }
     system_config::save(config)?;
+    if start_compat_backfill {
+        file_handle_service::reset_compat_progress();
+        file_handle_service::notify();
+    }
 
     //同步主机可能有变化,重新开始监听
     sync::listen_all();
@@ -120,5 +131,8 @@ pub mod model {
 
         // 服务器编号
         pub node_no: i64,
+
+        // 补转已有的不兼容视频
+        pub compat_backfill: bool,
     }
 }

@@ -148,8 +148,11 @@ update user set avatar = :avatar where id = :id;
 
 -- ------------------------------
 
--- 设置是否处理上传的文件
--- @name set_handle_file
+-- 设置上传的文件要做哪些处理
+-- @name set_handle_options
 -- @param id:i64
--- @param handle_file:i64
-update user set handleFile = :handle_file where id = :id;
+-- @param handle_thumb:i64
+-- @param handle_smooth_video:i64
+-- @param handle_compat_video:i64
+-- @param video_codec:String
+update user set handleThumb = :handle_thumb, handleSmoothVideo = :handle_smooth_video, handleCompatVideo = :handle_compat_video, videoCodec = :video_codec where id = :id;

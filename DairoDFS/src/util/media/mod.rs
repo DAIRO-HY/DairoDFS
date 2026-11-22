@@ -24,10 +24,12 @@ const RAW_EXTS: [&str; 2] = ["cr3", "cr2"];
 const HEIF_EXTS: [&str; 2] = ["heic", "hif"];
 
 /// 实况照片
-const DLIVE_EXT: &str = "dlive";
+pub const DLIVE_EXT: &str = "dlive";
 
-/// 视频
-const VIDEO_EXTS: [&str; 8] = ["mp4", "mov", "avi", "mkv", "flv", "rm", "rmvb", "3gp"];
+/// 视频(不包括ts:和TypeScript源文件的扩展名一样)
+const VIDEO_EXTS: [&str; 18] = [
+    "mp4", "mov", "avi", "mkv", "flv", "rm", "rmvb", "3gp", "wmv", "webm", "mpg", "mpeg", "m2ts", "mts", "m4v", "asf", "vob", "f4v",
+];
 
 /// ffmpeg程序路径
 pub fn ffmpeg() -> PathBuf {
@@ -85,6 +87,20 @@ pub fn is_image(ext: &str) -> bool {
 /// 视频的扩展名
 pub fn video_exts() -> Vec<&'static str> {
     VIDEO_EXTS.to_vec()
+}
+
+/// 相册显示的文件:所有图片和视频
+pub fn album_exts() -> Vec<&'static str> {
+    IMAGE_EXTS
+        .iter()
+        .chain(MAGICK_IMAGE_EXTS.iter())
+        .chain(PSD_EXTS.iter())
+        .chain(RAW_EXTS.iter())
+        .chain(HEIF_EXTS.iter())
+        .copied()
+        .chain([DLIVE_EXT])
+        .chain(VIDEO_EXTS.iter().copied())
+        .collect()
 }
 
 /// 可能带有EXIF信息(拍摄参数)的图片
@@ -273,4 +289,23 @@ where
     T: Send + 'static,
 {
     tokio::task::spawn_blocking(f).await.map_err(|e| e.to_string())?
+}
+
+#[cfg(test)]
+mod album_tests {
+    use super::*;
+
+    /// 相册的图片扩展名和原来写在SQL里的一致,视频扩展名和VIDEO_EXTS一致
+    #[test]
+    fn test_album_exts() {
+        let old_images = [
+            "jpg", "jpeg", "png", "bmp", "gif", "ico", "svg", "tiff", "webp", "wmf", "wmz", "jp2", "eps", "tga", "jfif", "psd", "psb", "ai",
+            "cr3", "cr2", "heic", "hif", "dlive",
+        ];
+        let mut expected: Vec<&str> = old_images.iter().copied().chain(VIDEO_EXTS).collect();
+        let mut actual = album_exts();
+        expected.sort();
+        actual.sort();
+        assert_eq!(actual, expected);
+    }
 }

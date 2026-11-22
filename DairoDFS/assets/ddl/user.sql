@@ -13,5 +13,9 @@ CREATE TABLE user
     parentId      INT8             NOT NULL default 0, -- 所属主账户ID,0表示主账户
     nickname      VARCHAR(32), -- 昵称
     avatar        CHAR(32), -- 头像图片的MD5
-    handleFile    INTEGER          NOT NULL default 1 -- 是否处理上传的文件(生成缩略图、预览图、转码等) 0:不处理 1:处理
+    handleFile    INTEGER          NOT NULL default 1, -- 已废弃(版本7改为下面几项),保留这一列是为了升级前产生的同步日志还能执行
+    handleThumb       INTEGER      NOT NULL default 1, -- 上传的文件是否生成缩略图、预览图、视频首帧图 0:否 1:是
+    handleSmoothVideo INTEGER      NOT NULL default 1, -- 是否生成流畅版视频(比1280大的视频缩小到1280、实况照片的视频) 0:否 1:是
+    handleCompatVideo INTEGER      NOT NULL default 1, -- 是否将手机原生播放不了的视频转成兼容版(mp4,分辨率不变) 0:否 1:是
+    videoCodec        VARCHAR(8)   NOT NULL default 'h265' -- 转码使用的视频编码 h264 h265
 );

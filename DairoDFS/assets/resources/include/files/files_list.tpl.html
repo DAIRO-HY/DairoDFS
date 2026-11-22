@@ -163,9 +163,13 @@
     }
 
     /**
-     * 打开文件,有预览图(比如PSD,CR3等)时打开预览图
+     * 打开文件:视频在播放页里打开;有预览图(比如PSD,CR3等)时打开预览图
      */
     function openFile(file) {
+        if (isVideoFile(file.name)) {
+            window.open(`/video.html?id=${file.id}`)
+            return
+        }
         $.ajaxByData("/api/files/property").add("ids", file.id).success(data => {
             if (data.extraList.some(it => it.name === "preview")) {
                 window.open(`/api/files/extra/${file.id}/preview`)

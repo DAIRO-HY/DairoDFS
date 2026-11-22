@@ -212,7 +212,7 @@ limit 100;
 
 -- ------------------------------
 
--- 获取需要补生成首帧图的视频(按ID顺序分批获取)
+-- 获取需要补生成首帧图的视频(按ID顺序分批获取,只获取设置了生成缩略图的账号的文件)
 -- @name select_preview_frame_todo
 -- @param after_id:i64
 -- @param exts:List<String>
@@ -227,7 +227,30 @@ where id > :after_id
 -- @each exts seq="," open="and ext in (" close=")" item="ext"
 :ext
 -- @end
+  and exists(select 1 from user where user.id = dfs_file.userId and user.handleThumb = 1)
   and not exists(select 1 from dfs_file as extraDf where extraDf.parentId = dfs_file.id and extraDf.isExtra = 1 and extraDf.name = 'preview-frame')
+order by id limit 10;
+
+-- ------------------------------
+
+-- 获取需要补转兼容版的视频(按ID顺序分批获取,只获取设置了转换兼容版的账号的文件)
+-- 还没有处理过的文件(state=0)由处理任务处理,这里不获取
+-- @name select_compat_todo
+-- @param after_id:i64
+-- @param exts:List<String>
+-- @return List<DfsFile>
+select * from dfs_file
+where id > :after_id
+  and storageId > 0
+  and isExtra = 0
+  and isHistory = 0
+  and deleteDate is null
+  and state != 0
+-- @each exts seq="," open="and ext in (" close=")" item="ext"
+:ext
+-- @end
+  and exists(select 1 from user where user.id = dfs_file.userId and user.handleCompatVideo = 1)
+  and not exists(select 1 from dfs_file as extraDf where extraDf.parentId = dfs_file.id and extraDf.isExtra = 1 and extraDf.name = 'compat')
 order by id limit 10;
 
 -- ------------------------------
@@ -292,6 +315,7 @@ update dfs_file set state = :state, stateMsg = :state_msg where id = :id;
 -- 删除文件夹时只标记文件夹本身,里面的文件不标记,所以只获取没有被删除的文件夹(包括所有上级文件夹)里的文件
 -- @name select_album
 -- @param user_id:i64
+-- @param exts:List<String> 相册显示的图片和视频的扩展名
 -- @return List<DfsFile>
 select * from dfs_file
 where parentId in (
@@ -304,7 +328,9 @@ where parentId in (
     select id from alive
 )
   and userId = :user_id
-  and ext in ('jpg','jpeg','png','bmp','gif','ico','svg','tiff','webp','wmf','wmz','jp2','eps','tga','jfif','psd','psb','ai','mp4','mov','avi','mkv','flv','rm','rmvb','3gp','cr3','cr2','heic','hif','dlive')
+-- @each exts seq="," open="and ext in (" close=")" item="ext"
+:ext
+-- @end
   and storageId > 0
   and isExtra = 0
   and isHistory = 0

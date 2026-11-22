@@ -198,6 +198,18 @@
     }
 
     /**
+     * 打开文件:视频在播放页里打开,其他文件直接打开
+     */
+    function openFile(file) {
+        if (isVideoFile(file.name)) {
+            const path = getCurrentFolderByUrl() + "/" + file.name
+            window.open(`/video.html?eid=${eid}&path=${encodeURIComponent(path)}`)
+            return
+        }
+        window.open(`${shareApi}/download/${pathUrl(file.name)}`)
+    }
+
+    /**
      * 文件在分享里的路径对应的URL(每一级分别编码)
      */
     function pathUrl(name) {
@@ -273,7 +285,7 @@
             e.stopPropagation()
             const file = fileList[parseInt($(this).data("index"))]
             if (file.fileFlag) {
-                window.open(`${shareApi}/download/${pathUrl(file.name)}`)
+                openFile(file)
             } else {
                 openFolder(getCurrentFolderByUrl() + "/" + file.name)
             }

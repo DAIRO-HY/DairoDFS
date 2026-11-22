@@ -1,30 +1,32 @@
 use crate::dao::dfs_file_dao::DfsFile;
 use crate::dao::user_dao::User;
 use crate::dao::{dfs_file_dao, user_dao, user_token_dao};
+use crate::service::file_handle_service::HandleOptions;
 use crate::util::{id_util, time_util};
 use sqlx_context::DbContext;
 
 /// 添加一个用户,同时为用户创建一个根目录
 /// - pwd 已经做过MD5的密码
-/// - handle_file 是否处理上传的文件 0:不处理 1:处理
+/// - handle_options 上传的文件要做哪些处理
 pub async fn add(
     ctx: &mut DbContext,
     name: String,
     pwd: String,
     email: Option<String>,
     state: i64,
-    handle_file: i64,
+    handle_options: &HandleOptions,
 ) -> Result<i64, sqlx::Error> {
-    let user = User {
+    let mut user = User {
         id: id_util::id(),
         name: Some(name),
         pwd: Some(pwd),
         email,
         state,
         date: time_util::current_millis(),
-        handleFile: handle_file,
+        handleFile: 1,
         ..Default::default()
     };
+    handle_options.apply_to(&mut user);
     user_dao::insert(&mut *ctx, &user).await?;
 
     //创建用户时，为用户添加一个根目录(父目录ID为0,名称为空)
@@ -48,7 +50,7 @@ pub async fn add_sub(
     nickname: Option<String>,
     state: i64,
 ) -> Result<i64, sqlx::Error> {
-    let user = User {
+    let mut user = User {
         id: id_util::id(),
         name: Some(name),
         pwd: Some(pwd),
@@ -56,11 +58,12 @@ pub async fn add_sub(
         date: time_util::current_millis(),
         parentId: parent_id,
         nickname,
-
-        //子账户上传的文件属于主账户,按主账户的设置处理,这里只是保持和默认值一致
         handleFile: 1,
         ..Default::default()
     };
+
+    //子账户上传的文件属于主账户,按主账户的设置处理,这里只是保持和默认值一致
+    HandleOptions::default().apply_to(&mut user);
     user_dao::insert(&mut *ctx, &user).await?;
     Ok(user.id)
 }

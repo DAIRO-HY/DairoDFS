@@ -52,14 +52,16 @@ pub const GROUPS: [(&str, &[(&str, &[&str])]); 3] = [
             ("state", &["state"]),
             ("nickname", &["nickname"]),
             ("avatar", &["avatar"]),
+            //handleFile已经不再使用,保留是为了升级前产生的同步日志还能按最后修改为准执行
             ("handleFile", &["handleFile"]),
+            ("handle", &["handleThumb", "handleSmoothVideo", "handleCompatVideo", "videoCodec"]),
         ],
     ),
     ("sub_account_grant", &[("perms", &["perms"])]),
 ];
 
 /// 登记的修改语句
-pub const STMTS: [Stmt; 17] = [
+pub const STMTS: [Stmt; 18] = [
     Stmt { sql: "update dfs_file set isHistory = 1 where id = ?;", table: "dfs_file", id: 0, columns: &[("isHistory", None)] },
     Stmt { sql: "update dfs_file set deleteDate = ? where id = ?;", table: "dfs_file", id: 1, columns: &[("deleteDate", Some(0))] },
     Stmt {
@@ -106,6 +108,12 @@ pub const STMTS: [Stmt; 17] = [
     Stmt { sql: "update user set nickname = ? where id = ?;", table: "user", id: 1, columns: &[("nickname", Some(0))] },
     Stmt { sql: "update user set avatar = ? where id = ?;", table: "user", id: 1, columns: &[("avatar", Some(0))] },
     Stmt { sql: "update user set handleFile = ? where id = ?;", table: "user", id: 1, columns: &[("handleFile", Some(0))] },
+    Stmt {
+        sql: "update user set handleThumb = ?, handleSmoothVideo = ?, handleCompatVideo = ?, videoCodec = ? where id = ?;",
+        table: "user",
+        id: 4,
+        columns: &[("handleThumb", Some(0)), ("handleSmoothVideo", Some(1)), ("handleCompatVideo", Some(2)), ("videoCodec", Some(3))],
+    },
     Stmt { sql: "update sub_account_grant set perms = ? where id = ?;", table: "sub_account_grant", id: 1, columns: &[("perms", Some(0))] },
 ];
 

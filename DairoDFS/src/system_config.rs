@@ -49,6 +49,10 @@ pub struct SystemConfig {
 
     /// 服务器编号(0~9):生成的ID末位是这个编号,双向同步的服务器编号不能相同
     pub node_no: i64,
+
+    /// 给已有的视频补转兼容版(手机原生播放不了的视频),只补设置了转换兼容版的账号
+    /// 默认关闭:升级后不会突然大量转码,管理员自己选择时间开启
+    pub compat_backfill: bool,
 }
 
 impl Default for SystemConfig {
@@ -68,6 +72,7 @@ impl Default for SystemConfig {
             operate_log_days: 30,
             recycle_keep_days: 30,
             node_no: 0,
+            compat_backfill: false,
         }
     }
 }

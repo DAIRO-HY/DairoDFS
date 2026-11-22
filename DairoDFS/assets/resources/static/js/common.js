@@ -126,3 +126,17 @@ function escapeHtml(str) {
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#39;")
 }
+
+/**
+ * 视频的扩展名(和服务器的一致),在视频播放页(video.html)里打开,可以选择清晰度
+ */
+const VIDEO_EXTS = ["mp4", "mov", "avi", "mkv", "flv", "rm", "rmvb", "3gp", "wmv", "webm", "mpg", "mpeg", "m2ts", "mts", "m4v", "asf", "vob", "f4v"]
+
+/**
+ * 是否视频文件
+ * @param name 文件名
+ */
+function isVideoFile(name) {
+    const ext = name.includes(".") ? name.split(".").pop().toLowerCase() : ""
+    return VIDEO_EXTS.includes(ext)
+}

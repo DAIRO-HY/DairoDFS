@@ -42,6 +42,89 @@ fn is_zero_f64(value: &f64) -> bool {
     *value == 0.0
 }
 
+/// 转码使用的视频编码
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum VideoCodec {
+    /// 兼容性最好,浏览器都能播放
+    H264,
+
+    /// 同样的画质文件更小,苹果设备和近几年的安卓手机都能硬件解码
+    #[default]
+    H265,
+}
+
+impl VideoCodec {
+    /// 从保存的名称转换,不认识的名称返回None
+    pub fn parse(name: &str) -> Option<Self> {
+        match name {
+            "h264" => Some(Self::H264),
+            "h265" => Some(Self::H265),
+            _ => None,
+        }
+    }
+
+    /// 保存到数据库的名称
+    pub fn name(self) -> &'static str {
+        match self {
+            Self::H264 => "h264",
+            Self::H265 => "h265",
+        }
+    }
+
+    /// ffmpeg的编码参数
+    fn ffmpeg_args(self) -> [&'static str; 6] {
+        match self {
+            Self::H264 => ["-c:v", "libx264", "-profile:v", "high", "-preset", "medium"],
+
+            //-tag:v hvc1兼容苹果设备,ffmpeg从H.264转H.265时,可能转-tag:v hev1得编码,导致苹果设备上无法播放
+            Self::H265 => ["-c:v", "libx265", "-tag:v", "hvc1", "-preset", "medium"],
+        }
+    }
+}
+
+/// 视频的封装格式和编码(判断手机能不能直接播放时使用)
+#[derive(Debug, Default)]
+pub struct CodecInfo {
+
+    //封装格式,ffprobe的format_name,如:mov,mp4,m4a,3gp,3g2,mj2
+    pub format: String,
+
+    //视频编码,如:h264 hevc wmv3
+    pub video: String,
+
+    //视频像素格式,如:yuv420p yuv420p10le
+    pub pix_fmt: String,
+
+    //音频编码,没有音轨时为None
+    pub audio: Option<String>,
+}
+
+/// 获取视频的封装格式和编码
+pub async fn get_codec(path: &Path) -> Result<CodecInfo, String> {
+    let data = shell_util::exec(&media::ffprobe(), [
+        "-v".as_ref(), "error".as_ref(), "-print_format".as_ref(), "json".as_ref(),
+        "-show_format".as_ref(), "-show_streams".as_ref(), path.as_os_str(),
+    ])
+    .await?;
+    let json: Value = serde_json::from_slice(&data).map_err(|e| e.to_string())?;
+    let streams = json["streams"].as_array().cloned().unwrap_or_default();
+
+    //封面图片也是一个视频流(attached_pic),要跳过
+    let Some(video) = streams
+        .iter()
+        .find(|it| it["codec_type"] == "video" && it["disposition"]["attached_pic"].as_i64() != Some(1))
+    else {
+        return Err("没有获取到视频信息".to_string());
+    };
+    let audio = streams.iter().find(|it| it["codec_type"] == "audio");
+    Ok(CodecInfo {
+        format: json["format"]["format_name"].as_str().unwrap_or_default().to_string(),
+        video: video["codec_name"].as_str().unwrap_or_default().to_string(),
+        pix_fmt: video["pix_fmt"].as_str().unwrap_or_default().to_string(),
+        audio: audio.map(|it| it["codec_name"].as_str().unwrap_or_default().to_string()),
+    })
+}
+
 /// 转码参数
 #[derive(Debug)]
 pub struct TransferArgument<'a> {
@@ -67,6 +150,9 @@ pub struct TransferArgument<'a> {
     //删除声音
     pub delete_sound: bool,
 
+    //视频编码
+    pub codec: VideoCodec,
+
     //输出文件
     pub output: &'a Path,
 }
@@ -74,7 +160,8 @@ pub struct TransferArgument<'a> {
 /// 获取视频信息
 pub async fn get_info(path: &Path) -> Result<VideoInfo, String> {
     let data = shell_util::exec(&media::ffprobe(), [
-        "-v".as_ref(), "error".as_ref(), "-print_format".as_ref(), "json".as_ref(), "-show_streams".as_ref(), path.as_os_str(),
+        "-v".as_ref(), "error".as_ref(), "-print_format".as_ref(), "json".as_ref(),
+        "-show_format".as_ref(), "-show_streams".as_ref(), path.as_os_str(),
     ])
     .await?;
     let json: Value = serde_json::from_slice(&data).map_err(|e| e.to_string())?;
@@ -90,7 +177,10 @@ pub async fn get_info(path: &Path) -> Result<VideoInfo, String> {
         bitrate: stream["bit_rate"].as_str().and_then(|it| it.parse().ok()).unwrap_or(0),
         ..Default::default()
     };
-    if let Some(duration) = stream["duration"].as_str().and_then(|it| it.parse::<f64>().ok()) {
+
+    //mkv、flv、webm等格式的视频流里没有时长,使用整个文件的时长
+    let duration = stream["duration"].as_str().or_else(|| json["format"]["duration"].as_str());
+    if let Some(duration) = duration.and_then(|it| it.parse::<f64>().ok()) {
         info.duration = (duration * 1000.0) as i64;
     }
     if let Some((num, den)) = stream["r_frame_rate"].as_str().and_then(|it| it.split_once('/')) {
@@ -164,6 +254,7 @@ async fn hdr_first_frame(path: &Path, temp_path: &Path) -> Result<Vec<u8>, Strin
         fps: 1.0,
         crf: 18,
         delete_sound: true,
+        codec: VideoCodec::H265,
         output: temp_path,
     };
     hdr_to_sdr(&arg).await?;
@@ -179,13 +270,13 @@ async fn first_frame(path: &Path) -> Result<Vec<u8>, String> {
     .await
 }
 
-/// 视频转码(SDR转SDR,HDR转HDR),编码为H.265
+/// 视频转码(SDR转SDR,HDR转HDR)
 pub async fn transfer(arg: &TransferArgument<'_>) -> Result<(), String> {
     let scale = format!("scale=w={}:h={}", arg.width, arg.height);
     run_transfer(arg, &scale).await
 }
 
-/// HDR视频转SDR视频,编码为H.265
+/// HDR视频转SDR视频
 pub async fn hdr_to_sdr(arg: &TransferArgument<'_>) -> Result<(), String> {
     let size = if arg.width > 0 && arg.height > 0 {
         format!("w={}:h={}:", arg.width, arg.height)
@@ -208,18 +299,43 @@ async fn run_transfer(arg: &TransferArgument<'_>, filter: &str) -> Result<(), St
         args.extend(["-vf".into(), filter.to_string()]);
     }
 
-    //-tag:v hvc1兼容苹果设备,ffmpeg从H.264转H.265时,可能转-tag:v hev1得编码,导致苹果设备上无法播放
-    args.extend([
-        "-c:v".into(), "libx265".into(), "-tag:v".into(), "hvc1".into(),
-        "-crf".into(), arg.crf.to_string(), "-preset".into(), "medium".into(),
-    ]);
+    args.extend(arg.codec.ffmpeg_args().map(String::from));
+
+    //手机只能硬件解码8位4:2:0的视频
+    args.extend(["-crf".into(), arg.crf.to_string(), "-pix_fmt".into(), "yuv420p".into()]);
     if arg.fps > 0.0 {
         args.extend(["-r".into(), format!("{:.2}", arg.fps)]);
     }
     if arg.delete_sound {
         args.push("-an".into());
+    } else {
+        args.extend(["-c:a".into(), "aac".into()]);
     }
-    args.extend(["-f".into(), "mp4".into(), "-y".into(), arg.output.to_string_lossy().into()]);
+    args.extend(mp4_output_args(arg.output));
     shell_util::exec(&media::ffmpeg(), &args).await?;
     Ok(())
+}
+
+/// 不重新编码视频,只转换成mp4封装
+/// - convert_audio 是否将音频转换成AAC(音频编码手机不支持时),false时直接复制
+/// - is_hevc 视频是否H.265编码
+pub async fn remux(input: &Path, output: &Path, convert_audio: bool, is_hevc: bool) -> Result<(), String> {
+    let mut args: Vec<String> = vec!["-v".into(), "error".into(), "-i".into(), input.to_string_lossy().into(), "-c:v".into(), "copy".into()];
+    if is_hevc {
+        //苹果设备只能播放hvc1标记的H.265视频
+        args.extend(["-tag:v".into(), "hvc1".into()]);
+    }
+    args.extend(["-c:a".into(), if convert_audio { "aac" } else { "copy" }.into()]);
+    args.extend(mp4_output_args(output));
+    shell_util::exec(&media::ffmpeg(), &args).await?;
+    Ok(())
+}
+
+/// 输出mp4文件的参数
+/// - 不要字幕和数据流:mp4不支持图片字幕(如蓝光的PGS字幕),带上会转码失败
+/// - faststart:索引放在文件开头,边下载边播放时不用先读取文件末尾
+fn mp4_output_args(output: &Path) -> Vec<String> {
+    let mut args: Vec<String> = ["-sn", "-dn", "-movflags", "+faststart", "-f", "mp4", "-y"].map(String::from).into();
+    args.push(output.to_string_lossy().into());
+    args
 }

@@ -12,7 +12,7 @@ use std::time::Duration;
 struct Assets;
 
 // VERSION 数据库版本号
-const VERSION: i32 = 6;
+const VERSION: i32 = 7;
 
 /// 数据库文件名
 pub const DB_FILE_NAME: &str = "dairo-dfs2.sqlite";
@@ -56,8 +56,22 @@ update sql_log set seq = rowid;
 CREATE UNIQUE INDEX index_seq ON sql_log (seq);
 ";
 
-/// 版本5升级到版本6:用户可以设置不处理上传的文件
-const UPGRADE_V6: &str = "alter table user add handleFile INTEGER NOT NULL default 1;";
+/// 版本6升级到版本7:上传文件的处理细分为缩略图、流畅版视频、兼容版视频,可以选择视频编码
+/// 新增的列见USER_COLUMNS_V7,这里是添加列之后执行的数据转换:
+/// - 原来设置了处理(handleFile=1)的账号全部开启,设置了不处理的全部关闭
+/// - 原来不处理的文件(state=3)改为待处理:文件属性现在总是生成,其他处理按账号的设置(全部关闭)
+const UPGRADE_V7: &str = "
+update user set handleThumb = handleFile, handleSmoothVideo = handleFile, handleCompatVideo = handleFile;
+update dfs_file set state = 0, stateMsg = null where state = 3;
+";
+
+/// 版本7新增的user表的列(列名, 定义)
+const USER_COLUMNS_V7: [(&str, &str); 4] = [
+    ("handleThumb", "INTEGER NOT NULL default 1"),
+    ("handleSmoothVideo", "INTEGER NOT NULL default 1"),
+    ("handleCompatVideo", "INTEGER NOT NULL default 1"),
+    ("videoCodec", "VARCHAR(8) NOT NULL default 'h265'"),
+];
 
 /// 需要从老库迁移数据的表(sql_log是Go版的同步日志,新版不再使用,不迁移)
 const MIGRATE_TABLES: [&str; 6] = [
@@ -183,13 +197,17 @@ async fn upgrade() -> Result<(), Box<dyn Error>> {
             tx.commit().await?;
         }
         if version < 6 {
-            //版本6:用户可以设置不处理上传的文件(字段已经存在时不再添加,避免升级中断后重复执行时失败)
-            let exists: i64 = sqlx::query_scalar("select count(*) from pragma_table_info('user') where name = 'handleFile'")
-                .fetch_one(&mut *conn)
-                .await?;
-            if exists == 0 {
-                sqlx::raw_sql(UPGRADE_V6).execute(&mut *conn).await?;
+            //版本6:用户可以设置不处理上传的文件
+            add_column_if_absent(&mut *conn, "user", "handleFile", "INTEGER NOT NULL default 1").await?;
+        }
+        if version < 7 {
+            //版本7:上传文件的处理细分
+            let mut tx = (&mut *conn).begin().await?;
+            for (column, definition) in USER_COLUMNS_V7 {
+                add_column_if_absent(&mut *tx, "user", column, definition).await?;
             }
+            sqlx::raw_sql(UPGRADE_V7).execute(&mut *tx).await?;
+            tx.commit().await?;
         }
     }
 
@@ -198,6 +216,19 @@ async fn upgrade() -> Result<(), Box<dyn Error>> {
         sqlx::query(&(format!("PRAGMA USER_VERSION = {}", VERSION)))
             .execute(&mut *conn)
             .await?;
+    }
+    Ok(())
+}
+
+/// 添加一列,已经存在时不添加
+/// 开发时(debug编译)老版本的程序也会读取当前的建表文件,建出来的表里已经有新的列,直接添加会失败
+async fn add_column_if_absent(conn: &mut SqliteConnection, table: &str, column: &str, definition: &str) -> Result<(), Box<dyn Error>> {
+    let exists: i64 = sqlx::query_scalar(&format!("select count(*) from pragma_table_info('{table}') where name = ?"))
+        .bind(column)
+        .fetch_one(&mut *conn)
+        .await?;
+    if exists == 0 {
+        sqlx::raw_sql(&format!("alter table {table} add {column} {definition};")).execute(&mut *conn).await?;
     }
     Ok(())
 }

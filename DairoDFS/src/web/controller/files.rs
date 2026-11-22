@@ -561,7 +561,8 @@ pub async fn album(login: Ext<LoginUser>) -> Result<Vec<(i64, i64, String, bool,
         .await?
         .into_iter()
         .collect();
-    let mut files = dfs_file_dao::select_album(&mut ctx, login.owner_id).await?;
+    let exts = media::album_exts().into_iter().map(String::from).collect();
+    let mut files = dfs_file_dao::select_album(&mut ctx, login.owner_id, exts).await?;
     let mut scope = Scope::load(&mut ctx, &login).await?;
     if scope.is_sub() {
         //子账户只显示有浏览权限的文件
