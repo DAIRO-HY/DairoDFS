@@ -347,6 +347,40 @@ def run_tests(dfs, con):
     check("刚删除的文件还在回收站", con.execute("select count(*) from dfs_file where id = ?", (trash_id,)).fetchone()[0] == 1)
     check("刚移入隔离区的文件不删除", recycle_row(con, keep_id) is not None and os.path.exists(keep_row[1]))
 
+    print("10. 高级页面的三个按钮:清空彻底删除记录 -> 回收未使用文件 -> 清空隔离区,不等待天数")
+    gone_id = dfs.upload("/t10/gone.txt", b"gone after purge")
+    dfs.upload("/t10/a/shared.txt", b"shared content 10")
+    shared_id = dfs.upload("/t10/b/shared.txt", b"shared content 10")
+    for fid in [gone_id, shared_id]:
+        dfs.request("DELETE", "/api/files/delete", {"ids": [fid]})
+    trash = json.loads(dfs.request("GET", "/api/trash/list")[1])
+    trash_ids = [it["id"] for it in trash if it["name"] in ("gone.txt", "shared.txt")]
+    status, text = dfs.request("DELETE", "/api/trash/delete", {"ids": trash_ids})
+    check("从垃圾箱彻底删除", status == 200, f"{status} {text}")
+    gone_sid = con.execute("select storageId from dfs_file_delete where id = ?", (gone_id,)).fetchone()[0]
+    shared_sid = con.execute("select storageId from dfs_file_delete where id = ?", (shared_id,)).fetchone()[0]
+
+    #存储文件的ID是创建时间,改成1天前创建的(回收未使用文件只回收10分钟之前创建的)
+    gone_sid = age_storage(con, gone_sid, days=1)
+    shared_sid = age_storage(con, shared_sid, days=1)
+    gone_path = con.execute("select path from storage_file where id = ?", (gone_sid,)).fetchone()[0]
+
+    dfs.run_recycle("/api/advanced/recycle_now")
+    check("清空记录之前:回收未使用文件不回收彻底删除表里的", exists_storage(con, gone_sid))
+    dfs.run_recycle("/api/advanced/clear_file_delete")
+    check("清空彻底删除记录:表里没有数据了", con.execute("select count(*) from dfs_file_delete").fetchone()[0] == 0)
+    check("清空彻底删除记录:存储文件还没动", exists_storage(con, gone_sid) and os.path.exists(gone_path))
+    dfs.run_recycle("/api/advanced/recycle_now")
+    row = recycle_row(con, gone_sid)
+    check("回收未使用文件:移到了隔离区", row is not None and not exists_storage(con, gone_sid) and os.path.exists(row[1]), row)
+    check("还有其他文件在用的存储文件没有回收", exists_storage(con, shared_sid))
+    other = [it[0] for it in con.execute("select id from storage_recycle where id != ?", (gone_sid,)).fetchall()]
+    dfs.run_recycle("/api/advanced/purge_recycle")
+    check("清空隔离区:刚移入的也删除了", recycle_row(con, gone_sid) is None and not os.path.exists(row[1]))
+    check("清空隔离区:隔离区没有记录了", con.execute("select count(*) from storage_recycle").fetchone()[0] == 0, other)
+    status, _ = dfs.request("GET", f"/api/files/download/{dfs.file_id('/t10/a/shared.txt')}/shared.txt")
+    check("共用存储的另一个文件还能下载", status == 200, status)
+
 
 if __name__ == "__main__":
     main()

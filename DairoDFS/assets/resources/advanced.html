@@ -3,104 +3,208 @@
 <head>
     {{template include/head}}
     <title>高级功能</title>
+    <style>
+        .adv-card {
+            background: rgba(255, 255, 255, .55);
+            border-radius: .5rem;
+            padding: .9rem 1rem 1rem;
+        }
+
+        .adv-card-title {
+            font-weight: 600;
+            font-size: 1.05rem;
+        }
+
+        .adv-card-title > i {
+            margin-right: .45rem;
+        }
+
+        .adv-card-desc {
+            color: #6c757d;
+            font-size: .82rem;
+            margin: .15rem 0 .75rem;
+        }
+
+        .adv-btn-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: .5rem;
+        }
+
+        .adv-btn {
+            display: flex;
+            align-items: center;
+            gap: .5rem;
+            text-align: left;
+            background: #fff;
+            border: 1px solid #dee2e6;
+            font-size: .9rem;
+        }
+
+        .adv-btn > i {
+            font-size: 1.1rem;
+        }
+
+        .adv-btn:hover {
+            border-color: #86b7fe;
+            background: #f4f8ff;
+        }
+
+        /* 执行操作 */
+        .adv-btn-action > i {
+            color: #0d6efd;
+        }
+
+        /* 只是查询,不修改数据 */
+        .adv-btn-query > i {
+            color: #198754;
+        }
+
+        /* 影响较大的操作 */
+        .adv-btn-warn > i {
+            color: #fd7e14;
+        }
+
+        /* 不能恢复的操作 */
+        .adv-btn-danger {
+            color: #dc3545;
+            border-color: #f1aeb5;
+        }
+
+        .adv-btn-danger:hover {
+            color: #fff;
+            background: #dc3545;
+            border-color: #dc3545;
+        }
+    </style>
 </head>
 <body>
 {{template include/top-bar}}
-<div class="mx-3 mt-3 p-2 rounded shadow bg-content">
-    <div class="row row-cols-1 row-cols-sm-auto">
-        <div class="col" id="validateErrFileDiv" style="display: none;">
-            <div class="alert alert-danger" id="validateErrFile"></div>
+<div class="mx-3 mt-3 p-3 rounded shadow bg-content">
+
+    <!-- 运行状态 -->
+    <div class="d-flex flex-wrap gap-2 mb-3">
+        <div class="alert alert-danger py-2 mb-0" id="validateErrFileDiv" style="display: none;">
+            <i class="bi bi-shield-exclamation me-1"></i><span id="validateErrFile"></span>
         </div>
-        <div class="col">
-            <div class="alert alert-primary">文件处理状态：<span id="fileHandling"></span></div>
-        </div>
-        <div class="col">
-            <div class="alert alert-success"><span id="recycleStorageTimerState"></span></div>
-        </div>
-        <div class="col">
-            <div class="alert alert-info"><span id="storageState"></span></div>
-        </div>
-        <div class="col">
-            <div class="alert alert-secondary"><span id="recycleState"></span></div>
-        </div>
+        <div class="alert alert-primary py-2 mb-0"><i class="bi bi-activity me-1"></i>文件处理状态：<span id="fileHandling"></span></div>
+        <div class="alert alert-success py-2 mb-0"><i class="bi bi-clock-history me-1"></i><span id="recycleStorageTimerState"></span></div>
+        <div class="alert alert-info py-2 mb-0"><i class="bi bi-hdd-stack me-1"></i><span id="storageState"></span></div>
+        <div class="alert alert-secondary py-2 mb-0"><i class="bi bi-recycle me-1"></i><span id="recycleState"></span></div>
     </div>
     <div class="alert alert-danger d-none" id="recycleBlockedDiv">
-        <span id="recycleBlocked"></span>
+        <i class="bi bi-exclamation-octagon me-1"></i><span id="recycleBlocked"></span>
         <button type="button" class="btn btn-danger btn-sm ms-2" onclick="onRecycleConfirmClick()">确认继续回收</button>
     </div>
-    <textarea class="form-control" id="sql"></textarea>
-    <div class="row row-cols-xl-6 row-cols-lg-5 row-cols-md-4 row-cols-sm-3 row-cols-2">
+
+    <!-- 功能按钮(按分类) -->
+    <div class="row row-cols-1 row-cols-md-2 row-cols-xxl-4 g-3">
         <div class="col">
-            <button type="button" class="btn w-100 btn-primary mt-2" onclick="onExecClick()">执行</button>
+            <div class="adv-card h-100">
+                <div class="adv-card-title"><i class="bi bi-gear-wide-connected text-primary"></i>文件处理</div>
+                <div class="adv-card-desc">上传的文件生成属性、缩略图、转码等</div>
+                <div class="adv-btn-grid">
+                <button type="button" class="btn adv-btn adv-btn-action" onclick="onReHandleClick()" title="唤醒文件处理任务,处理还没有处理的文件">
+                    <i class="bi bi-play-circle"></i><span>开启文件处理</span>
+                </button>
+                <button type="button" class="btn adv-btn adv-btn-query" onclick="onHandlingClick()" title="查询还没有处理的文件数量">
+                    <i class="bi bi-hourglass-split"></i><span>未处理的文件</span>
+                </button>
+                <button type="button" class="btn adv-btn adv-btn-query" onclick="onHandlingErrorClick()" title="查询处理失败的文件">
+                    <i class="bi bi-exclamation-triangle"></i><span>处理失败的文件</span>
+                </button>
+                <button type="button" class="btn adv-btn adv-btn-action" onclick="onHandErrorRetryClick()" title="把处理失败的文件改为待处理">
+                    <i class="bi bi-arrow-repeat"></i><span>处理失败全部重试</span>
+                </button>
+                </div>
+            </div>
         </div>
         <div class="col">
-            <button type="button" class="btn w-100 btn-dark mt-2" onclick="onDeleteExtraClick()">重置附属文件</button>
+            <div class="adv-card h-100">
+                <div class="adv-card-title"><i class="bi bi-images text-success"></i>重新生成</div>
+                <div class="adv-card-desc">删除已经生成的内容,按账号当前的设置重新处理</div>
+                <div class="adv-btn-grid">
+                <button type="button" class="btn adv-btn adv-btn-action" onclick="onClearPropertyClick()" title="重新生成尺寸、拍摄时间、时长等文件属性">
+                    <i class="bi bi-info-circle"></i><span>重置属性</span>
+                </button>
+                <button type="button" class="btn adv-btn adv-btn-action" onclick="onDeleteThumbClick()" title="删除并重新生成缩略图">
+                    <i class="bi bi-image"></i><span>重置缩略图片</span>
+                </button>
+                <button type="button" class="btn adv-btn adv-btn-action" onclick="onDeletePreviewClick()" title="删除并重新生成预览图(HEIC、RAW、PSD等)">
+                    <i class="bi bi-card-image"></i><span>重置预览图片</span>
+                </button>
+                <button type="button" class="btn adv-btn adv-btn-action" onclick="onDeletePreVideoClick()" title="删除并重新生成流畅版、兼容版视频">
+                    <i class="bi bi-film"></i><span>重置预览视频</span>
+                </button>
+                <button type="button" class="btn adv-btn adv-btn-warn" onclick="onDeleteExtraClick()" title="删除所有附属文件并全部重新生成">
+                    <i class="bi bi-layers"></i><span>重置附属文件</span>
+                </button>
+                </div>
+            </div>
         </div>
         <div class="col">
-            <button type="button" class="btn w-100 btn-info mt-2" onclick="onDeletePreVideoClick()">重置预览视频
-            </button>
+            <div class="adv-card h-100">
+                <div class="adv-card-title"><i class="bi bi-recycle text-warning"></i>存储空间回收</div>
+                <div class="adv-card-desc">彻底删除的文件 → 隔离区 → 从磁盘删除</div>
+                <div class="adv-btn-grid">
+                <button type="button" class="btn adv-btn adv-btn-query" onclick="onNotUseCountClick()" title="查询没有被使用的存储文件数量">
+                    <i class="bi bi-calculator"></i><span>未使用文件数量</span>
+                </button>
+                <button type="button" class="btn adv-btn adv-btn-action" onclick="onClearFileDeleteClick()" title="不再等待存储空间回收间隔">
+                    <i class="bi bi-journal-x"></i><span>清空彻底删除记录</span>
+                </button>
+                <button type="button" class="btn adv-btn adv-btn-action" onclick="onRecycleNowClick()" title="把没有被使用的存储文件移到隔离区">
+                    <i class="bi bi-recycle"></i><span>回收未使用文件</span>
+                </button>
+                <button type="button" class="btn adv-btn adv-btn-action" onclick="onRecycleRestoreClick()" title="把隔离区里仍然被使用的文件恢复回去">
+                    <i class="bi bi-arrow-counterclockwise"></i><span>恢复误回收文件</span>
+                </button>
+                <button type="button" class="btn adv-btn adv-btn-action" onclick="onRecycleTimerClick()" title="立即执行一次每天凌晨3点的回收任务">
+                    <i class="bi bi-clock-history"></i><span>立即执行回收任务</span>
+                </button>
+                <button type="button" class="btn adv-btn adv-btn-danger" onclick="onPurgeRecycleClick()" title="从磁盘真正删除隔离区里的文件,不能恢复">
+                    <i class="bi bi-trash3"></i><span>清空隔离区</span>
+                </button>
+                </div>
+            </div>
         </div>
         <div class="col">
-            <button type="button" class="btn w-100 btn-danger mt-2" onclick="onDeletePreviewClick()">重置预览图片
-            </button>
-        </div>
-        <div class="col">
-            <button type="button" class="btn w-100 btn-success mt-2" onclick="onDeleteThumbClick()">重置缩略图片
-            </button>
-        </div>
-        <div class="col">
-            <button type="button" class="btn w-100 btn-warning mt-2" onclick="onUsedSizeClick()">DFS使用大小<span
-                    id="usedSize"></span></button>
-        </div>
-        <div class="col">
-            <button type="button" class="btn w-100 btn-primary mt-2" onclick="onClearPropertyClick()">重置属性</button>
-        </div>
-        <div class="col">
-            <button type="button" class="btn w-100 btn-dark mt-2" onclick="onHandlingClick()">未处理的文件</button>
-        </div>
-        <div class="col">
-            <button type="button" class="btn w-100 btn-info mt-2" onclick="onHandlingErrorClick()">处理失败的文件
-            </button>
-        </div>
-        <div class="col">
-            <button type="button" class="btn w-100 btn-danger mt-2" onclick="onHandErrorRetryClick()">处理失败全部重试
-            </button>
-        </div>
-        <div class="col">
-            <button type="button" class="btn w-100 btn-success mt-2" onclick="onReHandleClick()">开启文件处理</button>
-        </div>
-        <div class="col">
-            <button type="button" class="btn w-100 btn-warning mt-2" onclick="onWithoutStorageClick()">储存丢失的文件
-            </button>
-        </div>
-        <div class="col">
-            <button type="button" class="btn w-100 btn-primary mt-2" onclick="onNotUseCountClick()">未使用文件数量
-            </button>
-        </div>
-        <div class="col">
-            <button type="button" class="btn w-100 btn-dark mt-2" onclick="onRecycleNowClick()">回收未使用文件</button>
-        </div>
-        <div class="col">
-            <button type="button" class="btn w-100 btn-success mt-2" onclick="onRecycleRestoreClick()">恢复误回收文件</button>
-        </div>
-        <div class="col">
-            <button type="button" class="btn w-100 btn-info mt-2" onclick="onValidateFileMd5Click()">验证文件完整(<span
-                    id="validateFileMd5Current">0</span>/<span id="validateFileMd5Total">0</span>)
-            </button>
-        </div>
-        <div class="col">
-            <button type="button" class="btn w-100 btn-danger mt-2" onclick="onDbBackUpClick()">备份数据库</button>
-        </div>
-        <div class="col">
-            <button type="button" class="btn w-100 btn-success mt-2" onclick="onResetDataClick()">重置并同步本机</button>
-        </div>
-        <div class="col">
-            <button type="button" class="btn w-100 btn-warning mt-2" onclick="onRecycleTimerClick()">立即执行回收任务</button>
+            <div class="adv-card h-100">
+                <div class="adv-card-title"><i class="bi bi-hdd-stack text-info"></i>存储与数据</div>
+                <div class="adv-card-desc">检查存储文件,备份和恢复本机数据</div>
+                <div class="adv-btn-grid">
+                <button type="button" class="btn adv-btn adv-btn-query" onclick="onUsedSizeClick()" title="统计存储文件占用的空间">
+                    <i class="bi bi-hdd"></i><span>DFS使用大小<span id="usedSize"></span></span>
+                </button>
+                <button type="button" class="btn adv-btn adv-btn-query" onclick="onWithoutStorageClick()" title="查询存储文件已经不存在的文件">
+                    <i class="bi bi-file-earmark-x"></i><span>储存丢失的文件</span>
+                </button>
+                <button type="button" class="btn adv-btn adv-btn-action" onclick="onValidateFileMd5Click()" title="逐个校验存储文件的MD5,再点一次停止">
+                    <i class="bi bi-shield-check"></i><span>验证文件完整(<span id="validateFileMd5Current">0</span>/<span id="validateFileMd5Total">0</span>)</span>
+                </button>
+                <button type="button" class="btn adv-btn adv-btn-action" onclick="onDbBackUpClick()" title="立即备份一次数据库">
+                    <i class="bi bi-database-down"></i><span>备份数据库</span>
+                </button>
+                <button type="button" class="btn adv-btn adv-btn-danger" onclick="onResetDataClick()" title="清空本机数据,从主机全量同步(只读模式)">
+                    <i class="bi bi-cloud-arrow-down"></i><span>重置并同步本机</span>
+                </button>
+                </div>
+            </div>
         </div>
     </div>
-    <div class="text-start">
-        <div id="result"></div>
-        <div id="table"></div>
+
+    <!-- 执行SQL,上面的查询按钮也会把SQL填到这里执行 -->
+    <div class="adv-card mt-3">
+        <div class="adv-card-title"><i class="bi bi-terminal text-dark"></i>执行SQL</div>
+        <div class="adv-card-desc">直接操作数据库,不记录同步日志,请谨慎使用</div>
+        <textarea class="form-control font-monospace" id="sql" rows="3"></textarea>
+        <div class="text-end mt-2">
+            <button type="button" class="btn btn-primary px-4" onclick="onExecClick()"><i class="bi bi-play-fill"></i>&nbsp;执行</button>
+        </div>
+        <div class="text-start">
+            <div id="result"></div>
+            <div id="table"></div>
+        </div>
     </div>
 </div>
 <script>
@@ -230,7 +334,25 @@
      */
     function onRecycleNowClick() {
         if (confirm("确定要把未使用的文件移到隔离区吗?隔离区的文件超过保留天数后才会真正删除")) {
-            $.ajaxByData("/api/advanced/recycle_now").post()
+            $.ajaxByData("/api/advanced/recycle_now").success(() => setTimeout(init, 1000)).post()
+        }
+    }
+
+    /**
+     * 立即删除彻底删除表(dfs_file_delete)里的所有记录
+     */
+    function onClearFileDeleteClick() {
+        if (confirm("确定要清空彻底删除记录吗?\n\n从垃圾箱彻底删除的文件,不再等待存储空间回收间隔。之后执行“回收未使用文件”时,没有被其他文件使用的存储文件会被移到隔离区。")) {
+            $.ajaxByData("/api/advanced/clear_file_delete").success(() => setTimeout(init, 1000)).post()
+        }
+    }
+
+    /**
+     * 立即真正删除隔离区里的所有文件
+     */
+    function onPurgeRecycleClick() {
+        if (confirm("确定要清空隔离区吗?\n\n隔离区里的文件会从磁盘上真正删除,不再等待保留天数,删除后不能恢复。仍然被使用的文件不会删除。")) {
+            $.ajaxByData("/api/advanced/purge_recycle").success(() => setTimeout(init, 1000)).post()
         }
     }
 

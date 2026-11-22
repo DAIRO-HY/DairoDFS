@@ -121,6 +121,18 @@ pub async fn confirm_blocked() {
     exclusive(async move { recycle_not_use_storage(blocked.time, Some(blocked.count)).await.map(|_| ()) }).await;
 }
 
+/// 立即删除彻底删除表里的所有记录,不再等待存储空间回收间隔(高级功能页面使用)
+/// 之后执行回收时,这些记录对应的存储文件没有被其他记录使用就会被移到隔离区
+pub async fn clear_file_delete_now() {
+    exclusive(delete_file_delete_before(i64::MAX)).await;
+}
+
+/// 立即真正删除隔离区里的所有文件,不再等待保留天数,删除后不能恢复(高级功能页面使用)
+/// 仍然被使用的文件不删除,留给restore_used恢复
+pub async fn purge_recycle_now() {
+    exclusive(purge_recycle_before(i64::MAX)).await;
+}
+
 /// 立即检查并恢复隔离区里仍然被使用的文件(高级功能页面使用)
 pub async fn restore_used_now() {
     exclusive(restore_used()).await;
@@ -149,10 +161,10 @@ async fn run_inner() -> Result<(), String> {
 
     //先恢复隔离区里仍然被使用的文件(正常情况下不会有),再回收
     restore_used().await?;
-    delete_timeout_file_delete().await?;
     let time = time_util::current_millis() - delete_storage_timeout() * DAY_MILLIS;
+    delete_file_delete_before(time).await?;
     recycle_not_use_storage(time, None).await?;
-    purge_recycle().await
+    purge_recycle_before(time_util::current_millis() - recycle_keep_days() * DAY_MILLIS).await
 }
 
 /// 回收站保留天数,至少1天,避免配置错误时立即删除
@@ -201,12 +213,11 @@ async fn delete_trash_timeout() -> Result<(), BizError> {
     }
 }
 
-/// 删除彻底删除表里到期的记录,对应的存储文件没有被使用时,之后由recycle_not_use_storage移到隔离区
+/// 删除彻底删除表里time之前删除的记录,对应的存储文件没有被使用时,之后由recycle_not_use_storage移到隔离区
 /// 只删除本机的记录,不记录同步日志,每台机器各自回收
-async fn delete_timeout_file_delete() -> Result<(), String> {
+async fn delete_file_delete_before(time: i64) -> Result<(), String> {
     let mut pre_ids = Vec::new();
     loop {
-        let time = time_util::current_millis() - delete_storage_timeout() * DAY_MILLIS;
         let mut ctx = lib_db::get_context();
         let list = dfs_file_delete_dao::select_by_timeout(&mut ctx, time).await.map_err(|e| e.to_string())?;
         let ids: Vec<i64> = list.iter().map(|it| it.id).collect();
@@ -428,10 +439,9 @@ async fn restore(record: &StorageRecycle) -> Result<(), String> {
     Ok(())
 }
 
-/// 真正删除隔离区里超过保留天数的文件
-async fn purge_recycle() -> Result<(), String> {
+/// 真正删除隔离区里time之前移入的文件
+async fn purge_recycle_before(time: i64) -> Result<(), String> {
     let err = |e: sqlx::Error| e.to_string();
-    let time = time_util::current_millis() - recycle_keep_days() * DAY_MILLIS;
     let mut ctx = lib_db::get_context();
     let mut dirs = HashSet::new();
     let mut pre_ids = Vec::new();

@@ -133,6 +133,18 @@ pub async fn recycle_restore() {
     tokio::spawn(recycle_service::restore_used_now());
 }
 
+/// 立即删除彻底删除表(dfs_file_delete)里的所有记录(在后台执行)
+#[POST("/api/advanced/clear_file_delete")]
+pub async fn clear_file_delete() {
+    tokio::spawn(recycle_service::clear_file_delete_now());
+}
+
+/// 立即真正删除隔离区里的所有文件,不能恢复(在后台执行)
+#[POST("/api/advanced/purge_recycle")]
+pub async fn purge_recycle() {
+    tokio::spawn(recycle_service::purge_recycle_now());
+}
+
 /// 立即执行一次回收定时任务(在后台执行)
 #[POST("/api/advanced/recycle_timer")]
 pub async fn recycle_timer() {
