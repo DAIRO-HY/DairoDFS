@@ -140,3 +140,35 @@ function isVideoFile(name) {
     const ext = name.includes(".") ? name.split(".").pop().toLowerCase() : ""
     return VIDEO_EXTS.includes(ext)
 }
+
+/**
+ * 复制文字到剪贴板
+ * navigator.clipboard只在https或localhost下可以用,http下改用隐藏文本框+execCommand复制
+ * @param text 要复制的文字
+ * @param container 临时文本框放在哪里;在对话框里复制时要传对话框,否则对话框会把焦点抢回去,复制不到
+ * @return 是否复制成功
+ */
+async function copyText(text, container = document.body) {
+    if (navigator.clipboard && window.isSecureContext) {
+        try {
+            await navigator.clipboard.writeText(text)
+            return true
+        } catch (e) {
+            //没有权限等情况,改用下面的方法
+        }
+    }
+    const textarea = document.createElement("textarea")
+    textarea.value = text
+    textarea.readOnly = true
+    textarea.style.cssText = "position:fixed;top:0;left:0;width:1px;height:1px;opacity:0"
+    container.appendChild(textarea)
+    textarea.select()
+    let isOk = false
+    try {
+        isOk = document.execCommand("copy")
+    } catch (e) {
+        //浏览器不支持
+    }
+    textarea.remove()
+    return isOk
+}

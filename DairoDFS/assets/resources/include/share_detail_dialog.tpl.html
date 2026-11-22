@@ -94,11 +94,13 @@
             shareCopyText += `\n提取码: ${shareDetailData.pwd}`
         }
         shareCopyText += "\n点击上面的链接提取文件"
-        if (navigator.clipboard) {
-            navigator.clipboard.writeText(shareCopyText)
-            $("#copyBtn").prepend("<i class='bi bi-check-circle'></i>")
-        } else {
-            alert("http环境不支持自动复制,请手动复制以下分享信息:\n\n" + shareCopyText)
-        }
+        copyText(shareCopyText, $("#modalShareDetail")[0]).then(isOk => {
+            if (isOk) {
+                $("#copyBtn>i").remove()
+                $("#copyBtn").prepend("<i class='bi bi-check-circle'></i>")
+            } else {
+                alert("浏览器不支持自动复制,请手动复制以下分享信息:\n\n" + shareCopyText)
+            }
+        })
     }
 </script>
